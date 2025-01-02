@@ -1,0 +1,134 @@
+/* Body style */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Ensures the page fills the height of the viewport */
+}
+
+/* Container for the entire page */
+.container {
+    width: 450px;  /* Increased width for a wider form */
+    min-height: 400px;  /* Decreased height */
+    padding: 20px;  /* Reduced padding */
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centers content vertically */
+}
+
+/* Logo section (centered and bigger) */
+.logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.logo-container .logo {
+    width: 120px; /* Adjusted size */
+    height: auto;
+}
+
+/* Form container */
+.form-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.input-container {
+    margin-bottom: 15px;
+}
+
+.input-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.input-container input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+/* Sign up button */
+.btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+/* Google Sign Up button */
+.social-btns {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.social-btns .btn-outline-danger {
+    width: 100%;
+    padding: 10px;
+    background-color: white;
+    border: 2px solid #db4437;
+    color: #db4437;
+    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.social-btns .btn-outline-danger:hover {
+    background-color: #db4437;
+    color: white;
+    border-color: #db4437;
+}
+
+.google-logo {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+}
+
+/* Links */
+.links {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.links a {
+    color: #007bff;
+    font-weight: bold;
+}
+
+.links a:hover {
+    text-decoration: underline;
+}
+
+/* Style for the login link */
+.login-link {
+    color: #007bff;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.login-link:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}

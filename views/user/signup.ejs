@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/style/signup.css">
+    <title>Signup Page</title>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Logo section (centered and bigger) -->
+        <div class="logo-container">
+            <img src="./images/store-logo.png" alt="Logo" class="logo">
+        </div>
+
+        <!-- Form section -->
+        <div class="form-container">
+            <h2>Sign Up</h2>
+            <form id="signform" method="post" action="/signup" >
+                <!-- Full Name Field -->
+                <div class="input-container">
+                    <label for="fullname">Full Name</label>
+                    <input type="text" id="fullname" name="name" placeholder="Enter your full name" required>
+                </div>
+                <div id="error-1" class="error-message"></div>
+
+                <!-- Email Field -->
+                <div class="input-container">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+                <div id="error-2" class="error-message"></div>
+
+                <!-- Phone Field -->
+                <div class="input-container">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
+                </div>
+                 <div id="error-3" class="error-message"></div>
+                <!-- Password Field -->
+                <div class="input-container">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Create a password" required>
+                </div>
+                <div id="error-4" class="error-message"></div>
+
+                <!-- Confirm Password Field -->
+                <div class="input-container">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
+                </div>
+                <div id="error-5" class="error-message"></div>
+
+                <!-- Sign Up Button -->
+                <button type="submit" class="btn btn-primary">Sign Up</button>
+
+                <!-- Google Sign Up Button -->
+                <div class="mt-2px">
+                    <p>or sign up with</p>
+                </div>
+                <div class="social-btns">
+                    <button type="button" class="btn btn-outline-danger">
+                        <img src="images/googlesignup.png" alt="Google Logo" class="google-logo" />
+                        Sign up with Google
+                    </button>
+                </div>
+
+                <!-- Login Link -->
+                <div class="links">
+                    <p>Already have an account? <a href="#" class="login-link">Log In</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        const nameid = document.getElementById("name");
+        const emailid = document.getElementById("email");
+        const phoneid = document.getElementById("phone");
+        const passid = document.getElementById("password");
+        const cpassid = document.getElementById("confirm-password");
+        const error1= document.getElementById('error-1');
+        const error2 = document.getElementById('error-2');
+        const error3 = document.getElementById('error-3'); 
+        const error4 = document.getElementById('error-4');
+        const error5 = document.getElementById('error-5'); 
+        const signform = document.getElementById('signform');
+
+        function nameValidateChecking(e){
+          const nameval = nameid.value;
+          const namepattern = /^[A-za-z\s]+$/;
+          if(nameval.trim()===""){
+            error1.style.display="block";
+            error1.innerHTML="please enter the valid name"
+          }else if(!namepattern.test(nameval)){
+            error1.style.display="block";
+            error1.innerHTML="name must be alphabets and spaces"
+          }else{
+            error1.style.display="none"
+            error1.innerHTML="";
+          }
+        }
+
+        function emailValidateChecking(e){
+            const emailval=emailid.value;
+            const emailpattern =/^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+
+            if(!emailpattern.test(emailval)){
+                error2.style.display="block";
+                error2.innerHTML="email must be @gmail.com"
+            }else{
+                error2.style.display="none";
+                error2.innerHTML="";
+            }
+        }
+
+        function phoneValidateChecking(){
+            const phoneval = phoneid.value;
+
+            if(phoneval.trim()===""){
+                error3.style.display="block";
+                error3.innerHTML="Enter valid phone number"
+            }else if(phoneval.length<10 || phoneval.length>10){
+             error3.style.display="block";
+             error3.innerHTML="enter 10 digit"
+            }else{
+            error3.style.display="none";
+            error3.innerHTML=""            }
+        }
+
+        document.addEventListener("DOMContentLoaded",()=>{
+            signform.addEventListener("submit",(e)=>{
+              nameValidateChecking();
+              emailValidateChecking();
+              phoneValidateChecking();
+              passValidateChecking();
+              if(
+                !nameid,
+                !emailid,
+                !passid,
+                !error1,
+                !error2,
+                !error3,
+                !error4,
+                !error5,
+                !signform
+              ){
+                console.error("some elements are not found!!")
+                
+              }
+              if(
+                error1.innerHTML || error2.innerHTML || error3.innerHTML ||
+                error4.innerHTML || error5.innerHTML
+              ){
+                e.preventDefault();
+              }
+            })
+        })
+ 
+
+
+
+    </script>
+</body>
+
+</html>
