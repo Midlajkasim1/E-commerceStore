@@ -1,0 +1,136 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Nunito Sans', sans-serif;
+    background-color: #f4f7fa;
+  }
+
+  .container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 420px;
+    padding: 30px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .login-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .login-form {
+    margin-top: 30px;
+  }
+
+  .login-form h3 {
+    font-size: 28px;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  .form-group label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background-color: #f9f9f9;
+  }
+
+  .form-control:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+  }
+
+  .error-message {
+    color: red;
+    font-size: 12px;
+    display: none;
+  }
+
+  .btn-primary {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 20px;
+    font-size: 16px;
+    width: 100%;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-primary:hover {
+    background-color: #0056b3;
+  }
+
+  .social-btns {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+  }
+
+  .social-btns a {
+    padding: 10px;
+    margin: 0 5px;
+    border-radius: 50%;
+    background-color: #4285f4;
+    color: white;
+    display: inline-block;
+    text-align: center;
+    font-size: 18px;
+    width: 40px;
+    height: 40px;
+    box-sizing: border-box;
+  }
+
+  .social-btns a:hover {
+    background-color: #357ae8;
+  }
+
+  .login-image {
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .login-image a {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+  }
+
+  .login-image a:hover {
+    color: #0056b3;
+  }
+
+  .login-image img {
+    max-width: 120px;
+    height: auto;
+    margin-bottom: 20px;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .card {
+      width: 90%;
+      padding: 20px;
+    }
+  }

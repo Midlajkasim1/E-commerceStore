@@ -69,12 +69,27 @@
                 <li class="nav-item mx-4"><a class="nav-link" href="#contact">Contact</a></li>
                 <li class="nav-item mx-4"><a class="nav-link" href="#tools">Tools</a></li>
             </ul>
-            <div class="navbar-icons ml-auto pr-5"> <!-- ml-auto aligns to the right, pr-3 adds space on the right -->
-                <img src="./images/login.png" alt="login" class="mr-4 large-icon" />
+            <div class="navbar-icons ml-auto pr-5">
+                <% if (locals.user) { %>
+                <div class="dropdown">
+                    <a href="#" class="dropdown  custom-link" id="userDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <%=locals.user.name%>
+                    </a>
+                    <div class="dropdown-content" aria-labelledby="userDropdown">
+                        <a class="dropdown-item" href="/userProfile">Profile</a>
+                        <a class="dropdown-item" href="/logout">Logout</a>
+                    </div>
+                </div>
+                <% } else { %>
+                <a href="/signup" class="btn btn-outline-primary">Sign Up</a>
+                <a href="/login" class="btn btn-primary">Login</a>
+                <% } %>
                 <img src="./images/akar-icons_search.png" alt="Search" class="mr-4" />
                 <img src="./images/akar-icons_heart.png" alt="Wishlist" class="mr-4" />
                 <img src="./images/ant-design_shopping-cart-outlined.png" alt="Cart" />
             </div>
+            
+            
         </div>
     </nav>
     

@@ -1,24 +1,48 @@
 const express = require('express');
- const app = express();
- const env = require('dotenv').config()
- const path = require('path')
- const connectDB =require('./config/db')
- const userRoutes = require('./routes/userRouter')
+const app = express();
+const env = require('dotenv');
+const session = require('express-session');
+const passport = require('./config/passport');
+env.config();
+const path = require('path');
+const connectDB = require('./config/db');
+const userRoutes = require('./routes/userRouter');
+const adminRoutes = require('./routes/adminRouter');
 
- connectDB();
- app.use(express.json());
- app.use(express.urlencoded({extended:true}))
 
- app.set('view engine','ejs');
- app.set("views",[path.join(__dirname,'views/user'),path.join(__dirname,'views/admin')])
- app.use(express.static(path.join(__dirname, 'public')));
- app.use('/',userRoutes)
+// Session setup
+app.use(session({
+   secret: process.env.SESSION_SECRET  || 'defaultSecret',
+   resave: false,
+   saveUninitialized: true,
+   cookie: { secure: false, httpOnly: true, maxAge: 48 * 60 * 60 * 1000 } // Session expiration
+}));
 
- const HOST = 'http://localhost';
+//
+app.use(passport.initialize());
+app.use(passport.session());
+// Disable caching for session management
+app.use((req, res, next) => {
+    res.set('cache-control', 'no-store');
+    next();
+});
 
-app.listen(process.env.PORT,()=>console.log(`Server is running at ${HOST}:${process.env.PORT}`))
+connectDB(); // Connect to DB
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Set up views and static files
+app.set('view engine', 'ejs');
+app.set("views", [path.join(__dirname, 'views/user'), path.join(__dirname, 'views/admin')]);
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Use routes for handling user requests
+app.use('/', userRoutes);
+app.use('/admin',adminRoutes)
+
+const HOST = 'http://localhost';
+
+// Start the server
+app.listen(process.env.PORT, () => console.log(`Server is running at ${HOST}:${process.env.PORT}`));
 
 module.exports = app;
-
-
- 

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Row Dashboard</title>
+    <link rel="stylesheet" href="style/dashboard.css">
+    <!-- Link to Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Urban Row</h2>
+        <ul>
+            <li><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="#"><i class="fas fa-cube"></i> Product</a></li>
+            <li><a href="#"><i class="fas fa-box"></i> Orders</a></li>
+            <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
+            <li><a href="#"><i class="fas fa-th-large"></i> Categories</a></li>
+            <li><a href="#"><i class="fas fa-gift"></i> Offers</a></li>
+            <ul>
+                <li><a href="#"><i class="fas fa-tag"></i> Coupon</a></li>
+                <li><a href="#"><i class="fas fa-image"></i> Banner</a></li>
+            </ul>
+            <li><a href="#"><i class="fas fa-cogs"></i> Settings</a></li>
+            <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </div>
+    <div class="main-content">
+        <div class="metrics">
+            <div class="metric">Total users: 29</div>
+            <div class="metric">Items sold: 34</div>
+            <div class="metric">Total Sales: ₹15889</div>
+            <div class="metric">Pending Orders: 12</div>
+        </div>
+        <button class="download-btn">Download report (PDF)</button>
+        <table class="top-products">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Product Image</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Revenue</th>
+                    <th>Qty Sold</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>#11225</td>
+                    <td><img src="https://m.media-amazon.com/images/I/81ZUL5rCfmL._AC_UY1100_.jpg" alt="Shirt"></td>
+                    <td>Shirt</td>
+                    <td>Shirt</td>
+                    <td>$120</td>
+                    <td>$1276.45</td>
+                    <td>5</td>
+                </tr>
+                <tr>
+                    <td>#11226</td>
+                    <td><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQeWYW3zFnf-4PUygz-FizPkaJVQ6AKcQinDw&s" alt="Shirt"></td>
+                    <td>Shirt</td>
+                    <td>Shirt</td>
+                    <td>$85.25</td>
+                    <td>$369.95</td>
+                    <td>5</td>
+                </tr>
+                <!-- Add more rows as needed -->
+            </tbody>
+        </table>
+        <div class="pagination">
+            <button class="pagination-button" aria-label="Previous Page">&lt;</button>
+            <button class="pagination-button">1</button>
+            <button class="pagination-button">2</button>
+            <button class="pagination-button">3</button>
+            <button class="pagination-button" aria-label="More Pages">...</button>
+            <button class="pagination-button" aria-label="Next Page">&gt;</button>
+        </div>
+    </div>
+</body>
+</html>
