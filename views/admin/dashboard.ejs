@@ -3,78 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Urban Row Dashboard</title>
-    <link rel="stylesheet" href="style/dashboard.css">
-    <!-- Link to Font Awesome for Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <title>Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/style/dashboard.css">
 </head>
 <body>
-    <div class="sidebar">
-        <h2>Urban Row</h2>
-        <ul>
-            <li><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-            <li><a href="#"><i class="fas fa-cube"></i> Product</a></li>
-            <li><a href="#"><i class="fas fa-box"></i> Orders</a></li>
-            <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
-            <li><a href="#"><i class="fas fa-th-large"></i> Categories</a></li>
-            <li><a href="#"><i class="fas fa-gift"></i> Offers</a></li>
-            <ul>
-                <li><a href="#"><i class="fas fa-tag"></i> Coupon</a></li>
-                <li><a href="#"><i class="fas fa-image"></i> Banner</a></li>
-            </ul>
-            <li><a href="#"><i class="fas fa-cogs"></i> Settings</a></li>
-            <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-        </ul>
-    </div>
+   
     <div class="main-content">
-        <div class="metrics">
-            <div class="metric">Total users: 29</div>
-            <div class="metric">Items sold: 34</div>
-            <div class="metric">Total Sales: ₹15889</div>
-            <div class="metric">Pending Orders: 12</div>
+        <div class="admin-profile">
+            <img src="/images/admin-pro.jpeg" alt="Admin">
         </div>
-        <button class="download-btn">Download report (PDF)</button>
-        <table class="top-products">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Product Image</th>
-                    <th>Product Name</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                    <th>Revenue</th>
-                    <th>Qty Sold</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>#11225</td>
-                    <td><img src="https://m.media-amazon.com/images/I/81ZUL5rCfmL._AC_UY1100_.jpg" alt="Shirt"></td>
-                    <td>Shirt</td>
-                    <td>Shirt</td>
-                    <td>$120</td>
-                    <td>$1276.45</td>
-                    <td>5</td>
-                </tr>
-                <tr>
-                    <td>#11226</td>
-                    <td><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQeWYW3zFnf-4PUygz-FizPkaJVQ6AKcQinDw&s" alt="Shirt"></td>
-                    <td>Shirt</td>
-                    <td>Shirt</td>
-                    <td>$85.25</td>
-                    <td>$369.95</td>
-                    <td>5</td>
-                </tr>
-                <!-- Add more rows as needed -->
-            </tbody>
-        </table>
-        <div class="pagination">
-            <button class="pagination-button" aria-label="Previous Page">&lt;</button>
-            <button class="pagination-button">1</button>
-            <button class="pagination-button">2</button>
-            <button class="pagination-button">3</button>
-            <button class="pagination-button" aria-label="More Pages">...</button>
-            <button class="pagination-button" aria-label="Next Page">&gt;</button>
+
+        <h4 class="mb-4">Dashboard</h4>
+        <%- include("../../views/partials/admin/header") %>
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stats-value">29</div>
+                    <div class="stats-label">Total users</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stats-value">34</div>
+                    <div class="stats-label">Items sold</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stats-value">₹ 15889</div>
+                    <div class="stats-label">Total Sales</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stats-value">12</div>
+                    <div class="stats-label">Pending Orders</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <h5>Top sold Products</h5>
+            <div class="d-flex gap-3 align-items-center">
+                <input type="text" class="date-input" placeholder="To">
+                <input type="text" class="date-input" placeholder="From">
+                <button class="download-btn">
+                    PDF
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="products-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>PRODUCT IMAGE</th>
+                        <th>PRODUCT NAME</th>
+                        <th>CATEGORY</th>
+                        <th>AMOUNT</th>
+                        <th>REVENUE</th>
+                        <th>QTY SOLD</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#11225</td>
+                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
+                        <td>Shirt</td>
+                        <td>Shirt</td>
+                        <td>$ 120</td>
+                        <td>$ 1276.45</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>#11226</td>
+                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
+                        <td>Shirt</td>
+                        <td>Shirt</td>
+                        <td>$ 85.25</td>
+                        <td>$ 369.95</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>#11227</td>
+                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
+                        <td>Pants</td>
+                        <td>Shirt</td>
+                        <td>$ 25.25</td>
+                        <td>$ 863.45</td>
+                        <td>4</td>
+                    </tr>
+                    <tr>
+                        <td>#11228</td>
+                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
+                        <td>Pants</td>
+                        <td>Pants</td>
+                        <td>$ 100</td>
+                        <td>$ 127.45</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>#11229</td>
+                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
+                        <td>Bag</td>
+                        <td>Bag</td>
+                        <td>$ 80</td>
+                        <td>$ 86.00</td>
+                        <td>2</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <span class="text-muted">SHOWING 1 OF 10</span>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-left"></i></a></li>
+                        <li class="page-item"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link active" href="#">3</a></li>
+                        <li class="page-item"><a class="page-link" href="#">4</a></li>
+                        <li class="page-item"><a class="page-link" href="#">8</a></li>
+                        <li class="page-item"><a class="page-link" href="#">9</a></li>
+                        <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a></li>
+                    </ul>
+                </nav>
+            </div>
         </div>
     </div>
 </body>

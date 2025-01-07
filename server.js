@@ -1,9 +1,11 @@
 const express = require('express');
 const app = express();
 const env = require('dotenv');
+env.config();
 const session = require('express-session');
 const passport = require('./config/passport');
-env.config();
+const flash = require('connect-flash');
+const nocache = require('nocache');
 const path = require('path');
 const connectDB = require('./config/db');
 const userRoutes = require('./routes/userRouter');
@@ -17,7 +19,8 @@ app.use(session({
    saveUninitialized: true,
    cookie: { secure: false, httpOnly: true, maxAge: 48 * 60 * 60 * 1000 } // Session expiration
 }));
-
+app.use(flash());
+app.use(nocache());
 //
 app.use(passport.initialize());
 app.use(passport.session());
@@ -35,6 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 app.set("views", [path.join(__dirname, 'views/user'), path.join(__dirname, 'views/admin')]);
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Use routes for handling user requests
 app.use('/', userRoutes);

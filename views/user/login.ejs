@@ -22,7 +22,29 @@
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
       rel="stylesheet"/>
-      <link rel="stylesheet" href="style/login.css">
+    <link rel="stylesheet" href="style/login.css">
+    <style>
+      /* Add custom styles for the signup link */
+      .sign-up-link {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #007bff; /* Blue color for the link */
+        text-decoration: none;
+        margin-top: 10px;
+        display: inline-block;
+        transition: color 0.3s ease, background-color 0.3s ease;
+      }
+      .sign-up-link:hover {
+        color: white;
+        background-color: #007bff; /* Add blue background on hover */
+        padding: 8px 16px;
+        border-radius: 5px;
+      }
+      .sign-up-link:active {
+        color: #0056b3;
+        background-color: #0056b3;
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -33,9 +55,6 @@
             <a href="/">
               <img src="images/store-logo.png" alt="Shopping Site" />
             </a>
-            <div class="text-center mt-2">
-              <a href="/signup" class="sign-up-link">Not registered? Sign up</a>
-            </div>
           </div>
           <!-- Login Form Below -->
           <div class="login-form mt-5">
@@ -83,6 +102,10 @@
                   </a>
                 </div>
               </div>
+              <div class="text-center mt-2">
+                <!-- The improved sign-up link -->
+                <a href="/signup" class="sign-up-link">Not registered? Sign up</a>
+              </div>
             </form>
           </div>
         </div>
@@ -103,7 +126,7 @@
 
         if (!emailpattern.test(emailval)) {
           error1.style.display = "block";
-          error1.innerHTML = "Invalid Format";
+          error1.innerHTML = "Invalid credintials";
         } else {
           error1.style.display = "none";
           error1.innerHTML = "";
@@ -114,7 +137,7 @@
         const passval = passid.value;
         if (passval.length < 8) {
           error2.style.display = "block";
-          error2.innerHTML = "Should contain at least 8 characters";
+          error2.innerHTML = "Should contain at least 4 characters";
         } else {
           error2.style.display = "none";
           error2.innerHTML = "";

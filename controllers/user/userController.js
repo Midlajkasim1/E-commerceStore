@@ -250,7 +250,7 @@ const logout = async (req,res)=>{
                console.log("Session error",err.message);
                return red.redirect('/pageNotFound')
            }
-           return res.redirect('/login')
+           return res.redirect('/')
        })
     } catch (error) {
        console.log("Logout error",error);

@@ -119,14 +119,14 @@ body {
         <img src="../images/store-logo.png" alt="logo">
         <div class="login-box">
             <h1 class="login-title">Login</h1>
-            <form>
+            <form method="POST" action="/admin/login">
                 <div class="input-group">
-                    <label for="email" class="label">Email</label>
-                    <input type="email" id="email" class="input" placeholder="Enter your email">
+                    <label for="email"  class="label">Email</label>
+                    <input type="email" id="email" name="email" class="input" placeholder="Enter your email">
                 </div>
                 <div class="input-group">
                     <label for="password" class="label">Password</label>
-                    <input type="password" id="password" class="input" placeholder="Enter your password">
+                    <input type="password"  id="password" name="password" class="input" placeholder="Enter your password">
                 </div>
                 <button type="submit" class="login-button">Log In</button>
             </form>

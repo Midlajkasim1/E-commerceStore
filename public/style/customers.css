@@ -1,0 +1,189 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+body {
+    background-color: #1a1d21;
+    color: #fff;
+}
+
+.container {
+    display: flex;
+    min-height: 100vh;
+}
+
+
+
+.logo {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 30px;
+}
+
+.nav-item {
+    padding: 12px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    color: #8b8b8b;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.nav-item i {
+    width: 20px;
+    margin-right: 10px;
+}
+
+.nav-item.active {
+    color: #fff;
+}
+
+.nav-item.logout {
+    color: #ff4444;
+}
+
+/* Main Content Styles */
+.main-content {
+    flex: 1;
+    padding: 30px;
+    background-color: #1a1d21;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    margin-right: 20px;
+}
+
+.search-bar input {
+    background: transparent;
+    border: none;
+    color: #8b8b8b;
+    padding: 8px;
+    width: 200px;
+    font-size: 0.9rem;
+}
+
+.search-bar i {
+    color: #8b8b8b;
+}
+
+.add-user-btn {
+    background-color: #4ade80;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Table Styles */
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #1e2227;
+    border-radius: 8px;
+}
+
+.users-table th {
+    text-align: left;
+    padding: 15px;
+    color: #8b8b8b;
+    font-weight: normal;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #2d3035;
+}
+
+.users-table td {
+    padding: 15px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #2d3035;
+}
+
+.user-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+}
+
+.block-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.unblock-btn {
+    background-color: #4ade80;
+    color: black;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.action-icon {
+    color: #8b8b8b;
+    margin-left: 15px;
+    cursor: pointer;
+}
+
+/* Pagination Styles */
+.pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 20px;
+    gap: 5px;
+}
+
+.showing-text {
+    color: #8b8b8b;
+    font-size: 0.9rem;
+    margin-right: auto;
+}
+
+.page-item {
+    padding: 8px 12px;
+    color: #8b8b8b;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.page-item.active {
+    background-color: #4ade80;
+    color: black;
+    border-radius: 5px;
+}
+
+.profile-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    margin-left: 20px;
+}
