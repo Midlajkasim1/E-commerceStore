@@ -78,6 +78,7 @@ body {
 .social-btns {
     margin-top: 20px;
     text-align: center;
+    margin-right: 15px;
 }
 
 .social-btns .btn-outline-danger {
@@ -88,6 +89,7 @@ body {
     color: #db4437;
     font-size: 16px;
     display: flex;
+    text-decoration: none;
     justify-content: center;
     align-items: center;
     cursor: pointer;

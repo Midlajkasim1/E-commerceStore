@@ -5,18 +5,12 @@ const env = require('dotenv').config();
 
 
 
-
-
-
-
-
-
-
-
 // Load Signup Page
 const loadSignup = async (req, res) => {
     try {
-        res.render('signup');
+        if(req.session){
+        res.render('signup',{message:req.flash('err')});
+    }
     } catch (error) {
         console.error("Error loading signup page:", error);
         res.status(500).send("Server error");
@@ -25,21 +19,21 @@ const loadSignup = async (req, res) => {
 
 // OTP Generator
 function generateOtp() {
-    return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+    return Math.floor(100000 + Math.random() * 900000).toString(); 
 }
-////cwxw gegf ankp nisu
 
-// Send Verification Email
+
+// email verification 
 async function sendVerificationEmail(email, otp) {
     try {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
-            port: 465,  // Use SSL port
-            secure: true,  // Use SSL
-            requireTLS: true,  // Ensure TLS is used
+            port: 465,  
+            secure: true,  
+            requireTLS: true,  
             auth: {
-                user: process.env.NODEMAILER_EMAIL,  // Your Gmail email
-                pass: process.env.NODEMAILER_PASSWORD,  // Your app-specific password
+                user: process.env.NODEMAILER_EMAIL,  
+                pass: process.env.NODEMAILER_PASSWORD, 
             },
         });
 
@@ -48,8 +42,8 @@ async function sendVerificationEmail(email, otp) {
             to: email,
             subject: "Verify your account",
             text: `Your OTP is ${otp}`,
-            html: `<b>Your OTP is: ${otp}. It is valid for one minute. Resend Otp Buttin will activate after.</b>`,
-            replyTo: process.env.NODEMAILER_EMAIL,  // Set a valid reply-to address
+            html: `<b>Your OTP is: ${otp}. It is valid for one minute.</b>`,
+            replyTo: process.env.NODEMAILER_EMAIL,  
         });
 
         console.log("Email sent:", info.response);
@@ -63,28 +57,32 @@ async function sendVerificationEmail(email, otp) {
 
 
 
-// Signup Handler
+// Signup 
 const signup = async (req, res) => {
     try {
         const { name, phone, email, password, cPassword } = req.body;
 
         if (!name || !phone || !email || !password || !cPassword) {
-            return res.render("signup", { message: "All fields are required", data: req.body });
+            req.flash('err','All fields are required')
+            return res.redirect("/signup");
         }
 
         if (password !== cPassword) {
-            return res.render("signup", { message: "Passwords do not match", data: req.body });
+            req.flash('err','Passwords do not match')
+            return res.redirect("/signup");
         }
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.render("signup", { message: "User already exists", data: req.body });
+            req.flash('err','User already exists')
+            return res.redirect("/signup");
         }
 
         const otp = generateOtp();
         const emailSent = await sendVerificationEmail(email, otp);
         if (!emailSent) {
-            return res.render("signup", { message: "Failed to send verification email. Try again.", data: req.body });
+            req.flash('err','Failed to send verification email. Try again.')
+            return res.redirect("/signup");
         }
 
         req.session.userOtp = otp;
@@ -104,11 +102,11 @@ const securePassword = async (password)=>{
         return passwordHash;
        
     } catch (error) {
-        
+        console.error("password error:", error);
     }
 }
 
-// OTP Verification Handler
+// OTP Verification 
 const verifyOtp = async (req, res) => {
     try {
       const {otp} = req.body;
@@ -160,7 +158,7 @@ const resendOtp = async (req, res) => {
     }
 };
 
-// Page Not Found Handler
+// Page not found 
 const pageNotFound = async (req, res) => {
     try {
         res.status(404).render('page-404');
@@ -171,12 +169,11 @@ const pageNotFound = async (req, res) => {
  };
 
 
-//loadlogin page
+//load login page
 const loadlogin = async (req, res) => {
     try {
-        console.log("Session user ID:", req.session.user);
         if (!req.session.user) {
-            return res.render('login');
+            return res.render('login',{msg:req.flash('err')});
         }
         res.redirect('/');
     } catch (error) {
@@ -188,44 +185,57 @@ const loadlogin = async (req, res) => {
 
 
 //login page
-// Login Handler
+
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        if(!email,!password){
+            req.flash('err','Please enter your email and password');
+            return res.redirect('/login');
+       }
+ 
+ 
+
         // Find user by email
         const user = await User.findOne({ email });
         if (!user) {
-            return res.render('login', { message: "User not found" });
+            req.flash('err','Invaild email id');
+            return res.redirect('/login');
+        }else if(user.isBlocked){
+            req.flash('err','this user blocked!!');
+            return res.redirect('/login')
         }
 
-        // Check if password matches
+
+         
         const isPasswordCorrect = await bcrypt.compare(password, user.password);
         if (!isPasswordCorrect) {
-            return res.render('login', { message: "Incorrect password" });
+            req.flash('err','password not match')
+            return res.redirect('/login');
         }
 
-        // Store user ID in session after successful login
-        req.session.user = user._id;  // Store the user ID in session
+        
+        req.session.user = user._id; 
         console.log("Session user ID:", req.session.user);
 
-        res.redirect('/');  // Redirect to home page after login
+        res.redirect('/');  
 
     } catch (error) {
         console.error("Login error:", error);
-        res.render('login', { message: "An error occurred. Please try again later." });
+        res.redirect('login');
     }
 };
 
 
 
-// Load Home Page
+//  Home Page
 const loadHomePage = async (req, res) => {
     try {
-        const userId = req.session.user;  // Get the user ID from session
+        const userId = req.session.user;  
 
         if (userId) {
-            const user = await User.findById(userId);  // Use user ID from session
+            const user = await User.findById(userId);  
             if (user) {
                 console.log("User data retrieved successfully:", user);
                 return res.render('home', { user: user });
@@ -234,7 +244,6 @@ const loadHomePage = async (req, res) => {
                 return res.render('home', { user: null });
             }
         } else {
-            console.log("No user logged in.");
             return res.render('home', { user: null });
         }
     } catch (error) {

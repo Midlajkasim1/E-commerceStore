@@ -34,8 +34,16 @@ const adminAuth = (req,res,next)=>{
     
   })
 }
+const adminCheck = (req,res,next)=>{
+  if(req.session.admin){
+    next();
+  }else{
+    res.redirect('/admin/login')
+  }
+}
 
 module.exports = {
   userAuth,
-  adminAuth
+  adminAuth,
+  adminCheck,
 }

@@ -3,31 +3,44 @@ const bcrypt = require('bcrypt')
 
 const loadlogin = (req, res) => {
     if (req.session.admin) {
-        return res.redirect('/admin/dashboard');  // Redirect to admin dashboard if already logged in
+        return res.redirect('/admin/dashboard');  
     }
-    res.render("admin-login", { message: null });
+    res.render("admin-login",{message:req.flash('err')});
 };
 
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log('Login request received with email:', email);
+        if(!email,!password){
+            req.flash('err','Please enter the email and password!')
+           return res.redirect('/admin/login')
+        }
+    
 
         const admin = await User.findOne({ email, isAdmin: true });
-        console.log('Admin found:', admin);
+        // console.log('admin found:', admin);
+                
+        if(!admin){
+            req.flash('err','Invalid admin!');
+            return res.redirect('/admin/login')
+        }
 
         if (admin) {
             const passwordMatch = await bcrypt.compare(password, admin.password);
             console.log('Password match:', passwordMatch);
+        
 
-            if (passwordMatch) {
+            if (!passwordMatch) {
+               req.flash('err','Invalid Password!')
+               return res.redirect('/admin/login')
+               
+            }else{
                 req.session.admin = true;
-                console.log('Session set:', req.session);
-                return res.redirect('/admin/dashboard');  // Corrected redirection to /admin/dashboard
+                return res.redirect('/admin/dashboard');  
             }
             
         } else {
-            return res.redirect('/admin/login');  // Redirect to login if no admin found
+            return res.redirect('/admin/login'); 
         }
     } catch (error) {
         console.log('Login error:', error);
@@ -38,14 +51,12 @@ const login = async (req, res) => {
 const loadDashboard = async (req, res) => {
     if (req.session.admin) {
         try {
-            console.log('Rendering dashboard for admin');
-            res.render("dashboard");  // Ensure you have a dashboard.ejs file
+            res.render("dashboard");  
         } catch (error) {
             console.log('Dashboard error:', error);
             return res.redirect("/pageerror");
         }
     } else {
-        console.log('Admin session not found, redirecting to login');
         return res.redirect('/admin/login');
     }
 };

@@ -84,22 +84,18 @@ body, html {
 
   .social-btns {
     display: flex;
-    justify-content: center;
-    margin-top: 15px;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
   }
-
   .social-btns a {
-    padding: 10px;
-    margin: 0 5px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    background-color: #4285f4;
-    color: white;
-    display: inline-block;
-    text-align: center;
-    font-size: 18px;
-    width: 40px;
-    height: 40px;
-    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
   }
 
   .social-btns a:hover {
@@ -122,10 +118,36 @@ body, html {
   }
 
   .login-image img {
-    max-width: 120px;
+    max-width: 100px;
     height: auto;
     margin-bottom: 20px;
   }
+.text-danger{
+  color: red;
+}
+/* Add custom styles for the signup link */
+.sign-up-link {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #007bff; /* Blue color for the link */
+  text-decoration: none;
+  margin-top: 10px;
+  padding-left: 115px; 
+  display: inline-block;
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+.sign-up-link:hover {
+  color: rgb(12, 64, 155);
+  /* background-color: #007bff;  */
+  /* padding: 8px 16px; */
+  border-radius: 5px;
+}
+/* .sign-up-link:active {
+  color: #0056b3;
+  background-color: #0056b3;
+} */
+
+
 
   /* Responsive Design */
   @media (max-width: 768px) {

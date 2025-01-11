@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <link rel="stylesheet" href="/style/category.css">
+</head>
+<body>
+    
+   
+        <!-- Sidebar -->
+        <%- include("../../views/partials/admin/header") %>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <h1>Categories</h1>
+                <% if(message && message.length>0){ %>
+                    <h6 class="text-success text-center"><%=message%></h6>
+                    <%}%>
+                    <% if(msg && msg.length>0){ %>
+                        <h6 class="text-success text-center"><%=msg%></h6>
+                        <%}%>
+
+                <div class="search-bar">
+                    <form action="/admin/" method="get">
+                        <input type="text" name="search" placeholder="Search Categories" value="">
+                        <i class="fas fa-search"></i>
+                    </form>
+                </div>
+                <div class="profile-container">
+                    <div class="profile-section">
+                        <a href="/admin/category/addCategory" class="add-user-btn">ADD CATEGORY +</a>
+                    </div>
+                </div>
+            </div>
+
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>NO</th>
+                        <th> Name</th>
+                        <th>Description</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>List/Unlist</th>
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                   <%cat.reverse().forEach((category,index)=>{%>
+                    <tr>
+                        <td><%=index+1%></td>
+                        <td><%=category.name%></td>
+                        <td><%=category.description%></td>
+                        <td><%= new Date(category.createdAt).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        }) %></td>
+                        <td>
+                          <% if(category.isListed){%>
+                            <span class="custom-badge custom-badge-success custom-badge-rounded-pill" style="width: 60px;">Listed</span>
+                          <%}else{%>
+                            <span class="custom-badge custom-badge-danger custom-badge-rounded-pill" style="width: 60px;">Unlisted</span>
+                            <%}%>
+                          </td>
+                         
+                          <td>
+                            <% if(category.isListed){%>
+                            <button class="btn btn-danger" style="width: 70px">
+                              <a href="/admin/category/listCategory?id=<%= category._id %>" class="text-white text-decoration-none">Unlist</a>
+                            </button>
+                            <%} else { %>
+                            <button class="btn btn-success" style="width: 70px">
+                              <a href="/admin/category/unlistCategory?id=<%= category._id %>" class="text-white text-decoration-none">List</a>
+                            </button>
+                            <% } %>
+                          </td>
+      
+                                  <td>
+                                    <a href="/admin/category/editCategory?id=<%= category._id %>" class="btn btn-primary btn-icon" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                  </td>
+              
+                            </div>
+                        </td>
+                    </tr>
+                    <%})%>
+                </tbody>
+            </table>
+            
+
+            <div class="pagination">
+                <%if (currentPage>1){%>
+                <a class="text-decoration-none" href="?page=<%= currentPage - 1 %>">&laquo; Previous</a>
+                <% } %> <% for (let i =1; i <= totalPages; i++) { %> <% if(i ===currentPage) { %>
+                <span class="showing-text"><%= i %></span>
+                <%} else {%>
+               <a class="text-decoration-none" href="?page=<= i %>"><%= i %></a>
+               <%}%><%}%> <% if(currentPage < totalPages){%>
+               <a class="text-decoration-none" href="?page=<%= currentPage + 1 %>">Next &raquo;</a>
+               <%}%>
+            </div>
+        </div>
+    </div>
+    </div>
+</body>
+</html>

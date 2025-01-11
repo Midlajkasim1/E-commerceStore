@@ -33,12 +33,17 @@ const customerInfo = async (req, res) => {
     const totalPages = Math.ceil(count / limit);
 
     // Render the page and pass the necessary variables
-    res.render('customers', { 
-      data: userData, 
-      search: search,  // Pass search term to the view
-      totalPages: totalPages, 
-      currentPage: page 
-    });
+
+if(req.session.admin){
+  
+  res.render('customers', { 
+    data: userData, 
+    search: search,                          // Pass search term to the view
+    totalPages: totalPages, 
+    currentPage: page 
+  });
+}
+  
   } catch (error) {
     console.error(error);
     res.redirect("/pageerror");

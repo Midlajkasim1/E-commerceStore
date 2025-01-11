@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Row - Products</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/style/product.css">
+  
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+           
+            <%- include("../../views/partials/admin/header") %>
+
+            <!-- Main Content -->
+            <div class="col-md-10 main-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Products</h2>
+                    <div class="search-bar">
+                        <form action="/admin/" method="get">
+                            <input type="text" name="search" placeholder="Search Categories" value="">
+                            <i class="fas fa-search"></i>
+                        </form>
+                    </div>
+                    <a href="/admin/products/addProducts" class="btn btn-success text-decoration-none">
+                        ADD PRODUCT +
+                    </a>
+                </div>
+
+               
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>PRODUCT IMAGE</th>
+                            <th>PRODUCT NAME</th>
+                            <th>PRODUCT CATEGORY</th>
+                            <th>PIECE</th>
+                            <th>AMOUNT</th>
+                            <th>LAST UPDATED</th>
+                            <th>COLOR AVAILABLE</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#11225</td>
+                            <td><img src="/api/placeholder/50/50" class="product-img" alt="Shirt"></td>
+                            <td>Shirt</td>
+                            <td>Shirt</td>
+                            <td>15</td>
+                            <td>$120</td>
+                            <td>6/10/2020</td>
+                            <td>
+                                <span class="color-dot red-dot"></span>
+                                <span class="color-dot blue-dot"></span>
+                            </td>
+                            <td>
+                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        <!-- Add more product rows as needed -->
+                    </tbody>
+                </table>
+
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item"><a class="page-link" href="#">Previous</a></li>
+                        <li class="page-item"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item active"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+</body>
+</html>

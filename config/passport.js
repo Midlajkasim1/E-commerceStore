@@ -6,13 +6,21 @@ const env = require('dotenv').config();
 passport.use(new GoogleStrategy({
     clientID:process.env.GOOGLE_CLIENT_ID,
     clientSecret:process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL:'/auth/google/callback'
+    callbackURL:'/auth/google/callback',
+    scope:['profile','email'],
+    prompt:'select-account'
 },
   async(accessToken,refreshToken,profile,done)=>{
     try {
         let user = await User.findOne({googleId:profile.id});
         if(user){
-            return done(null,user);
+            if(user.isBlocked){
+                return done(null,false,{message:'your are blocked!'});
+               
+                
+            }
+
+            return done(null,user); 
         }else{
             user = new User({
                 name:profile.displayName,

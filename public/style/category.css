@@ -47,6 +47,8 @@
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 500;
+    text-decoration: none;
+    
 }
 
 /* Table Styles */
@@ -133,3 +135,76 @@
     border-radius: 5px;
 }
 
+.profile-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    margin-left: 20px;
+}
+.admin-profile {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+  }
+  
+  .admin-profile img {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+  }
+
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-icon i {
+    margin-right: 5px;
+}
+
+.btn-icon:hover {
+    opacity: 0.9;
+}
+
+/* Base badge styles */
+.custom-badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+    color: #fff;
+  }
+  
+  /* Success badge */
+  .custom-badge-success {
+    background-color: #28a745; /* Green */
+  }
+  
+  /* Danger badge */
+  .custom-badge-danger {
+    background-color: #dc3545; /* Red */
+  }
+  
+  /* Rounded-pill style */
+  .custom-badge-rounded-pill {
+    border-radius: 50rem;
+  }
+  

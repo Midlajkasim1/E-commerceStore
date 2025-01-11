@@ -92,6 +92,9 @@ body {
 .login-button:hover {
     background-color: #6a2fcc;
 }
+.text-danger{
+  color: red;
+}
 
 /* Responsive Layout */
 @media (max-width: 768px) {
@@ -119,6 +122,10 @@ body {
         <img src="../images/store-logo.png" alt="logo">
         <div class="login-box">
             <h1 class="login-title">Login</h1>
+            <%if(message.length>0){%>
+                <h4 class="text-danger"><%=message%></h4>
+                  
+                <%}%>
             <form method="POST" action="/admin/login">
                 <div class="input-group">
                     <label for="email"  class="label">Email</label>

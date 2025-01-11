@@ -10,10 +10,6 @@ const productSchema = new mongoose.Schema({
     type:String,
     required:true,
   },
-  brand:{
-    type:String,
-    required:true
-  },
   category:{
     type:Schema.Types.ObjectId,
     ref:"Category",
@@ -54,8 +50,30 @@ const productSchema = new mongoose.Schema({
     required:true,
     default:"Available",
   },
+  size: {
+    sizeS: {
+        type: Number,
+        default: 0
+    },
+    sizeM: {
+        type: Number,
+        default: 0
+    },
+    sizeL: {
+        type: Number,
+        default: 0
+    },
+    sizeXL: {
+        type: Number,
+        default: 0
+    },
+    sizeXXL: {
+        type: Number,
+        default: 0
+    }
+},
 },{timestamps:true})
 
-const Product = mongoose.Model("Product",productSchema);
+const Product = mongoose.model("Product",productSchema);
 
  module.exports = Product;

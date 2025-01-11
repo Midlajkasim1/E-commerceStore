@@ -24,26 +24,7 @@
       rel="stylesheet"/>
     <link rel="stylesheet" href="style/login.css">
     <style>
-      /* Add custom styles for the signup link */
-      .sign-up-link {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #007bff; /* Blue color for the link */
-        text-decoration: none;
-        margin-top: 10px;
-        display: inline-block;
-        transition: color 0.3s ease, background-color 0.3s ease;
-      }
-      .sign-up-link:hover {
-        color: white;
-        background-color: #007bff; /* Add blue background on hover */
-        padding: 8px 16px;
-        border-radius: 5px;
-      }
-      .sign-up-link:active {
-        color: #0056b3;
-        background-color: #0056b3;
-      }
+      
     </style>
   </head>
   <body>
@@ -69,7 +50,7 @@
                   id="email"
                   placeholder="Enter email"
                 />
-                <div id="error1" class="error-message"></div>
+               
               </div>
               <div class="form-group">
                 <label for="password">Password</label>
@@ -80,17 +61,17 @@
                   id="password"
                   placeholder="Password"
                 />
-                <div id="error2" class="error-message"></div>
+               
               </div>
-              <%if(locals.message && message.length>0){%>
-              <div class="alert alert-danger text-center">
-                <%=message%>
-              </div>
+              <%if(msg.length>0){%>
+              <h4 class="text-danger"><%=msg%></h4>
+                
               <%}%>
+             
               <div class="d-flex justify-content-between align-items-center">
                 <button type="submit" class="btn btn-primary">Log In</button>
                 <div class="mt-2px">
-                  <p>or log in with</p>
+                  <p>or log in with google,</p>
                 </div>
                 <div class="social-btns">
                   <a href="/auth/google" class="btn btn-outline-danger">
@@ -102,7 +83,7 @@
                   </a>
                 </div>
               </div>
-              <div class="text-center mt-2">
+              <div class="text-center mt-4">
                 <!-- The improved sign-up link -->
                 <a href="/signup" class="sign-up-link">Not registered? Sign up</a>
               </div>
@@ -111,53 +92,5 @@
         </div>
       </div>
     </div>
-
-    <script>
-      const emailid = document.getElementById("email");
-      const passid = document.getElementById("password");
-      const error1 = document.getElementById("error1");
-      const error2 = document.getElementById("error2");
-      const loginform = document.getElementById("loginform");
-
-      function emailValidateChecking(e) {
-        const emailval = emailid.value;
-        const emailpattern =
-          /^[a-zA-Z0-9._-]+@([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,4})$/;
-
-        if (!emailpattern.test(emailval)) {
-          error1.style.display = "block";
-          error1.innerHTML = "Invalid credintials";
-        } else {
-          error1.style.display = "none";
-          error1.innerHTML = "";
-        }
-      }
-
-      function passValidateChecking(e) {
-        const passval = passid.value;
-        if (passval.length < 8) {
-          error2.style.display = "block";
-          error2.innerHTML = "Should contain at least 4 characters";
-        } else {
-          error2.style.display = "none";
-          error2.innerHTML = "";
-        }
-      }
-
-      document.addEventListener("DOMContentLoaded", function () {
-        loginform.addEventListener("submit", function (e) {
-          emailValidateChecking();
-          passValidateChecking();
-
-          if (!emailid || !passid || !error1 || !error2 || !loginform) {
-            console.error("One or more elements not found");
-          }
-
-          if (error1.innerHTML || error2.innerHTML) {
-            e.preventDefault();
-          }
-        });
-      });
-    </script>
   </body>
 </html>
