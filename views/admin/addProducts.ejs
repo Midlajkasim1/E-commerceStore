@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add New Product</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <style>
         body {
@@ -18,7 +20,7 @@
         .content-main {
             max-width: 800px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 48px 20px;
         }
 
         .content-title {
@@ -204,22 +206,27 @@
     </style>
 </head>
 <body>
+    <%- include("../../views/partials/admin/header") %>
+
     <section class="content-main">
         <h2 class="content-title">Add New Product</h2>
         
         <div class="main-container">
+            <%if(message){%>
+                <div><%= message%></div>
+                <%}%>
             <form id="productForm" action="/admin/products/addProducts" enctype="multipart/form-data" method="POST" onsubmit="return validateForm()">
                 <!-- Basic Information -->
                 <div class="form-section">
                     <div class="form-group">
-                        <label class="form-label" for="product_name">Product Name</label>
-                        <input type="text" class="form-control" id="product_name" name="productName" placeholder="Type here">
+                        <label class="form-label"  for="product_name">Product Name</label>
+                        <input type="text"   class="form-control" id="product_name" name="productName" placeholder="Type here">
                         <div id="productName-error" class="error-message"></div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="descriptionid">Description</label>
-                        <textarea class="form-control" id="descriptionid" name="description" rows="4" placeholder="Type here"></textarea>
+                        <textarea value="gtregwetgergrege"  class="form-control" id="descriptionid" name="description" rows="4" placeholder="Type here"></textarea>
                         <div id="description-error" class="error-message"></div>
                     </div>
                 </div>
@@ -229,17 +236,17 @@
                     <div class="grid-3">
                         <div class="form-group">
                             <label class="form-label">Regular Price</label>
-                            <input type="text" class="form-control" name="regularPrice" placeholder="$">
+                            <input type="text"  class="form-control" name="regularPrice" placeholder="$">
                             <div id="regularPrice-error" class="error-message"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Sale Price</label>
-                            <input type="text" class="form-control" name="salePrice" placeholder="$">
+                            <input type="text"" class="form-control" name="salePrice" placeholder="$">
                             <div id="salePrice-error" class="error-message"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Quantity</label>
-                            <input type="text" class="form-control" name="quantity" placeholder="0">
+                            <input type="text"  class="form-control" name="quantity" placeholder="0">
                             <div id="quantity-error" class="error-message"></div>
                         </div>
                     </div>
@@ -261,35 +268,35 @@
                         <div class="sizes-container">
                             <div class="size-input">
                                 <label>S:</label>
-                                <input type="text" name="sizeS" placeholder="0">
+                                <input  type="text" name="sizeS" placeholder="0">
                                 <div id="sizeS-error" class="error-message"></div>
                             </div>
                             <div class="size-input">
                                 <label>M:</label>
-                                <input type="text" name="sizeM" placeholder="0">
+                                <input  type="text" name="sizeM" placeholder="0">
                                 <div id="sizeM-error" class="error-message"></div>
                             </div>
                             <div class="size-input">
                                 <label>L:</label>
-                                <input type="text" name="sizeL" placeholder="0">
+                                <input  type="text" name="sizeL" placeholder="0">
                                 <div id="sizeL-error" class="error-message"></div>
                             </div>
                             <div class="size-input">
                                 <label>XL:</label>
-                                <input type="text" name="sizeXL" placeholder="0">
+                                <input  type="text" name="sizeXL" placeholder="0">
                                 <div id="sizeXL-error" class="error-message"></div>
                             </div>
                             <div class="size-input">
                                 <label>XXL:</label>
-                                <input type="text" name="sizeXXL" placeholder="0">
+                                <input  type="text" name="sizeXXL" placeholder="0">
                                 <div id="sizeXXL-error" class="error-message"></div>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Color</label>
-                        <input type="text" class="form-control" name="color" placeholder="Red, Blue, Green...">
+                        <label  class="form-label">Color</label>
+                        <input type="text" value="blue" class="form-control" name="color" placeholder="Red, Blue, Green...">
                         <div id="color-error" class="error-message"></div>
                     </div>
                 </div>
@@ -323,7 +330,7 @@
     </div>
 </div>
 
-                <button type="button" class="submit-button" onclick="validateAndSubmit()">Publish</button>
+                <button type="submit" class="submit-button" onclick="validateAndSubmit()">Publish</button>
             </form>
         </div>
     </section>
