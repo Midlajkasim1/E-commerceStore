@@ -268,6 +268,77 @@ const logout = async (req,res)=>{
     }
 }
 
+//
+const getforgotPassword = async (req,res)=>{
+       try {
+        res.render('forgotPassword',{msg:req.flash('err')})
+       } catch (error) {
+        res.redirect('/pageNotFound')
+       }
+}
+
+//
+ const verifyemail = async(req,res)=>{
+   try {
+    const {email} = req.body;
+    console.log(req.body);
+    
+    const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/
+    const emailCheck = await User.findOne({email:email})
+
+    if(!emailPattern.test(email)){
+      req.flash('err','email is not correct!!');
+      return res.redirect('/login')
+    }else if(!emailCheck){
+       req.flash('err','this email is not valid')
+       return res.redirect('/login')
+    }
+     
+    req.session.userEmail = email;
+    const otp = generateOtp();
+    const emailSent = await sendVerificationEmail(email, otp);
+    if (!emailSent) {
+        req.flash('err','Failed to send verification email. Try again.')
+        return res.redirect('/login')
+    }
+
+    req.session.userOtp = otp;
+    req.session.userEmail = email;
+    console.log("reset otp",otp);
+    
+    res.render('resetOtp')
+   } catch (error) {
+    console.error("Signup error:", error);
+    res.redirect('/pageNotFound');
+   }
+ }
+
+const resetverifyOtp = async (req,res)=>{
+    try {
+        const {otp} =req.body;
+        if(otp===req.session.userOtp){
+       res.json({success:true,redirectUrl:'/reset-password'})         
+        }else{
+            res.json({sucess:false,message:"OTP not matching"})
+        }
+    } catch (error) {
+        res.status(500).json({sucess:false,message:"An error occurred. Please try again"});
+    }
+}
+
+const resetPassword = async (req,res)=>{
+    try {
+        res.render('resetPassword');
+
+    } catch (error) {
+        res.redirect('/pageNotFound')
+    }
+}
+
+
+
+
+
 
 module.exports = {
     loadHomePage,
@@ -278,5 +349,10 @@ module.exports = {
     resendOtp,
     loadlogin,
     login,
-    logout
+    getforgotPassword,
+    verifyemail,
+    resetverifyOtp,
+    resetPassword,
+    logout,
+
 };

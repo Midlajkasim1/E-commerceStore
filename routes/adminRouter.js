@@ -35,10 +35,10 @@ router.post("/products/addProducts",adminCheck,uploads.array("images",4),product
 router.post('/products/addProductOffer',adminAuth,productController.addProductOffer);
 router.post('/products/removeProductsOffer',adminAuth,productController.removeProductOffer)
 router.get('/products/blockProduct',adminCheck,productController.blockProduct);
-router.get('/products/unblockProduct',adminCheck,productController.UnblockProduct)
-
-
-
+router.get('/products/unblockProduct',adminCheck,productController.unblockProduct)
+router.get('/products/editProduct/:id',adminCheck,productController.getEditProduct)
+router.post('/products/editProduct/:id',adminCheck,uploads.array("images",4),productController.editProduct);
+router.post('/products/editProduct/deleteImage/:id',adminCheck,productController.deleteSingle)
 
 
 module.exports = router;

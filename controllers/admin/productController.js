@@ -4,7 +4,7 @@ const User = require('../../models/userSchema');
 const path = require('path');
 const sharp = require('sharp');
 const fs = require('fs');
-const { categoryInfo } = require('./categoryController');
+const mongoose = require('mongoose');
 
 
 
@@ -167,7 +167,7 @@ const addProductOffer = async (req,res)=>{
           res.json({status:true});
     } catch (error) {
          res.redirect("/pageerror");
-         res.status(500).json({status:false, message: "Internal server error"})
+        //  res.status(500).json({status:false, message: "Internal server error"})
     }
  }
 
@@ -178,7 +178,6 @@ const removeProductOffer = async (req, res) => {
         const { productId } = req.body;
         console.log('Received productId:', productId);
 
-        // Find product - use findOne instead of find
         const product = await Product.findOne({ _id: productId });
         if (!product) {
             return res.status(404).json({ status: false, message: "Product not found" });
@@ -217,7 +216,7 @@ const blockProduct = async (req,res)=>{
     }
 }
 //
-const UnblockProduct = async (req,res)=>{
+const unblockProduct = async (req,res)=>{
     try {
         let id = req.query.id;
         await Product.updateOne({_id:id},{isBlocked:false});
@@ -227,9 +226,100 @@ const UnblockProduct = async (req,res)=>{
     }
 }
 
+//edit product
 
+const getEditProduct = async (req,res)=>{
+    try {
+        const id = req.params.id;
+        
+        const product = await Product.findOne({_id:id});
+        const category = await Category.find({});
+        res.render('editProduct',{
+            product:product,
+            cat:category
+        })
+    } catch (error) {
+        res.redirect('/pagerror')
+    }
+}
 
-    
+//
+const editProduct = async (req,res)=>{
+    try {
+        const id = req.params.id;
+        const product = await Product.findOne({_id:id});
+        const data =req.body;
+        const existingProduct = await Product.findOne({
+            productName:data.productName,
+            _id:{$ne:id}
+
+        })
+        if(existingProduct){
+            return res.status(400).json({error:"Product with name already exists. Please try with another name"})
+        }
+        const images = [];
+        if(req.files && req.files.length>0){
+            for(let i=0;i<req.files.length;i++){
+                images.push(req.files[i].filename);
+            }
+        }
+        const updateFields ={
+            productName:data.productName,
+            description:data.description,
+            category:product.category,
+            regularPrice:data.regularPrice,
+            salePrice:data.salePrice,
+            quantity:data.quantity,
+            size:data.size,
+            color:data.color
+
+        }
+        if(req.files.length>0){
+            updateFields.$push ={productImage:{$each:images}};
+        }
+        await Product.findByIdAndUpdate(id,updateFields,{new:true});
+        res.redirect('/admin/products');
+    } catch (error) {
+        console.error(error);
+        res.redirect('/pageerror');
+    }
+}
+//
+const deleteSingle = async (req, res) => {
+    try {
+        const { imageNameToServer } = req.body;
+        const productIdToServer = req.params.id; // Retrieve productId from the URL parameter
+
+        // Validate the productIdToServer format (Mongo ObjectId validation)
+        if (!mongoose.Types.ObjectId.isValid(productIdToServer)) {
+            return res.status(400).json({ status: false, message: 'Invalid Product ID' });
+        }
+
+        // Proceed with the deletion logic as you've already written
+        const product = await Product.findByIdAndUpdate(productIdToServer, {
+            $pull: { productImage: imageNameToServer }
+        });
+
+        if (!product) {
+            return res.status(404).json({ status: false, message: 'Product not found' });
+        }
+
+        const imagePath = path.join('public', 'uploads', 're-image', imageNameToServer);
+        if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+            console.log(`Image ${imageNameToServer} deleted successfully`);
+            return res.send({ status: true });
+        } else {
+            console.log(`Image ${imageNameToServer} not found`);
+            return res.send({ status: false, message: 'Image not found' });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send({ status: false, message: 'Error occurred while deleting the image.' });
+    }
+};
+
+  
 
 module.exports = {
     getProducts,
@@ -238,6 +328,9 @@ module.exports = {
     addProductOffer,
     removeProductOffer,
     blockProduct,
-    UnblockProduct
+    unblockProduct,
+    getEditProduct,
+    editProduct,
+    deleteSingle
 
 }

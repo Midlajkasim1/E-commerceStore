@@ -23,6 +23,12 @@ router.post('/login',userController.login);
 
 
 router.post('/logout',userController.logout)
+//
+router.get('/forgot-password',userController.getforgotPassword);
+router.post('/verify-email',userController.verifyemail);
+router.post('/reset-otp',userController.resetverifyOtp);
+router.get('/reset-password',userController.resetPassword);
+
 
 
 

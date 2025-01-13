@@ -7,6 +7,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
         body {
             background-color: #1a202c;
@@ -97,6 +99,56 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
         }
+        .thumbnails-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.thumbnail {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.remove-icon {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #ff4444;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    line-height: 20px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.preview-container {
+    position: relative;
+    max-width: 400px;
+    margin-bottom: 1rem;
+}
+
+.preview-image, .cropped-preview {
+    max-width: 100%;
+    display: none;
+}
+
+.image-cropper {
+    display: none;
+    margin-top: 1rem;
+}
 
         .image-upload-section {
             margin-top: 2rem;
@@ -209,21 +261,22 @@
     <%- include("../../views/partials/admin/header") %>
 
     <section class="content-main">
-        <h2 class="content-title">Add New Product</h2>
+        <h2 class="content-title">Edit Product</h2>
         
         <div class="main-container">
-            <form id="productForm" action="/admin/products/addProducts" enctype="multipart/form-data" method="POST">
+  
+            <form id="productForm" action="/admin/products/editProduct/<%= product._id %>" enctype="multipart/form-data" method="POST" >
                 <!-- Basic Information -->
                 <div class="form-section">
                     <div class="form-group">
                         <label class="form-label"  for="product_name">Product Name</label>
-                        <input type="text"   class="form-control" id="product_name" name="productName" placeholder="Type here">
+                        <input type="text"   class="form-control" id="product_name" name="productName" value="<%=product.productName%>"  placeholder="Type here">
                         <div id="productName-error" class="error-message"></div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="descriptionid">Description</label>
-                        <textarea value="gtregwetgergrege"  class="form-control" id="descriptionid" name="description" rows="4" placeholder="Type here"></textarea>
+                        <textarea   class="form-control" id="descriptionid" value="<%=product.description%>" name="description" rows="4" placeholder="Type here"><%=product.description%></textarea>
                         <div id="description-error" class="error-message"></div>
                     </div>
                 </div>
@@ -233,17 +286,17 @@
                     <div class="grid-3">
                         <div class="form-group">
                             <label class="form-label">Regular Price</label>
-                            <input type="text"  class="form-control" name="regularPrice" placeholder="$">
+                            <input type="text"  class="form-control" name="regularPrice" value="<%=product.regularPrice%>" placeholder="$">
                             <div id="regularPrice-error" class="error-message"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Sale Price</label>
-                            <input type="text"" class="form-control" name="salePrice" placeholder="$">
+                            <input type="text" class="form-control" name="salePrice" value="<%=product.salePrice%>" placeholder="$">
                             <div id="salePrice-error" class="error-message"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Quantity</label>
-                            <input type="text"  class="form-control" name="quantity" placeholder="0">
+                            <input type="text"  class="form-control" name="quantity" value="<%=product.quantity%>" placeholder="0">
                             <div id="quantity-error" class="error-message"></div>
                         </div>
                     </div>
@@ -265,27 +318,27 @@
                         <div class="sizes-container">
                             <div class="size-input">
                                 <label>S:</label>
-                                <input  type="text" name="sizeS" placeholder="0">
+                                <input  type="text" name="sizeS" value="<%= product.size.sizeS %>">
                                 <div id="sizeS-error" class="error-message"></div>
                             </div>
                             <div class="size-input">
                                 <label>M:</label>
-                                <input  type="text" name="sizeM" placeholder="0">
+                                <input  type="text" name="sizeM"value="<%= product.size.sizeM %>">
                                 <div id="sizeM-error" class="error-message"></div>
                             </div>
                             <div class="size-input">
                                 <label>L:</label>
-                                <input  type="text" name="sizeL" placeholder="0">
+                                <input  type="text" name="sizeL" value="<%= product.size.sizeL %>">
                                 <div id="sizeL-error" class="error-message"></div>
                             </div>
                             <div class="size-input">
                                 <label>XL:</label>
-                                <input  type="text" name="sizeXL" placeholder="0">
+                                <input  type="text" name="sizeXL" value="<%= product.size.sizeXL %>">
                                 <div id="sizeXL-error" class="error-message"></div>
                             </div>
                             <div class="size-input">
                                 <label>XXL:</label>
-                                <input  type="text" name="sizeXXL" placeholder="0">
+                                <input  type="text" name="sizeXXL" value="<%= product.size.sizeXXL %>">
                                 <div id="sizeXXL-error" class="error-message"></div>
                             </div>
                         </div>
@@ -293,62 +346,133 @@
 
                     <div class="form-group">
                         <label  class="form-label">Color</label>
-                        <input type="text" value="blue" class="form-control" name="color" placeholder="Red, Blue, Green...">
+                        <input type="text" value="<%=product.color%>" class="form-control" name="color" placeholder="Red, Blue, Green...">
                         <div id="color-error" class="error-message"></div>
                     </div>
                 </div>
 
              <!-- Image Upload -->
 <!-- Image Upload -->
+<div id="addedImagesContainer" class="thumbnails-container">
+    <!-- Existing images will be displayed here -->
+    <%for(let i=0; i<product.productImage.length; i++){%>
+        <div class="thumbnail" data-image="<%=product.productImage[i]%>">
+            <img class="rounded" src="/uploads/re-image/<%=product.productImage[i]%>" alt="Product Image">
+            <span class="remove-icon" onclick="deleteSingleImage('<%=product.productImage[i]%>', '<%=product._id%>')">×</span>
+        </div>
+    <%}%>
+</div>
+
 <div class="image-upload-section">
     <h3 class="card-header">Product Images</h3>
-    <div id="addedImagesContainer" class="thumbnails-container"></div>
     
     <div id="imageUploadContainer">
         <!-- Initial image upload section -->
         <div class="form-section" id="imageSection1">
             <div class="form-group">
-                <img src="" id="imgView1" alt="" style="max-width: 100%; display: none;">
+                <div class="preview-container">
+                    <img src="" id="imgView1" alt="" class="preview-image">
+                    <img src="" id="croppedImg1" alt="" class="cropped-preview">
+                </div>
                 <input class="form-control" type="file" name="images" id="input1" 
                     accept="image/png, image/jpeg, image/jpg"
                     onchange="viewImage(event, 1)">
                 <div class="image-cropper">
-                    <img src="" id="croppedImg1" alt="" style="max-width: 200px; display: none;">
                     <button type="button" id="saveButton1" class="btn-primary">Save</button>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="form-group" style="margin-top: 20px;">
+    <div class="form-group mt-4">
         <button type="button" class="btn-primary" id="addMoreImages" onclick="addImageSection()">
             Add More Images
         </button>
     </div>
 </div>
 
-                <button type="submit" class="submit-button" id="sbmtBtn">Publish</button>
+
+                <button type="submit" class="submit-button" id="sbmtBtn">Upload</button>
             </form>
         </div>
+        
     </section>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
         <script>
-        //     function validateAndSubmit(){
-        //       if(validateForm()){
-        //          document.forms[0].submit();  
-        //       }
-        //   }
+             
   
           function viewImage1(event) {
     document.getElementById("imgView1").src = URL.createObjectURL(event.target.files[0]);
 }
 
-  // Initialize variables to store cropper instances and selected images
+//
 let croppers = {};
-let selectedImages = [];
 let imageCounter = 1;
+$(document).ready(function() {
+            console.log('jQuery is loaded:', typeof jQuery !== 'undefined');
+        });
+
+        // Updated deleteSingleImage function
+        function deleteSingleImage(imageId, productId) {
+            console.log('Deleting image:', imageId, 'from product:', productId);
+            
+            if (!productId || !imageId) {
+                alert('Invalid product or image ID');
+                return;
+            }
+
+            // Add loading state
+            const thumbnail = document.querySelector(`.thumbnail[data-image="${imageId}"]`);
+            if (thumbnail) {
+                thumbnail.style.opacity = '0.5';
+            }
+
+            // Make sure jQuery and $ are defined
+            if (typeof jQuery === 'undefined') {
+                console.error('jQuery is not loaded!');
+                return;
+            }
+
+            // Perform the AJAX request
+            $.ajax({
+                url: `/admin/products/editProduct/deleteImage/${productId}`,
+                type: 'POST',
+                data: {
+                    imageNameToServer: imageId
+                },
+                success: function(response) {
+                    console.log('Success response:', response);
+                    if (response.status === true) {
+                        // Remove the thumbnail element
+                        if (thumbnail) {
+                            thumbnail.remove();
+                        }
+                        // Optional: Show success message
+                        alert('Image deleted successfully');
+                    } else {
+                        alert('Error: ' + (response.message || 'Failed to delete image'));
+                        // Reset opacity if failed
+                        if (thumbnail) {
+                            thumbnail.style.opacity = '1';
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', {xhr, status, error});
+                    alert('Failed to delete image. Please try again.');
+                    // Reset opacity if failed
+                    if (thumbnail) {
+                        thumbnail.style.opacity = '1';
+                    }
+                }
+            });
+        }
+
+
 
 function addImageSection() {
     imageCounter++;
@@ -360,17 +484,19 @@ function addImageSection() {
     
     newSection.innerHTML = `
         <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h4 style="margin: 0;">Image ${imageCounter}</h4>
-                <button type="button" class="btn-primary" style="background-color: #dc3545;" 
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 class="m-0">Image ${imageCounter}</h4>
+                <button type="button" class="btn-danger" 
                     onclick="removeImageSection(${imageCounter})">Remove</button>
             </div>
-            <img src="" id="imgView${imageCounter}" alt="" style="max-width: 100%; display: none;">
+            <div class="preview-container">
+                <img src="" id="imgView${imageCounter}" alt="" class="preview-image">
+                <img src="" id="croppedImg${imageCounter}" alt="" class="cropped-preview">
+            </div>
             <input class="form-control" type="file" name="images" id="input${imageCounter}" 
                 accept="image/png, image/jpeg, image/jpg"
                 onchange="viewImage(event, ${imageCounter})">
             <div class="image-cropper">
-                <img src="" id="croppedImg${imageCounter}" alt="" style="max-width: 200px; display: none;">
                 <button type="button" id="saveButton${imageCounter}" class="btn-primary">Save</button>
             </div>
         </div>
@@ -380,19 +506,16 @@ function addImageSection() {
 }
 
 function removeImageSection(index) {
-    // Remove the cropper instance if it exists
     if (croppers[index]) {
         croppers[index].destroy();
         delete croppers[index];
     }
     
-    // Remove the thumbnail if it exists
     const thumbnail = document.querySelector(`.thumbnail[data-index="${index}"]`);
     if (thumbnail) {
         thumbnail.remove();
     }
     
-    // Remove the section
     const section = document.getElementById(`imageSection${index}`);
     if (section) {
         section.remove();
@@ -401,21 +524,25 @@ function removeImageSection(index) {
 
 function viewImage(event, index) {
     const fileInput = event.target;
+    const file = fileInput.files[0];
     const imageElement = document.getElementById(`imgView${index}`);
     const croppedPreview = document.getElementById(`croppedImg${index}`);
-    const cropperContainer = croppedPreview.parentNode;
+    const cropperContainer = document.querySelector(`#imageSection${index} .image-cropper`);
 
-    // Clear any existing cropper instance for this index
+    if (!file) return;
+
+    // Clear existing cropper
     if (croppers[index]) {
         croppers[index].destroy();
         delete croppers[index];
     }
 
-    // Show the original image preview
-    imageElement.src = URL.createObjectURL(event.target.files[0]);
+    // Show preview
+    imageElement.src = URL.createObjectURL(file);
     imageElement.style.display = 'block';
+    croppedPreview.style.display = 'none';
 
-    // Initialize Cropper.js once the image is loaded
+    // Initialize cropper
     imageElement.onload = function() {
         croppers[index] = new Cropper(imageElement, {
             aspectRatio: 1,
@@ -425,18 +552,14 @@ function viewImage(event, index) {
             zoomable: true,
             cropBoxResizable: true,
             cropBoxMovable: true,
-            guides: true,
-            center: true,
-            highlight: false
+            guides: true
         });
 
-        // Show the cropping container
         cropperContainer.style.display = 'block';
     };
 
-    // Handle the Save button click
-    const saveButton = document.getElementById(`saveButton${index}`);
-    saveButton.onclick = function() {
+    // Handle save
+    document.getElementById(`saveButton${index}`).onclick = function() {
         if (!croppers[index]) return;
 
         const croppedCanvas = croppers[index].getCroppedCanvas({
@@ -446,90 +569,65 @@ function viewImage(event, index) {
             imageSmoothingQuality: 'high'
         });
 
-        // Update the preview image
+        // Update preview
         croppedPreview.src = croppedCanvas.toDataURL('image/jpeg', 0.9);
         croppedPreview.style.display = 'block';
+        imageElement.style.display = 'none';
 
-        // Convert cropped image to File object and update input
+        // Convert to file and update input
         croppedCanvas.toBlob((blob) => {
-            const fileName = `cropped-image-${index}-${Date.now()}.jpg`;
+            const fileName = `cropped-image-${index}.jpg`;
             const croppedFile = new File([blob], fileName, { type: 'image/jpeg' });
             
-            // Update file input with cropped image
+            // Update file input
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(croppedFile);
             fileInput.files = dataTransfer.files;
 
-            // Add to thumbnails
-            addThumbnail(croppedFile, index);
-
+            // Update thumbnail
+            updateThumbnail(croppedFile, index);
         }, 'image/jpeg', 0.9);
 
-        // Clean up cropper
+        // Cleanup
         croppers[index].destroy();
         delete croppers[index];
-        
-        // Hide original image preview and show cropped preview
-        imageElement.style.display = 'none';
         cropperContainer.style.display = 'none';
     };
 }
 
-function addThumbnail(file, index) {
-    const addedImagesContainer = document.getElementById('addedImagesContainer');
+function updateThumbnail(file, index) {
+    const container = document.getElementById('addedImagesContainer');
     
-    // Create thumbnail container
-    const thumbnail = document.createElement('div');
-    thumbnail.classList.add('thumbnail');
-    thumbnail.style.display = 'inline-block';
-    thumbnail.style.margin = '10px';
-    thumbnail.style.position = 'relative';
-
-    // Create thumbnail image
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    img.alt = `Thumbnail ${index}`;
-    img.style.width = '100px';
-    img.style.height = '100px';
-    img.style.objectFit = 'cover';
-    img.style.borderRadius = '4px';
-
-    // Create remove button
-    const removeIcon = document.createElement('span');
-    removeIcon.innerHTML = '×';
-    removeIcon.style.position = 'absolute';
-    removeIcon.style.top = '-8px';
-    removeIcon.style.right = '-8px';
-    removeIcon.style.backgroundColor = '#ff4444';
-    removeIcon.style.color = 'white';
-    removeIcon.style.borderRadius = '50%';
-    removeIcon.style.width = '20px';
-    removeIcon.style.height = '20px';
-    removeIcon.style.textAlign = 'center';
-    removeIcon.style.lineHeight = '20px';
-    removeIcon.style.cursor = 'pointer';
-
-    // Handle remove click
-    removeIcon.onclick = function() {
-        thumbnail.remove();
-        // Clear the file input
-        document.getElementById(`input${index}`).value = '';
-        document.getElementById(`croppedImg${index}`).style.display = 'none';
-    };
-
-    thumbnail.appendChild(img);
-    thumbnail.appendChild(removeIcon);
-    
-    // Remove existing thumbnail for this index if it exists
-    const existingThumbnail = addedImagesContainer.querySelector(`[data-index="${index}"]`);
+    // Remove existing thumbnail for this index
+    const existingThumbnail = container.querySelector(`.thumbnail[data-index="${index}"]`);
     if (existingThumbnail) {
         existingThumbnail.remove();
     }
     
+    // Create new thumbnail
+    const thumbnail = document.createElement('div');
+    thumbnail.className = 'thumbnail';
     thumbnail.setAttribute('data-index', index);
-    addedImagesContainer.appendChild(thumbnail);
+    
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    img.alt = `Image ${index}`;
+    
+    const removeIcon = document.createElement('span');
+    removeIcon.className = 'remove-icon';
+    removeIcon.textContent = '×';
+    removeIcon.onclick = () => {
+        thumbnail.remove();
+        document.getElementById(`input${index}`).value = '';
+        document.getElementById(`croppedImg${index}`).style.display = 'none';
+    };
+    
+    thumbnail.appendChild(img);
+    thumbnail.appendChild(removeIcon);
+    container.appendChild(thumbnail);
 }
   
+ 
       
 document.getElementById('sbmtBtn').addEventListener('click', (event)=>{
     clearErrorMessages();
@@ -649,14 +747,8 @@ document.getElementById('sbmtBtn').addEventListener('click', (event)=>{
           }
 })
 
-        //   function validateForm(event) {
-              
-             
-  
-        //       return isValid;
-        //   }
-  
-          
+
+
       </script>
 </script>
         
