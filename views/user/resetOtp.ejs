@@ -222,36 +222,59 @@
             })
             return false;
         }
-    function resendOTP(){
-        clearInterval(timerInterval);
-        timer=60;
-        document.getElementById("otp").disabled=false;
-        document.getElementById("timerValue").classList.remove("expired");
-        document.getElementById("timerValue").textContent = timer;
-        startTimer();
-        $.ajax({
-            type:"POST",
-            url:"/resend-otp",
-            success: function (response){
-                if(response.success){
-                    Swal.fire({
-                       icon:"success",
-                       title:"OTP Resend Successfully",
-                       showConfirmButton: false,
-                       timer:1500,
-                    })
-                }else{
-                    Swal.fire({
-                        icon:"error",
-                        title:"Error",
-                        text:"An error occured while resend OTP. Please try again ",
+        //
 
-                    })
-                }
+        function resendOTP() {
+    clearInterval(timerInterval);
+    timer = 60;
+    document.getElementById("otp").disabled = false;
+    document.getElementById("timerValue").classList.remove("expired");
+    document.getElementById("timerValue").textContent = timer;
+    
+    // Show loading state
+    Swal.fire({
+        title: 'Sending OTP...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    $.ajax({
+        type: "POST",
+        url: "/resendReset-otp",
+        success: function(response) {
+            Swal.close(); // Close the loading dialog
+            
+            if (response.success) {
+                startTimer(); // Only start timer if OTP was sent successfully
+                Swal.fire({
+                    icon: "success",
+                    title: "OTP Resend Successfully",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+            } else {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: response.message || "An error occurred while resending OTP. Please try again",
+                });
             }
-        })
-        return false;
-    }
+        },
+        error: function(xhr, status, error) {
+            Swal.close(); // Close the loading dialog
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Failed to connect to the server. Please try again.",
+            });
+        }
+    });
+    
+    return false;
+}
 
     </script>
 </body>

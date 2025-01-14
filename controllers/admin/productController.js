@@ -245,15 +245,16 @@ const getEditProduct = async (req,res)=>{
 
 //
 const editProduct = async (req,res)=>{
-    try {
+    try {        
         const id = req.params.id;
         const product = await Product.findOne({_id:id});
         const data =req.body;
+        const categoryId = await Category.findOne({ name: data.category });
         const existingProduct = await Product.findOne({
-            productName:data.productName,
+            productName:data.productName,   
             _id:{$ne:id}
 
-        })
+        })  
         if(existingProduct){
             return res.status(400).json({error:"Product with name already exists. Please try with another name"})
         }
@@ -266,7 +267,7 @@ const editProduct = async (req,res)=>{
         const updateFields ={
             productName:data.productName,
             description:data.description,
-            category:product.category,
+            category:categoryId._id,
             regularPrice:data.regularPrice,
             salePrice:data.salePrice,
             quantity:data.quantity,

@@ -93,154 +93,31 @@
         <div class="container">
             <div class="row justify-content-center mb-3 pb-3">
                 <div class="col-md-12 heading-section text-center">
-                    <h2>New Shoes Arrival</h2>
+                    <h2>New Arrival</h2>
                     <p>Far far away, behind the word mountains, far from the countries Vokalia and Consonantia.</p>
                 </div>
             </div>
             <div class="row g-4"> <!-- g-4 adds gap between columns and rows -->
                 <!-- Product Card 1 -->
+                 <%for(let i=0; i<products.length;i++){%>
                 <div class="col-md-3 mb-4"> <!-- Added margin-bottom here -->
                     <div class="product">
-                        <a href="#" class="img-prod">
-                            <img class="img-fluid" src="images/img1.png" alt="Product 1">
+                        <a href="/productsDetails?id=<%=products[i]._id%>" class="img-prod">
+                            <img class="img-fluid" src="/uploads/re-image/<%=products[i].productImage[0]%>" alt="<%=products[i].productName%>">
                         </a>
                         <div class="text py-3 px-3">
-                            <h3><a href="#">Nike Free RN 2019 iD</a></h3>
+                            <h3><%=products[i].productName%></h3>
                             <div class="pricing">
-                                <p class="price"><span>$120.00</span></p>
+                                <p class="price"><%=products[i].salesPrice%></p>
                             </div>
                             <p class="bottom-area">
-                                <a href="#" class="btn btn-sm btn-outline-primary">Add to Cart</a>
+                                <a href="/addtToCart?id=<%products[i]._id%>" class="btn btn-sm btn-outline-primary">Add to Cart</a>
                             </p>
                         </div>
                     </div>
                 </div>
-    
-                <!-- Product Card 2 -->
-                <div class="col-md-3 mb-4"> <!-- Added margin-bottom here -->
-                    <div class="product">
-                        <a href="#" class="img-prod">
-                            <img class="img-fluid" src="images/img2.png" alt="Product 2">
-                        </a>
-                        <div class="text py-3 px-3">
-                            <h3><a href="#">Nike Free RN 2019 iD</a></h3>
-                            <div class="pricing">
-                                <p class="price"><span>$120.00</span></p>
-                            </div>
-                            <p class="bottom-area">
-                                <a href="#" class="btn btn-sm btn-outline-primary">Add to Cart</a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-    
-                <!-- Product Card 3 -->
-                <div class="col-md-3 mb-4"> <!-- Added margin-bottom here -->
-                    <div class="product">
-                        <a href="#" class="img-prod">
-                            <img class="img-fluid" src="images/img3.png" alt="Product 3">
-                        </a>
-                        <div class="text py-3 px-3">
-                            <h3><a href="#">Nike Free RN 2019 iD</a></h3>
-                            <div class="pricing">
-                                <p class="price"><span>$120.00</span></p>
-                            </div>
-                            <p class="bottom-area">
-                                <a href="#" class="btn btn-sm btn-outline-primary">Add to Cart</a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-    
-                <!-- Product Card 4 -->
-                <div class="col-md-3 mb-4"> <!-- Added margin-bottom here -->
-                    <div class="product">
-                        <a href="#" class="img-prod">
-                            <img class="img-fluid" src="images/img4.png" alt="Product 4">
-                        </a>
-                        <div class="text py-3 px-3">
-                            <h3><a href="#">Nike Free RN 2019 iD</a></h3>
-                            <div class="pricing">
-                                <p class="price"><span>$120.00</span></p>
-                            </div>
-                            <p class="bottom-area">
-                                <a href="#" class="btn btn-sm btn-outline-primary">Add to Cart</a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-    
-                <!-- Product Card 5 -->
-                <div class="col-md-3 mb-4"> <!-- Added margin-bottom here -->
-                    <div class="product">
-                        <a href="#" class="img-prod">
-                            <img class="img-fluid" src="images/img5.png" alt="Product 5">
-                        </a>
-                        <div class="text py-3 px-3">
-                            <h3><a href="#">Nike Free RN 2019 iD</a></h3>
-                            <div class="pricing">
-                                <p class="price"><span>$120.00</span></p>
-                            </div>
-                            <p class="bottom-area">
-                                <a href="#" class="btn btn-sm btn-outline-primary">Add to Cart</a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-    
-                <!-- Product Card 6 -->
-                <div class="col-md-3 mb-4"> <!-- Added margin-bottom here -->
-                    <div class="product">
-                        <a href="#" class="img-prod">
-                            <img class="img-fluid" src="images/img6.png" alt="Product 6">
-                        </a>
-                        <div class="text py-3 px-3">
-                            <h3><a href="#">Nike Free RN 2019 iD</a></h3>
-                            <div class="pricing">
-                                <p class="price"><span>$120.00</span></p>
-                            </div>
-                            <p class="bottom-area">
-                                <a href="#" class="btn btn-sm btn-outline-primary">Add to Cart</a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-    
-                <!-- Product Card 7 -->
-                <div class="col-md-3 mb-4"> <!-- Added margin-bottom here -->
-                    <div class="product">
-                        <a href="#" class="img-prod">
-                            <img class="img-fluid" src="images/img9.png" alt="Product 7">
-                        </a>
-                        <div class="text py-3 px-3">
-                            <h3><a href="#">Nike Free RN 2019 iD</a></h3>
-                            <div class="pricing">
-                                <p class="price"><span>$120.00</span></p>
-                            </div>
-                            <p class="bottom-area">
-                                <a href="#" class="btn btn-sm btn-outline-primary">Add to Cart</a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-    
-                <!-- Product Card 8 -->
-                <div class="col-md-3 mb-4"> <!-- Added margin-bottom here -->
-                    <div class="product">
-                        <a href="#" class="img-prod">
-                            <img class="img-fluid" src="images/img8.png" alt="Product 8">
-                        </a>
-                        <div class="text py-3 px-3">
-                            <h3><a href="#">Nike Free RN 2019 iD</a></h3>
-                            <div class="pricing">
-                                <p class="price"><span>$120.00</span></p>
-                            </div>
-                            <p class="bottom-area">
-                                <a href="#" class="btn btn-sm btn-outline-primary">Add to Cart</a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                 <%}%>
+           
     
             </div> <!-- End row -->
         </div> <!-- End container -->
