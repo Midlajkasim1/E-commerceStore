@@ -58,43 +58,210 @@
             margin: 0 10px;
             color: #666;
         }
-    .wishlist-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background-color: rgba(237, 247, 247, 0.8);
-      padding: 8px;
-      border-radius: 50%;
-      cursor: pointer;
-    }
+        /* Enhanced Sidebar Styles */
+aside {
+    position: sticky;
+    top: 20px;
+}
 
+/* Category Section */
+.border.rounded {
+    background: #ffffff;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    border: none !important;
+    transition: transform 0.3s ease;
+}
+
+.border.rounded:hover {
+    transform: translateY(-5px);
+}
+
+/* Category Title */
+.border.rounded h5 {
+    color: #2c3e50;
+    font-weight: 600;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #088178;
+    margin-bottom: 15px;
+}
+
+/* Category List */
+.list-styled {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.list-styled li {
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+.list-styled li a {
+    display: block;
+    padding: 8px 15px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.list-styled li a:hover {
+    background-color: #f8f9fa;
+    color: #088178 !important;
+    padding-left: 20px;
+}
+
+.list-styled li a::after {
+    content: '→';
+    position: absolute;
+    right: 15px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.list-styled li a:hover::after {
+    opacity: 1;
+}
+
+/* Price Filter Section */
+.price-button {
+    background-color: #ffffff;
+    color: #2c3e50;
+    border: 1px solid #e9ecef !important;
+    border-radius: 8px !important;
+    padding: 12px 20px !important;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.price-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #088178, #0aa69f);
+    transition: left 0.3s ease;
+    z-index: -1;
+}
+
+.price-button:hover {
+    color: #ffffff !important;
+    border-color: transparent !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(8, 129, 120, 0.2);
+}
+
+.price-button:hover::before {
+    left: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+    aside {
+        position: static;
+        margin-bottom: 30px;
+    }
+    
+    .border.rounded {
+        margin-bottom: 20px;
+    }
+}
+.wishlist-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: rgba(237, 247, 247, 0.9);
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.product-card {
+    height: 480px; /* Increased height to accommodate longer titles */
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px);
+}
+
+.product-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.product-card h5 {
+    font-size: 16px;
+    color: #2c3e50;
+    margin: 10px 0;
+    height: 72px; /* Increased height for 3 lines */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Changed to show 3 lines */
+    -webkit-box-orient: vertical;
+    line-height: 1.5; /* Better readability */
+}
+
+.product-card .text-muted {
+    font-size: 14px;
+    margin: 5px 0;
+}
+
+.product-card p {
+    margin: 5px 0;
+    font-weight: 500;
+}
+
+.add-to-cart-btn {
+    background-color: #088178;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    margin-top: auto; /* Pushes button to bottom */
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.add-to-cart-btn:hover {
+    background-color: #066661;
+    transform: translateY(-2px);
+}
+
+/* Responsive adjustment */
+@media (max-width: 768px) {
     .product-card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 15px;
-      text-align: center;
-      position: relative;
-      transition: box-shadow 0.3s;
+        height: 430px;
     }
-
-    .product-card:hover {
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    
+    .product-card img {
+        height: 180px;
     }
-
-    .add-to-cart-btn {
-      background-color:#088178;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background-color 0.3s;
+    
+    .product-card h5 {
+        height: 60px;
+        font-size: 14px;
     }
-
-    .add-to-cart-btn:hover {
-      background-color: #0056b3;
-    }
-
+}
     .price-button {
       background-color: #f1f1f1;
       color: #333;
@@ -127,8 +294,9 @@
 
     <!-- Search Bar -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <form action="/search" method="POST" class="search-form">
-        <input type="text" name="query" placeholder="Search items..." class="search-input" />
+      <form action="/search" method="post" class="search-form">
+        <input type="text" name="query" placeholder="Search items..." value="<%= locals.search || '' %>" class="search-input" />
+
         <button type="submit" class="search-button">Search</button>
       </form>
     </div>

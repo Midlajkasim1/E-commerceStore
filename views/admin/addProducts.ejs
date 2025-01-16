@@ -557,13 +557,7 @@ document.getElementById('sbmtBtn').addEventListener('click', (event)=>{
                   displayErrorMessage('productName-error', 'Please enter a product name.');
                   isValid = false;
                   return
-              } else if (!/^[a-zA-Z\s]+$/.test(name.trim())) {
-                event.preventDefault()
-                  displayErrorMessage('productName-error', 'Product name should contain only alphabetic characters.');
-                  isValid = false;
-                  return
               }
-              
               // Add size validation logic
               const validateSize = (size, errorId) => {
                   if (size && !/^\d+$/.test(size)) {
@@ -585,12 +579,7 @@ document.getElementById('sbmtBtn').addEventListener('click', (event)=>{
                   displayErrorMessage('description-error', 'Please enter a product description.');
                   isValid = false;
                   return
-              } else if (!/^[a-zA-Z\s]+$/.test(description.trim())) {
-                event.preventDefault()
-                  displayErrorMessage('description-error', 'Product description should contain only alphabetic characters.');
-                  isValid = false;
-                  return
-              }
+              } 
   
               if (parseInt(quantity) < 0) {
                 event.preventDefault()

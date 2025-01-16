@@ -109,18 +109,29 @@
                         </tbody>
                     </table>
 
-                
-            <div class="pagination">
-                <%if (currentPage>1){%>
-                <a class="text-decoration-none" href="?page=<%= currentPage - 1 %>">&laquo; Previous</a>
-                <% } %> <% for (let i =1; i <= totalPages; i++) { %> <% if(i ===currentPage) { %>
-                <span class="showing-text"><%= i %></span>
-                <%} else {%>
-               <a class="text-decoration-none" href="?page=<= i %>"><%= i %></a>
-               <%}%><%}%> <% if(currentPage < totalPages){%>
-               <a class="text-decoration-none" href="?page=<%= currentPage + 1 %>">Next &raquo;</a>
-               <%}%>
-            </div>
+                    <div class="pagination">
+                        <% if (parseInt(currentPage) > 1) { %>
+                            <a class="text-decoration-none" href="/admin/products?page=<%= parseInt(currentPage) - 1 %><%= search ? '&search=' + search : '' %>">
+                                &laquo; Previous
+                            </a>
+                        <% } %>
+                        
+                        <% for (let i = 1; i <= parseInt(totalPages); i++) { %>
+                            <% if (i === parseInt(currentPage)) { %>
+                                <span class="showing-text current-page"><%= i %></span>
+                            <% } else { %>
+                                <a class="text-decoration-none" href="/admin/products?page=<%= i %><%= search ? '&search=' + search : '' %>">
+                                    <%= i %>
+                                </a>
+                            <% } %>
+                        <% } %>
+                        
+                        <% if (parseInt(currentPage) < parseInt(totalPages)) { %>
+                            <a class="text-decoration-none" href="/admin/products?page=<%= parseInt(currentPage) + 1 %><%= search ? '&search=' + search : '' %>">
+                                Next &raquo;
+                            </a>
+                        <% } %>
+                    </div>
 
                 </div>
         </div>

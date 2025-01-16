@@ -241,78 +241,103 @@ body {
     margin-bottom: 15px;
 }
 
-/* Product Section */
-.product {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    overflow: hidden;
-    transition: all 0.3s ease-in-out;
+.wishlist-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: rgba(237, 247, 247, 0.9);
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1;
 }
 
-.product:hover {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+.product-card {
+    height: 480px; /* Increased height to accommodate longer titles */
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     transform: translateY(-5px);
 }
 
-.product .img-prod img {
+.product-card img {
     width: 100%;
-    transition: transform 0.3s ease-in-out;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 15px;
 }
 
-.product:hover .img-prod img {
-    transform: scale(1.05);
-}
-
-.product .text {
-    text-align: center;
-    padding: 15px;
-}
-
-.product .text h3 {
-    font-size: 18px;
-    margin-bottom: 10px;
-}
-
-.product .text .pricing {
+.product-card h5 {
     font-size: 16px;
-    font-weight: bold;
-    color: #007bff;
+    color: #2c3e50;
+    margin: 10px 0;
+    height: 72px; /* Increased height for 3 lines */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Changed to show 3 lines */
+    -webkit-box-orient: vertical;
+    line-height: 1.5; /* Better readability */
 }
 
-.btn-outline-primary {
-    border-color: #007bff;
-    color: #007bff;
+.product-card .text-muted {
+    font-size: 14px;
+    margin: 5px 0;
 }
 
-.btn-outline-primary:hover {
-    background-color: #007bff;
+.product-card p {
+    margin: 5px 0;
+    font-weight: 500;
+}
+
+.add-to-cart-btn {
+    background-color: #088178;
     color: #fff;
-}
-.btn-custom {
-    background-color: transparent; /* Transparent background */
-    color: #007bff; /* Blue text color */
-    font-size: 1.2rem; /* Slightly larger font */
-    padding: 12px 25px; /* Padding for better button size */
-    border: 2px solid #fff; /* Blue border */
-    border-radius: 25px; /* Rounded corners */
-    text-transform: uppercase; /* Make text uppercase */
-    font-weight: bold; /* Make text bold */
-    display: inline-block;
-    transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease; /* Smooth transition for hover */
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    margin-top: auto; /* Pushes button to bottom */
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
 
-.btn-custom:hover {
-    background-color: #007bff; /* Blue background on hover */
-    color: white; /* Change text color to white on hover */
-    transform: translateY(-5px); /* Slight movement on hover */
+.add-to-cart-btn:hover {
+    background-color: #066661;
+    transform: translateY(-2px);
 }
 
-
-.text {
-    text-align: center; /* Ensuring the text is center aligned */
+/* Responsive adjustment */
+@media (max-width: 768px) {
+    .product-card {
+        height: 430px;
+    }
+    
+    .product-card img {
+        height: 180px;
+    }
+    
+    .product-card h5 {
+        height: 60px;
+        font-size: 14px;
+    }
 }
 
+@media (max-width: 576px) {
+    .col-md-3 {
+        width: 100%; /* 1 column on mobile */
+    }
+}
 /* Footer */
 .ftco-footer {
     background-color: #333;
@@ -371,4 +396,137 @@ body {
 
 .check{
     color: #000;
+}
+/* Grid Section Styles */
+.ftco-choose {
+    padding: 60px 0;
+    background: #f8f9fa;
+}
+
+/* Common styles for all choose-wrap sections */
+.choose-wrap {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.choose-wrap:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Overlay effect for background images */
+.choose-wrap::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.choose-wrap:hover::before {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* Text styles */
+.text {
+    position: relative;
+    z-index: 1;
+}
+
+.subheading {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #ffd700;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.choose-wrap h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.choose-wrap p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    line-height: 1.8;
+    margin-bottom: 25px;
+}
+
+/* Custom button styles */
+.btn-custom {
+    background: transparent;
+    border: 2px solid #fff;
+    color: #fff;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.btn-custom:hover {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+    .choose-wrap {
+        min-height: 300px !important;
+    }
+    
+    .choose-wrap h2 {
+        font-size: 24px;
+    }
+    
+    .text {
+        padding: 20px !important;
+    }
+}
+
+/* Adding hover effects for images */
+.img {
+    background-size: cover !important;
+    background-position: center !important;
+    transition: all 0.5s ease;
+}
+
+.choose-wrap:hover .img {
+    transform: scale(1.05);
+}
+
+/* Equal height columns */
+.row.no-gutters {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.row.no-gutters > [class*='col-'] {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+/* Add divider styles */
+.divider-one, .divider-two {
+    position: relative;
+}
+
+.divider-one::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10%;
+    height: 80%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.1);
 }

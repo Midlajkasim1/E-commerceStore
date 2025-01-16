@@ -345,6 +345,422 @@
     color: white;
 }
 
+.color-selection {
+    margin: 20px 0;
+}
+
+.color-options {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.color-option {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+}
+
+.color-option.selected {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #000;
+}
+/* size */
+.size-selection {
+    margin: 25px 0;
+}
+
+.size-selection h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.size-options {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.size-option {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #e5e5e5;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    color: #333;
+    background: white;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.size-option:hover {
+    border-color: #088178;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(8, 129, 120, 0.15);
+}
+
+.size-option.selected {
+    background-color: #088178;
+    color: white;
+    border-color: #088178;
+}
+
+.size-option.out-of-stock {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background: #f8f8f8;
+    position: relative;
+}
+
+.size-option.out-of-stock::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #ccc;
+    transform: rotate(-45deg);
+}
+
+/* Size Guide Button */
+.size-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+      /* Enhanced Reviews Section Styles */
+      .reviews-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .reviews-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .reviews-summary {
+            background-color: #f8f8f8;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .overall-rating {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .rating-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .rating-stars {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .total-reviews {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .write-review-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+
+        .write-review-btn:hover {
+            background-color: #066c64;
+        }
+
+        .write-review-btn i {
+            margin-right: 8px;
+        }
+
+        .review-card {
+            background-color: #f8f8f8;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        .review-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .bottom-review-section {
+            text-align: center;
+            margin: 40px 0;
+            padding: 30px;
+            background-color: #f8f8f8;
+            border-radius: 10px;
+        }
+
+        .bottom-review-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .bottom-review-content h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .bottom-review-content p {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .large-review-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .large-review-btn:hover {
+            background-color: #066c64;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .review-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+
+        .section-title{
+            display: flex;
+             align-items: center;
+             justify-content: center;
+             margin-top: 60px;
+        }
+        
+        
+
+        /* also bought style */
+        .others-bought {
+    padding: 40px 0;
+    background-color: #f8f9fa;
+    margin-top: 40px;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.section-title h2 {
+    font-size: 28px;
+    color: #2c3e50;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 10px;
+}
+
+.section-title h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    height: 3px;
+    background-color: #088178;
+}
+/* Product Card Styles - Same as previous */
+.others-bought .product-card {
+    height: 480px;  /* Increased height to accommodate longer titles */
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.others-bought .product-card:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px);
+}
+
+.others-bought .product-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.others-bought .product-card h5 {
+    font-size: 16px;
+    color: #2c3e50;
+    margin: 10px 0;
+    height: 72px;  /* Increased height for 3 lines */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;  /* Changed to show 3 lines */
+    -webkit-box-orient: vertical;
+    line-height: 1.5;  /* Added for better readability */
+}
+
+/* Add tooltip for full product name */
+.others-bought .product-card h5:hover {
+    cursor: pointer;
+}
+
+.others-bought .product-card h5[title] {
+    position: relative;
+}
+
+.product-card .text-muted {
+    font-size: 14px;
+    margin: 5px 0;
+}
+
+.product-card p {
+    margin: 5px 0;
+}
+
+.others-bought .wishlist-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.others-bought .product-card .text-muted {
+    font-size: 14px;
+    margin: 5px 0;
+}
+
+.others-bought .product-card p {
+    margin: 5px 0;
+}
+
+.others-bought .add-to-cart-btn {
+    background-color: #088178;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    margin-top: auto;  /* This will push the button to the bottom */
+    transition: background-color 0.3s;
+}
+
+.others-bought .add-to-cart-btn:hover {
+    background-color: #066661;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .others-bought {
+        padding: 30px 0;
+    }
+
+    .section-title h2 {
+        font-size: 24px;
+    }
+
+    .others-bought .product-card {
+        height: 430px;  /* Adjusted for mobile */
+    }
+    
+    .others-bought .product-card img {
+        height: 180px;
+    }
+    
+    .others-bought .product-card h5 {
+        height: 60px;  /* Slightly smaller on mobile */
+        font-size: 14px;
+    }
+}
+    .price-button {
+      background-color: #f1f1f1;
+      color: #333;
+      border: 1px solid #ddd;
+      border-radius: 30px;
+      padding: 10px 20px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 14px;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    .price-button:hover {
+      background-color: #007bff;
+      color: #fff;
+      transform: scale(1.05);
+    }
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     .product-price {
@@ -460,6 +876,27 @@
                             <li><i class="fas fa-undo"></i> 30-Day Returns</li>
                         </ul>
                     </div>
+                    <div class="color-selection">
+                        <h4>Select Color</h4>
+                        <div class="color-options">
+                            <div class="color-option" style="background-color: #000000;" title="Black"></div>
+                            <div class="color-option" style="background-color: #FFFFFF; border: 1px solid #e0e0e0;" title="White"></div>
+                            <div class="color-option" style="background-color: #FF0000;" title="Red"></div>
+                            <div class="color-option" style="background-color: #0000FF;" title="Blue"></div>
+                            <div class="color-option" style="background-color: #008000;" title="Green"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="size-selection">
+    <h4>Select Size</h4>
+    <div class="size-options">
+        <div class="size-option">S</div>
+        <div class="size-option">M</div>
+        <div class="size-option">L</div>
+        <div class="size-option">XL</div>
+        <div class="size-option">XXL</div>
+    </div>
+</div>
 
                     <div class="detail-extralink">
                         <div class="detail-qty">
@@ -521,6 +958,67 @@
                       </div>
                 </div>
             </div>
+            <div class="reviews-section">
+                <div class="reviews-header">
+                    <h3>Customer Reviews</h3>
+                    <button class="write-review-btn">
+                        <i class="fas fa-pen"></i>
+                        Write a Review
+                    </button>
+                </div>
+        
+                <div class="reviews-summary">
+                    <div class="overall-rating">
+                        <div class="rating-number">4.5</div>
+                        <div class="rating-stars">
+                            <div>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <span class="total-reviews">Based on 125 reviews</span>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="review-filters">
+                    <button class="filter-btn active">All Reviews</button>
+                    <button class="filter-btn">5 Star</button>
+                    <button class="filter-btn">4 Star</button>
+                    <button class="filter-btn">3 Star</button>
+                    <button class="filter-btn">2 Star</button>
+                    <button class="filter-btn">1 Star</button>
+                    <button class="filter-btn">With Photos</button>
+                </div>
+        
+                <div class="review-list">
+                    <!-- Sample Review Cards (previous structure remains the same) -->
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="reviewer-info">
+                                <div class="reviewer-avatar">JD</div>
+                                <div>
+                                    <h5>John Doe</h5>
+                                    <div class="review-rating">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star-half-alt"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="review-date">2 days ago</span>
+                        </div>
+                        <p class="review-content">Great product! The quality is excellent and the size fits perfectly. Would definitely recommend it to others.</p>
+                    </div>
+                </div>
+        
+             
+            </div>
+        
     </div>
 
     <%-include("../../views/partials/user/footer")%>

@@ -243,12 +243,11 @@ const loadHomePage = async (req, res) => {
             isBlocked: false,
             category: { $in: categories.map(category => category._id) },
             quantity: { $gt: 0 }
-        });
-
+        }).lean();
+ 
         // Sort and slice to get the latest 4 products
-        productData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdOn));
+        productData.sort((a, b) => new Date(b.createdOn) - new Date(a.createdOn));
         productData = productData.slice(0, 4);
-
         // If user is logged in
         if (userId) {
             const user = await User.findById(userId);
@@ -557,7 +556,7 @@ const resetPassword = async (req, res) => {
     try {
         const user = req.session.user;
         const userData = await User.findOne({_id:user});
-        const search =req.body.query;
+        const search = req.body.query || ""; 
         
         const categories = await Category.find({isListed:true}).lean();
         const categoriesIds = categories.map(category=>category._id.toString());
@@ -569,6 +568,7 @@ const resetPassword = async (req, res) => {
         }else{
             searchResult = await Product.find({
                 productName:{$regex:".*"+search+".*",$options:"i"},
+                isBlocked:false,
                 quantity:{$gt:0},
                 category:{$in:categoriesIds}
             })
@@ -581,6 +581,7 @@ const resetPassword = async (req, res) => {
         let totalPages = Math.ceil(searchResult.length/itemsPerPage);
         const currentProduct = searchResult.slice(startIndex,endIndex);
         res.render('shop',{
+            search:search,
             user:userData,
             products:currentProduct,
             category:categories,

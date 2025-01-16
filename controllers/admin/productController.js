@@ -9,44 +9,50 @@ const mongoose = require('mongoose');
 
 
 
-const getProducts = async (req,res)=>{
+const getProducts = async (req, res) => {
     try {
-        if(req.session.admin){
+        if (req.session.admin) {
             const search = req.query.search || "";
-            const page = req.query.page || 1;
+            // Parse page as integer
+            const page = parseInt(req.query.page) || 1;
             const limit = 4;
+            // Calculate skip with parsed page number
+            const skip = (page - 1) * limit;
+
+            // Query for products
             const productData = await Product.find({
-              
-            productName:{$regex:new RegExp(".*"+search+".*","i")}
-                
+                productName: { $regex: new RegExp(".*" + search + ".*", "i") }
             })
-            .limit(limit *1)
-            .skip((page - 1) * limit)
-            .populate('category')
-            .exec();
-            const count = await Product.find({
-                productName:{$regex:new RegExp(".*"+search+".*","")}
-            }).countDocuments();
+                .skip(skip)
+                .limit(limit)
+                .populate('category')
+                .exec();
 
-            const category = await Category.find({isListed:true});
-            if(category){
-                res.render('product',{
-                    search:search,
-                    data:productData,
-                    currentPage:page,
-                    totalPages:Math.ceil(count/limit),
-                    cat:category
-                })
+            // Get total count
+            const count = await Product.countDocuments({
+                productName: { $regex: new RegExp(".*" + search + ".*", "i") }
+            });
 
-            }else{
-                res.render('page-404')
+            const category = await Category.find({ isListed: true });
+
+            if (category) {
+                // Convert page and totalPages to numbers
+                const totalPages = Math.ceil(count / limit);
+                
+                res.render('product', {
+                    search: search,
+                    data: productData,
+                    currentPage: page,
+                    totalPages: totalPages,
+                    cat: category
+                });
+            } else {
+                res.render('page-404');
             }
-
         }
- 
     } catch (error) {
-        res.redirect('/pageerror')
-
+        console.error('Pagination Error:', error);
+        res.redirect('/pageerror');
     }
 }
 

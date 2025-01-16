@@ -1,170 +1,212 @@
+/* Reset and base styles */
 body, html {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    font-family: 'Nunito Sans', sans-serif;
-    background-color: #f4f7fa;
-  }
-
-  .container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-  }
-
-  .card {
-    width: 100%;
-    max-width: 420px;
-    padding: 30px;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  .login-section {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .login-form {
-    margin-top: 30px;
-  }
-
-  .login-form h3 {
-    font-size: 28px;
-    text-align: center;
-    margin-bottom: 20px;
-    color: #333;
-  }
-
-  .form-group label {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 8px;
-  }
-
-  .form-control {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    background-color: #f9f9f9;
-  }
-
-  .form-control:focus {
-    border-color: #007bff;
-    outline: none;
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
-  }
-
-  .error-message {
-    color: red;
-    font-size: 12px;
-    display: none;
-  }
-
-  .forgot-password-link{
-    font-size: 0.875rem;
-    color: #007bff;;
-    text-decoration: none;
-  }
-
-  .forgot-password-link:hover{
-    color: #0056b3;
-    text-decoration: underline;
-  }
-
-
-  .btn-primary {
-    background-color: #007bff;
-    color: white;
-    padding: 12px 20px;
-    font-size: 16px;
-    width: 100%;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-  }
-
-  .btn-primary:hover {
-    background-color: #0056b3;
-  }
-
-  .social-btns {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 10px;
-  }
-  .social-btns a {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-  }
-
-  .social-btns a:hover {
-    background-color: #357ae8;
-  }
-
-  .login-image {
-    text-align: center;
-    margin-top: 20px;
-  }
-
-  .login-image a {
-    color: #007bff;
-    text-decoration: none;
-    font-size: 14px;
-  }
-
-  .login-image a:hover {
-    color: #0056b3;
-  }
-
-  .login-image img {
-    max-width: 100px;
-    height: auto;
-    margin-bottom: 20px;
-  }
-.text-danger{
-  color: red;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  font-family: 'Nunito Sans', sans-serif;
+  background-color: #f4f7fa;
 }
-/* Add custom styles for the signup link */
-.sign-up-link {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #007bff; /* Blue color for the link */
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Card styling */
+.card {
+  width: 100%;
+  max-width: 400px;
+  height: 620px;
+  background-color: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-body {
+  padding: 2rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Logo section */
+.login-image {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.login-image img {
+  max-width: 80px;
+  height: auto;
+}
+
+/* Form section */
+.login-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-form h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #333;
+  text-align: center;
+}
+
+/* Form groups */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+/* Input fields */
+.form-control {
+  width: calc(100% - 24px);
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background-color: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  background-color: #fff;
+}
+
+/* Error message */
+.error-message, .text-danger {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Forgot password link */
+.forgot-password-link {
+  font-size: 0.75rem;
+  color: #6c757d;
   text-decoration: none;
-  margin-top: 10px;
-  padding-left: 115px; 
-  display: inline-block;
-  transition: color 0.3s ease, background-color 0.3s ease;
+  display: block;
+  text-align: right;
+  margin-bottom: 1.5rem;
 }
-.sign-up-link:hover {
-  color: rgb(12, 64, 155);
-  /* background-color: #007bff;  */
-  /* padding: 8px 16px; */
-  border-radius: 5px;
+
+/* Login section layout */
+.d-flex {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
 }
-/* .sign-up-link:active {
-  color: #0056b3;
+
+/* Login button */
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+  padding: 0.875rem 0;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  width: 80%;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
   background-color: #0056b3;
-} */
+  transform: translateY(-1px);
+}
 
+/* Google login section */
+.mt-2px {
+  text-align: center;
+  margin-top: 1rem;
+}
 
+.mt-2px p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #666;
+}
 
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .card {
-      width: 90%;
-      padding: 20px;
-    }
+.social-btns {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.btn-outline-danger {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  background: white;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-outline-danger:hover {
+  background-color: #f8f9fa;
+}
+
+.btn-outline-danger img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Sign up section */
+.text-center {
+  text-align: center;
+  margin-top: 1.5rem;
+  flex-shrink: 0;
+}
+
+.sign-up-link {
+  color: #007bff;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.sign-up-link:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
+/* Media Queries */
+@media (max-width: 480px) {
+  .card {
+      height: 600px;
   }
+  
+  .card-body {
+      padding: 1.5rem;
+  }
+  
+  .btn-primary {
+      width: 90%;
+  }
+}
