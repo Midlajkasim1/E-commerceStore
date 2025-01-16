@@ -48,7 +48,7 @@ const addCategory = async(req,res)=>{
     const {name,description} = req.body;
     
     try {
-       if(!name,!description){
+       if(!name || !description){
         req.flash('categoryExistingMessage','please fill the form!')
         return res.redirect('/admin/category/addCategory')
        }
@@ -67,7 +67,7 @@ const addCategory = async(req,res)=>{
         res.redirect('/admin/category')
 
     } catch (error) {
-        return res.status(500).json({error:"Internal Server Error"});
+        return res.status(500).json({error:"Internal Server Errors"});
     
 
     }

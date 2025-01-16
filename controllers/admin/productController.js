@@ -132,7 +132,7 @@ const addProducts = async (req, res) => {
                 productImage: images,
                 status: 'Available',
             });
-console.log(newProduct)
+        console.log(newProduct)
             await newProduct.save();
 
             // Redirect on success

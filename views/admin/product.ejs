@@ -66,7 +66,7 @@
                                     </td>
                                     <td>
                                         <%if(locals.data[i].productOffer){%>
-                                            <%=data[i].productOffer%>
+                                            <%=data[i].productOffer%>%
                                             <%}else{%>
                                                 0%
                                                 <%}%>
@@ -92,7 +92,7 @@
                                         <a href="/admin/products/blockProduct?id=<%=data[i]._id%>" class="text-white text-decoration-none">Block</a>
                                       </button>
                                       <%}else{%>
-                                      <button class="btn btn-success" style="width: 70px">
+                                      <button class="btn btn-success" style="width: 80px padding-left-5px">
                                         <a href="/admin/products/unblockProduct?id=<%=data[i]._id%>" class="text-white text-decoration-none">Unblock</a>
                                       </button>
                                       <%}%>
@@ -109,26 +109,18 @@
                         </tbody>
                     </table>
 
-                    <div class="pagination">
-                        <%if (currentPage>1){%>
-                            <a class="text-decoration-none" href="?page=<%= currentPage - 1 %>">&laquo; Previous</a>
-                            <% } %>
-                                <% for (let i=1; i <=totalPages; i++) { %>
-                                    <% if(i===currentPage) { %>
-                                        <span class="showing-text">
-                                            <%= i %>
-                                        </span>
-                                        <%} else {%>
-                                            <a class="text-decoration-none" href="?page=<= i %>">
-                                                <%= i %>
-                                            </a>
-                                            <%}%>
-                                                <%}%>
-                                                    <% if(currentPage < totalPages){%>
-                                                        <a class="text-decoration-none"
-                                                            href="?page=<%= currentPage + 1 %>">Next &raquo;</a>
-                                                        <%}%>
-                    </div>
+                
+            <div class="pagination">
+                <%if (currentPage>1){%>
+                <a class="text-decoration-none" href="?page=<%= currentPage - 1 %>">&laquo; Previous</a>
+                <% } %> <% for (let i =1; i <= totalPages; i++) { %> <% if(i ===currentPage) { %>
+                <span class="showing-text"><%= i %></span>
+                <%} else {%>
+               <a class="text-decoration-none" href="?page=<= i %>"><%= i %></a>
+               <%}%><%}%> <% if(currentPage < totalPages){%>
+               <a class="text-decoration-none" href="?page=<%= currentPage + 1 %>">Next &raquo;</a>
+               <%}%>
+            </div>
 
                 </div>
         </div>

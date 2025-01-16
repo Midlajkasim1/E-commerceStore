@@ -37,7 +37,27 @@
       background-color: #0056b3;
       transform: scale(1.05);
     }
+    .breadcrumb-wrap {
+            background: var(--light-gray);
+            padding: 15px 0;
+            margin-bottom: 50px;
+        }
 
+        .breadcrumb {
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+        }
+
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .breadcrumb span {
+            margin: 0 10px;
+            color: #666;
+        }
     .wishlist-btn {
       position: absolute;
       top: 10px;
@@ -62,7 +82,7 @@
     }
 
     .add-to-cart-btn {
-      background-color: #46698f;
+      background-color:#088178;
       color: #fff;
       border: none;
       border-radius: 5px;
@@ -98,6 +118,13 @@
   <%-include("../../views/partials/user/header")%>
 
   <div class="container my-4">
+    <div class="breadcrumb">
+      <a href="/">Home</a>
+      <span>/</span>
+      <a href="/shop">Shop</a>
+    
+  </div>
+
     <!-- Search Bar -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <form action="/search" method="POST" class="search-form">
@@ -138,7 +165,8 @@
             <div class="col-md-4">
               <div class="product-card">
                 <span class="wishlist-btn">❤️</span>
-                <img src="/uploads/re-image/<%= products[i].productImage[0] %>" alt="<%= products[i].productName %>" class="img-fluid rounded">
+                <a href="/productDetails?id=<%=products[i]._id%>">
+                <img src="/uploads/re-image/<%= products[i].productImage[0] %>" alt="<%= products[i].productName %>" class="img-fluid rounded"></a>
                 <h5 class="mt-3"><%= products[i].productName %></h5>
                 <p class="text-muted"><strike>₹<%= products[i].regularPrice.toLocaleString('en-IN') %></strike></p>
                 <p>₹<%= products[i].salePrice.toLocaleString('en-IN') %></p>
