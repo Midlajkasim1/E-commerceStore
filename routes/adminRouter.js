@@ -29,7 +29,7 @@ router.get('/category/unlistCategory',adminCheck,categoryController.getUnListCat
 router.get('/category/editCategory',adminCheck,categoryController.getEditCategory);
 router.post('/category/editCategory/:id',adminCheck,categoryController.editCategory);
 //product
-router.get('/products',adminCheck,productController.getProducts)
+router.get('/products',adminCheck,productController.getProducts);
 router.get('/products/addProducts',adminCheck,productController.getaddProduct)
 router.post("/products/addProducts",adminCheck,uploads.array("images",4),productController.addProducts);
 router.post('/products/addProductOffer',adminAuth,productController.addProductOffer);

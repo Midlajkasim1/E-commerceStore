@@ -99,8 +99,9 @@ body, html {
 .error-message, .text-danger {
   color: #dc3545;
   font-size: 0.875rem;
-  margin-top: 0.25rem;
-  margin-bottom: 0.5rem;
+  /* margin-top: 0.25rem;
+  margin-bottom: 0.5rem; */
+  padding-left: 39px;
 }
 
 /* Forgot password link */
@@ -111,14 +112,17 @@ body, html {
   display: block;
   text-align: right;
   margin-bottom: 1.5rem;
+  padding-left: 239px;
 }
-
+.forgot-password-link:hover{
+   color: #007bff;
+}
 /* Login section layout */
 .d-flex {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: auto;
+  margin-top: 3px;
 }
 
 /* Login button */
@@ -180,7 +184,7 @@ body, html {
 /* Sign up section */
 .text-center {
   text-align: center;
-  margin-top: 1.5rem;
+  margin-top: 0.5rem;
   flex-shrink: 0;
 }
 

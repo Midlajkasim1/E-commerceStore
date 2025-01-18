@@ -13,13 +13,10 @@ const getProducts = async (req, res) => {
     try {
         if (req.session.admin) {
             const search = req.query.search || "";
-            // Parse page as integer
             const page = parseInt(req.query.page) || 1;
             const limit = 4;
-            // Calculate skip with parsed page number
             const skip = (page - 1) * limit;
 
-            // Query for products
             const productData = await Product.find({
                 productName: { $regex: new RegExp(".*" + search + ".*", "i") }
             })
@@ -28,7 +25,6 @@ const getProducts = async (req, res) => {
                 .populate('category')
                 .exec();
 
-            // Get total count
             const count = await Product.countDocuments({
                 productName: { $regex: new RegExp(".*" + search + ".*", "i") }
             });
@@ -36,7 +32,6 @@ const getProducts = async (req, res) => {
             const category = await Category.find({ isListed: true });
 
             if (category) {
-                // Convert page and totalPages to numbers
                 const totalPages = Math.ceil(count / limit);
                 
                 res.render('product', {
@@ -61,7 +56,7 @@ const getaddProduct = async (req,res)=>{
         if(req.session.admin){
             const message =req.session.error
             const category = await Category.find({isListed:true});
-            res.render("addProducts",{cat:category,message})
+            res.render("addProducts",{cat:category,message:req.flash('added')})
         }else{
             res.redirect('/admin/login')
         }
@@ -79,7 +74,6 @@ const addProducts = async (req, res) => {
     try {
         const products = req.body;
 
-        // Check if product already exists
         const productExists = await Product.findOne({
             productName: products.productName,
         });
@@ -87,19 +81,16 @@ const addProducts = async (req, res) => {
         if (!productExists) {
             const images = [];
 
-            // Ensure the target directory exists
             const uploadDir = path.join('public', 'uploads', 'product-images');
             if (!fs.existsSync(uploadDir)) {
                 fs.mkdirSync(uploadDir, { recursive: true });
             }
 
-            // Process uploaded files
             if (req.files && req.files.length > 0) {
                 for (let i = 0; i < req.files.length; i++) {
                     const originalImagePath = req.files[i].path;
                     const resizedImagePath = path.join(uploadDir, req.files[i].filename);
 
-                    // Resize image using Sharp
                     await sharp(originalImagePath)
                         .resize({ width: 440, height: 440 })
                         .toFile(resizedImagePath);
@@ -108,7 +99,6 @@ const addProducts = async (req, res) => {
                 }
             }
 
-            // Find category ID from name
             const categoryId = await Category.findOne({ name: products.category });
             if (!categoryId) {
                 req.session.error = 'Invalid Category name'
@@ -124,7 +114,6 @@ const addProducts = async (req, res) => {
         sizeXXL: Number(products.sizeXXL) || 0,
     };
     
-            // Create a new product
             const newProduct = new Product({
                 productName: products.productName,
                 description: products.description,
@@ -140,17 +129,15 @@ const addProducts = async (req, res) => {
             });
         console.log(newProduct)
             await newProduct.save();
+            req.flash('added','Product added successfully')
 
-            // Redirect on success
             return res.redirect('/admin/products/addProducts');
         } else {
             req.session.error = 'Product already exists. Please try another name'
             return res.redirect('/admin/products/addProducts');
 
-            // return res.status(400).json({
-            //     error: "Product already exists. Please try another name",
-            // });
         }
+       
     } catch (error) {
         console.error("Error saving products", error);
         return res.redirect('/admin/pageerror');
@@ -173,7 +160,6 @@ const addProductOffer = async (req,res)=>{
           res.json({status:true});
     } catch (error) {
          res.redirect("/pageerror");
-        //  res.status(500).json({status:false, message: "Internal server error"})
     }
  }
 
@@ -242,7 +228,8 @@ const getEditProduct = async (req,res)=>{
         const category = await Category.find({});
         res.render('editProduct',{
             product:product,
-            cat:category
+            cat:category,
+            
         })
     } catch (error) {
         res.redirect('/pagerror')
@@ -295,14 +282,12 @@ const editProduct = async (req,res)=>{
 const deleteSingle = async (req, res) => {
     try {
         const { imageNameToServer } = req.body;
-        const productIdToServer = req.params.id; // Retrieve productId from the URL parameter
+        const productIdToServer = req.params.id; 
 
-        // Validate the productIdToServer format (Mongo ObjectId validation)
         if (!mongoose.Types.ObjectId.isValid(productIdToServer)) {
             return res.status(400).json({ status: false, message: 'Invalid Product ID' });
         }
 
-        // Proceed with the deletion logic as you've already written
         const product = await Product.findByIdAndUpdate(productIdToServer, {
             $pull: { productImage: imageNameToServer }
         });

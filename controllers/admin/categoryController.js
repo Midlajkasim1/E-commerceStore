@@ -52,7 +52,7 @@ const addCategory = async(req,res)=>{
         req.flash('categoryExistingMessage','please fill the form!')
         return res.redirect('/admin/category/addCategory')
        }
-        const existingCategory = await Category.findOne({name});
+        const existingCategory = await Category.findOne({name:name});
         if(existingCategory){
             req.flash('categoryExistingMessage','Category already exists.')
             return res.redirect('/admin/category/addCategory')

@@ -2,15 +2,13 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Define the upload path
 const uploadPath = path.join(__dirname, "../public/uploads/re-image");
 
-// Ensure the upload path exists
 if (!fs.existsSync(uploadPath)) {
     fs.mkdirSync(uploadPath, { recursive: true });
 }
 
-// Configure multer storage
+// multer storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadPath);
