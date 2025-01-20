@@ -21,6 +21,10 @@ const cartSchema = new mongoose.Schema({
         type:Number,
         required:true
     },
+    size: {          // Add this field
+        type: String,
+        default: ''
+    },
     totalPrice:{
         type:Number,
         required:true

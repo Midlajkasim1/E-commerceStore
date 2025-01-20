@@ -17,10 +17,26 @@ const productDetails = async (req,res)=>{
         const productOffer = product.productOffer || 0;
         const totalOffer = categoryOffer + productOffer;
 
+
+ // Get available sizes (sizes with stock > 0)
+
+        // Get available sizes (sizes with stock > 0)
+        const availableSizes = [];
+        for (const sizeKey of ['sizeS', 'sizeM', 'sizeL', 'sizeXL', 'sizeXXL']) {
+            if (product.size[sizeKey] > 0) {
+                availableSizes.push({
+                    label: sizeKey.replace('size', ''), // Convert sizeS to S
+                    stock: product.size[sizeKey],
+                });
+            }
+        }
+
+
+
         const allProducts=await Product.find({category: findcategory})
 
         const randomNum=new Set()
-
+        
         while(randomNum.size<3){
             const num=Math.floor(Math.random()*10)
             if(num<=allProducts.length){
@@ -37,7 +53,11 @@ const productDetails = async (req,res)=>{
             totalOffer:totalOffer,
             category:findcategory,
             ranNum:ranNum,
-            allProducts: allProducts
+            allProducts: allProducts,
+            availableSizes: availableSizes, // Pass availableSizes to the view
+            messages: {}, // Pass an empty messages object by default
+
+
         });
 
     } catch (error) {

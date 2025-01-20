@@ -798,6 +798,55 @@
         font-size: 16px;
     }
 }
+.product-details-banner {
+    background: linear-gradient(rgba(8, 129, 120, 0.9), rgba(8, 129, 120, 0.8));
+    padding: 20px 0;
+    margin-bottom: 40px;
+}
+
+.banner-content {
+    text-align: left;
+}
+
+/* Updated breadcrumb styles */
+.product-details-banner .breadcrumb {
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    color: #ffffff;
+}
+
+.product-details-banner .breadcrumb a {
+    color: #ffffff;
+    text-decoration: none;
+    opacity: 0.9;
+    transition: opacity 0.3s;
+}
+
+.product-details-banner .breadcrumb a:hover {
+    opacity: 1;
+}
+
+.product-details-banner .breadcrumb span {
+    margin: 0 10px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Remove the original breadcrumb-wrap since we integrated it into the banner */
+.breadcrumb-wrap {
+    display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .product-details-banner {
+        padding: 15px 0;
+    }
+    
+    .product-details-banner .breadcrumb {
+        font-size: 13px;
+    }
+}
 
     </style>
 </head>
@@ -815,6 +864,20 @@
             </div>
         </div>
     </div>
+    <div class="product-details-banner">
+        <div class="container">
+            <div class="banner-content">
+                <div class="breadcrumb">
+                    <a href="/">Home</a>
+                    <span>/</span>
+                    <a href="/shop">Shop</a>
+                    <span>/</span>
+                    <%=product.productName%>
+                </div>
+            </div>
+        </div>
+    </div>
+   
 
     <div class="container">
         <div class="row">
@@ -886,33 +949,51 @@
                             <div class="color-option" style="background-color: #008000;" title="Green"></div>
                         </div>
                     </div>
-                    
                     <div class="size-selection">
-    <h4>Select Size</h4>
-    <div class="size-options">
-        <div class="size-option">S</div>
-        <div class="size-option">M</div>
-        <div class="size-option">L</div>
-        <div class="size-option">XL</div>
-        <div class="size-option">XXL</div>
-    </div>
-</div>
-
-                    <div class="detail-extralink">
-                        <div class="detail-qty">
-                            <a class="qty-down"><i class="fas fa-minus"></i></a>
-                            <span class="qty-val">1</span>
-                            <a class="qty-up"><i class="fas fa-plus"></i></a>
+                        <div class="size-header">
+                            <h4>Select Size</h4>
                         </div>
-                        <div class="product-extra-link2">
-                            <button type="submit" class="button-add-to-cart">
-                                <i class="fas fa-shopping-cart"></i>
-                                Add to cart
-                            </button>
-                            <a href="#" class="action-btn">
-                                <i class="far fa-heart"></i>
-                            </a>
-                        </div>
+                        <form action="/addToCart/<%= product._id %>" method="POST">
+                            <div class="size-options">
+                                <% availableSizes.forEach(size => { %>
+                                    <label class="size-option <%= size.stock === 0 ? 'out-of-stock' : '' %>" 
+                                           for="size-<%= size.label %>">
+                                        <input type="radio" 
+                                               id="size-<%= size.label %>" 
+                                               name="size" 
+                                               value="<%= size.label %>"
+                                               <%= size.stock === 0 ? 'disabled' : '' %>
+                                               required>
+                                        <%= size.label %>
+                                        <small>(<%= size.stock %> left)</small>
+                                    </label>
+                                <% }); %>
+                            </div>
+                    
+                            <% if (messages.error) { %>
+                                <div class="alert alert-danger mt-3">
+                                    <%= messages.error %>
+                                </div>
+                            <% } %>
+                            
+                            <% if (messages.success) { %>
+                                <div class="alert alert-success mt-3">
+                                    <%= messages.success %>
+                                </div>
+                            <% } %>
+                    
+                            <div class="product-extra-link2 mt-3">
+                                <button type="submit" class="button-add-to-cart w-100" 
+                                        <%= availableSizes.length === 0 ? 'disabled' : '' %>>
+                                    <i class="fas fa-shopping-cart"></i> 
+                                    <%= availableSizes.length === 0 ? 'Out of Stock' : 'Add to Cart' %>
+                                </button>
+                                
+                                <a href="#" class="action-btn">
+                                    <i class="far fa-heart"></i>
+                                </a>
+                            </div>
+                        </form>
                     </div>
 
                     <div class="product-detail-meta">
@@ -951,7 +1032,7 @@
                               <h5 class="mt-3"><%= allProducts[i].productName %></h5>
                               <p class="text-muted"><strike>₹<%= allProducts[i].regularPrice.toLocaleString('en-IN') %></strike></p>
                               <p>₹<%= allProducts[i].salePrice.toLocaleString('en-IN') %></p>
-                              <button class="add-to-cart-btn w-100">Add to Cart</button>
+                              <a href="/addToCart/<%=allProducts[i]._id%>" class="add-to-cart-btn w-100" >Add to Cart</a>
                             </div>
                           </div>
                         <% } %>
@@ -1117,5 +1198,30 @@
                 document.querySelector('.qty-val').textContent = val - 1;
             }
         });
+
+        ///cart
+    //     async function addToCart(productId) {
+    //   try {
+    //     const response = await fetch('/addToCart', {
+    //       method: 'POST',
+    //       headers: {
+    //         'Content-Type': 'application/json'
+    //       },
+    //       body: JSON.stringify({ productId })
+    //     });
+
+    //     if (response.ok) {
+    //       alert('Product added to cart!');
+    //       // After adding, reload the page to reflect cart changes
+    //       location.reload(); // This will reload the page and reflect the updated cart
+    //     } else {
+    //       alert('Failed to add product to cart');
+    //     }
+    //   } catch (error) {
+    //     console.error('Error:', error);
+    //     alert('An error occurred while adding the product to the cart');
+    //   }
+    // }
+</script>
 </script>
   
