@@ -76,7 +76,13 @@ router.get('/deleteAddress',userAuth,profileController.deleteAddress);
 router.post('/addToCart/:id',userAuth,cartController.addToCartByGet);
 router.get('/cart',userAuth,cartController.getAddToCart)
 router.post('/cart/update-quantity',userAuth, cartController.updateCartQuantity);
-router.post('/cart/remove',userAuth,cartController.removeFromCart)
+router.post('/cart/remove',userAuth,cartController.removeFromCart);
+
+
+//review
+router.post('/submit-review',userAuth,productController.submitReview);
+router.post('/delete-review/:reviewId/:productId',userAuth,productController.deleteReview)
+
 
 
 module.exports= router;

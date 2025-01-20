@@ -162,10 +162,8 @@ const updateCartQuantity = async (req, res) => {
         } else if (action === 'decrease') {
             if (userCart.items[itemIndex].quantity > 1) {
                 userCart.items[itemIndex].quantity -= 1;
-            } else {
-                // Remove item if quantity would become 0
-                userCart.items.splice(itemIndex, 1);
-            }
+            } 
+
         }
 
         // Update total price for the item if it still exists
