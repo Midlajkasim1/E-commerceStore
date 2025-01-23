@@ -94,5 +94,7 @@ router.post('/checkout/edit-address', checkoutController.checkOuteditAddress);
 // router.post('/place-order',userAuth,checkoutController.placeOrder );
 router.post('/place-order', userAuth, ordercontroller.placeOrder);
 
-
+//order
+router.get('/profile/order',userAuth,ordercontroller.getOrderDetails)
+// router.get('/details/:orderId',userAuth,ordercontroller.getOrderDetails);
 module.exports= router;

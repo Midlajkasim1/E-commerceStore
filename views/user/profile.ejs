@@ -18,35 +18,7 @@
             color: #666;
         }
 
-        /* Sidebar Styles */
-        .sidebar {
-            position: sticky;
-            top: 20px;
-        }
-
-        .nav-link {
-            color: #2c3e50;
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
-            background-color: #f8f9fa;
-            color: #088178;
-            padding-left: 25px;
-        }
-
-        .nav-link.active {
-            background-color: #edf7f7;
-            color: #088178;
-        }
-
-        .nav-link i {
-            margin-right: 10px;
-        }
-
+      
         /* Profile Form Styles */
         .profile-card {
             background: #ffffff;
@@ -139,13 +111,8 @@
             cursor: pointer;
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 991px) {
-            .sidebar {
-                position: static;
-                margin-bottom: 30px;
-            }
-        }
+      
+        
     </style>
 </head>
 
@@ -162,35 +129,9 @@
 
         <div class="row mt-4">
             <!-- Sidebar -->
-            <div class="col-lg-3">
-                <div class="sidebar">
-                    <div class="bg-white rounded p-4">
-                        <nav class="nav flex-column">
-                            <a class="nav-link" href="/overview">
-                                <i class="bi bi-grid"></i> Overview
-                            </a>
-                            <a class="nav-link" href="/orders">
-                                <i class="bi bi-box"></i> My Orders
-                            </a>
-                            <a class="nav-link" href="/payments">
-                                <i class="bi bi-credit-card"></i> My Payments
-                            </a>
-                            <a class="nav-link" href="/wallet">
-                                <i class="bi bi-wallet"></i> My Wallet
-                            </a>
-                            <a class="nav-link" href="/myaddress">
-                                <i class="bi bi-geo-alt"></i> My Addresses
-                            </a>
-                            <a class="nav-link active" href="/userProfile">
-                                <i class="bi bi-person"></i> My Profile
-                            </a>
-                            <a class="nav-link logout-link" href="/logout">
-                                <i class="bi bi-box-arrow-right"></i> Logout
-                            </a>
-                        </nav>
-                    </div>
-                </div>
-            </div>
+            <%-include("../../views/partials/user/profileSidebar")%>
+
+          
 
             <!-- Main Content -->
             <div class="col-lg-9">

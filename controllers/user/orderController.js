@@ -112,6 +112,46 @@ const placeOrder = async (req, res) => {
     }
 };
 
+const getOrderDetails = async (req, res) => {
+    try {
+        const userId = req.session.user;
+        
+        const orders = await Order.find({ userId })
+            .populate({
+                path: 'orderedItems.product',
+                model: 'Product',
+                select: 'name images price size'  // Explicitly select fields
+            })
+            .populate('address')  // Ensure address is populated
+            .sort({ createOn: -1 });
+
+        res.render('order', { 
+            orders: orders.map(order => ({
+                ...order.toObject(),
+                formattedDate: order.createOn.toLocaleDateString(),
+                statusClass: getStatusClass(order.status)
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching order details:', error);
+        res.redirect('/pageNotFound');
+    }
+};
+// Helper function to map status to CSS class
+const getStatusClass = (status) => {
+    const statusMap = {
+        'Pending': 'bg-warning',
+        'Processing': 'bg-info',
+        'Shipped': 'bg-primary',
+        'Delivered': 'bg-success',
+        'Cancel': 'bg-danger',
+        'Return Request': 'bg-secondary',
+        'Returned': 'bg-dark'
+    };
+    return statusMap[status] || 'bg-secondary';
+};
+
 module.exports = {
-    placeOrder
+    placeOrder,
+    getOrderDetails
 };
