@@ -304,12 +304,14 @@
 
                 <!-- Product Details -->
                 <div class="form-section">
-                    <div class="form-group">
+                    <div class="form-group"> 
                         <label class="form-label">Category</label>
                         <select class="form-select" name="category">
-                            <%for(let i=0;i<cat.length;i++){%>
-                            <option value="<%=cat[i].name%>"><%=cat[i].name%></option>
-                            <%}%>
+                            <% for (let i = 0; i < cat.length; i++) { %>
+                                <option value="<%= cat[i]._id %>" <%= (product.category && product.category._id.toString() === cat[i]._id.toString()) ? 'selected' : '' %>>
+                                    <%= cat[i].name %>
+                                </option>
+                            <% } %>
                         </select>
                         <div id="category-error" class="error-message"></div>
                     </div>

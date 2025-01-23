@@ -87,7 +87,8 @@ const getAddress = async(req,res)=>{
 
         res.render('address',{
             user: userId,
-            userAddress: userAddress 
+            userAddress: userAddress ,
+            user: req.user || req.session.user  // Add this line explicitly
         });
     } catch (error) {
         console.error('Error in getAddress:', error);

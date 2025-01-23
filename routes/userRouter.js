@@ -4,6 +4,8 @@ const userController = require('../controllers/user/userController');
 const productController = require('../controllers/user/productController');
 const profileController = require('../controllers/user/profileController');
 const cartController = require('../controllers/user/cartController');
+const checkoutController = require('../controllers/user/checkoutController');
+const ordercontroller =require('../controllers/user/orderController');
 const passport = require('passport');
 const { userAuth,blockCheck } = require('../middlewares/auth');
 
@@ -83,6 +85,14 @@ router.post('/cart/remove',userAuth,cartController.removeFromCart);
 router.post('/submit-review',userAuth,productController.submitReview);
 router.post('/delete-review/:reviewId/:productId',userAuth,productController.deleteReview)
 
+//checkout
+router.get('/checkout',userAuth,checkoutController.getCheckout );
+router.post('/checkout-addAddress',userAuth,checkoutController.checkoutAddAddress);
+router.post('/checkout/edit-address', checkoutController.checkOuteditAddress);
+
+
+// router.post('/place-order',userAuth,checkoutController.placeOrder );
+router.post('/place-order', userAuth, ordercontroller.placeOrder);
 
 
 module.exports= router;

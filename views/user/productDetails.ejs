@@ -7,7 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
+            :root {
             --primary-color: #3a3a3a;
             --secondary-color: #088178;
             --light-gray: #f8f8f8;
@@ -16,8 +16,12 @@
         body {
             font-family: 'Inter', sans-serif;
             color: var(--primary-color);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
         }
 
+/* 
         .breadcrumb-wrap {
             background: var(--light-gray);
             padding: 15px 0;
@@ -38,13 +42,149 @@
         .breadcrumb span {
             margin: 0 10px;
             color: #666;
+        } */
+        .product-details-banner {
+            background: linear-gradient(rgba(8, 129, 120, 0.9), rgba(8, 129, 120, 0.8));
+            padding: 40px 0;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            margin-bottom: 40px;
         }
+
+        .banner-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* Full Width Breadcrumb Styles */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            color: #ffffff;
+        }
+
+        .breadcrumb a {
+            color: #ffffff;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+
+        .breadcrumb a:hover {
+            opacity: 1;
+        }
+
+        .breadcrumb span {
+            margin: 0 10px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+
+
+
+  /* Banner and Breadcrumb Fixes */
+  .product-details-banner {
+        background: linear-gradient(rgba(8, 129, 120, 0.9), rgba(8, 129, 120, 0.8));
+        padding: 40px 0;
+        margin-bottom: 40px;
+        width: 100%;
+        position: relative;
+    }
+
+    .banner-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 15px;
+    }
+
+    .product-details-banner .breadcrumb {
+        display: flex;
+        align-items: center;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .product-details-banner .breadcrumb a {
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 14px;
+        transition: opacity 0.3s;
+    }
+
+    .product-details-banner .breadcrumb span {
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0 10px;
+    }
+/*  */
+
+
+  /* Container Fixes */
+  .main-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 15px;
+    }
+
+     /* Full Width Footer Styles */
+     footer {
+            background: #f8f9fa;
+            margin-top: 60px;
+            padding: 40px 0;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+    /* Responsive Fixes */
+    @media (max-width: 768px) {
+        .product-details-banner {
+            padding: 20px 0;
+        }
+
+        .banner-content {
+            padding: 0 10px;
+        }
+
+        .main-content {
+            padding: 0 10px;
+        }
+
+        .footer-content {
+            padding: 0 10px;
+        }
+    }
+
+
+
+
+
+
+
 
         /* Enhanced Product Gallery */
         .product-gallery {
             position: relative;
             margin-bottom: 30px;
         }
+
 
         .product-image-container {
             position: relative;
@@ -776,6 +916,18 @@
         flex-direction: column;
     }
 }
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+            .product-details-banner {
+                padding: 20px 0;
+            }
+
+            .banner-content,
+            .main-content,
+            .footer-content {
+                padding: 0 10px;
+            }
+        }
 
 @media (max-width: 576px) {
     .product-title {
@@ -860,7 +1012,6 @@
     border-radius: 4px;
     background-color: #f8f9fa;
 }
-
 .rating-input {
     display: flex;
     flex-direction: row-reverse;
@@ -889,7 +1040,6 @@
 .rating-input label:hover ~ label {
     color: #ffd700;
 }
-
 .review-card {
     background-color: #fff;
     transition: transform 0.2s;
@@ -908,39 +1058,37 @@
     font-size: 48px;
     color: #333;
 }
+.size-option.out-of-stock {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.out-of-stock-label {
+    display: block;
+    font-size: 0.8em;
+    color: #dc3545;
+    margin-top: 2px;
+}
 
     </style>
 </head>
 <body>
     <%-include("../../views/partials/user/header")%>
 
-    <div class="page-header breadcrumb-wrap">
-        <div class="container">
+    <div class="product-details-banner">
+        <div class="banner-content">
             <div class="breadcrumb">
                 <a href="/">Home</a>
                 <span>/</span>
                 <a href="/shop">Shop</a>
                 <span>/</span>
-                Product Details
-            </div>
-        </div>
-    </div>
-    <div class="product-details-banner">
-        <div class="container">
-            <div class="banner-content">
-                <div class="breadcrumb">
-                    <a href="/">Home</a>
-                    <span>/</span>
-                    <a href="/shop">Shop</a>
-                    <span>/</span>
-                    <%=product.productName%>
-                </div>
+                <%= product.productName %>
             </div>
         </div>
     </div>
    
 
-    <div class="container">
+    <div class="main-content">
         <div class="row">
             <div class="col-md-6">
                 <div class="product-gallery">
@@ -965,12 +1113,10 @@
                     
                     <div class="product-meta">
                         <div class="product-rating">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star-half-alt"></i>
-                            <span>(25 reviews)</span>
+                            <% for(let i = 1; i <= 5; i++) { %>
+                                <i class="fas fa-star <%= i <= averageRating ? 'text-warning' : 'text-muted' %>"></i>
+                            <% } %>
+                            <span>(<%= totalReviews %> reviews)</span>
                         </div>
                     </div>
 
@@ -1000,16 +1146,7 @@
                             <li><i class="fas fa-undo"></i> 30-Day Returns</li>
                         </ul>
                     </div>
-                    <div class="color-selection">
-                        <h4>Select Color</h4>
-                        <div class="color-options">
-                            <div class="color-option" style="background-color: #000000;" title="Black"></div>
-                            <div class="color-option" style="background-color: #FFFFFF; border: 1px solid #e0e0e0;" title="White"></div>
-                            <div class="color-option" style="background-color: #FF0000;" title="Red"></div>
-                            <div class="color-option" style="background-color: #0000FF;" title="Blue"></div>
-                            <div class="color-option" style="background-color: #008000;" title="Green"></div>
-                        </div>
-                    </div>
+               
                     <div class="size-selection">
                         <div class="size-header">
                             <h4>Select Size</h4>
@@ -1027,9 +1164,9 @@
                                                required
                                                onchange="showStock(this, <%= size.stock %>)">
                                         <%= size.label %>
-                                        <span class="stock-info" id="stock-<%= size.label %>" style="display: none;">
-                                            <!-- <small>(<%= size.stock %> left)</small> -->
-                                        </span>
+                                        <% if (size.stock === 0) { %>
+                                            <span class="out-of-stock-label">Out of Stock</span>
+                                        <% } %>
                                     </label>
                                 <% }); %>
                             </div>
@@ -1084,6 +1221,7 @@
                 </div>
             </div>
         </div>
+        </div>
             <!-- Others Also Bought Section -->
             <div class="others-bought">
                 <div class="section-title">
@@ -1107,91 +1245,95 @@
                       </div>
                 </div>
             </div>
-            <% if(user) { %>
-                <form action="/submit-review" method="POST" class="review-form mb-4">
-                    <input type="hidden" name="productId" value="<%= product._id %>">
-                    <div class="mb-3">
-                        <label class="form-label">Rating</label>
-                        <div class="rating-input">
-                            <% for(let i = 5; i >= 1; i--) { %>
-                                <input type="radio" id="star<%= i %>" name="rating" value="<%= i %>" required>
-                                <label for="star<%= i %>" title="<%= i %> stars">
-                                    <i class="fas fa-star"></i>
-                                </label>
-                            <% } %>
+            <div class="reviews-section container mt-5">
+                <div class="row">
+                    <!-- Left Column: Average Rating Summary -->
+                    <div class="col-md-4">
+                        <div class="reviews-summary p-4 rounded">
+                            <div class="overall-rating text-center">
+                                <h2 class="mb-0 rating-number"><%= averageRating %></h2>
+                                <div class="rating-stars">
+                                    <div class="stars mb-2">
+                                        <% for(let i = 1; i <= 5; i++) { %>
+                                            <i class="fas fa-star <%= i <= averageRating ? 'text-warning' : 'text-muted' %>"></i>
+                                        <% } %>
+                                    </div>
+                                    <span class="total-reviews">Based on <%= totalReviews %> reviews</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="review" class="form-label">Your Review</label>
-                        <textarea class="form-control" id="review" name="review" rows="4" required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Submit Review</button>
-                </form>
-            <% } else { %>
-                <div class="alert alert-info">
-                    Please <a href="/login">login</a> to submit a review.
-                </div>
-            <% } %>
             
-            <!-- Reviews Display Section -->
-            <div class="reviews-container mt-5">
-                <h3 class="mb-4">Customer Reviews (<%= totalReviews %>)</h3>
-                
-                <!-- Average Rating Display -->
-                <div class="average-rating mb-4">
-                    <div class="d-flex align-items-center">
-                        <h2 class="mb-0 me-2"><%= averageRating %></h2>
-                        <div class="stars">
-                            <% for(let i = 1; i <= 5; i++) { %>
-                                <i class="fas fa-star <%= i <= averageRating ? 'text-warning' : 'text-muted' %>"></i>
-                            <% } %>
-                        </div>
-                    </div>
-                    <p class="text-muted">Based on <%= totalReviews %> reviews</p>
-                </div>
-            
-                <!-- Individual Reviews -->
-               <!-- Individual Reviews -->
-<div class="reviews-list">
-    <% if(reviews.length > 0) { %>
-        <% reviews.forEach(review => { %>
-            <div class="review-card mb-3 p-3 border rounded">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div class="rating">
-                        <% for(let i = 1; i <= 5; i++) { %>
-                            <i class="fas fa-star <%= i <= review.rating ? 'text-warning' : 'text-muted' %>"></i>
+                        <!-- Review Form -->
+                        <% if(user) { %>
+                            <div class="write-review-form mt-4">
+                                <form action="/submit-review" method="POST" class="review-form">
+                                    <input type="hidden" name="productId" value="<%= product._id %>">
+                                    <div class="mb-3">
+                                        <label class="form-label">Your Rating</label>
+                                        <div class="rating-input">
+                                            <% for(let i = 5; i >= 1; i--) { %>
+                                                <input type="radio" id="star<%= i %>" name="rating" value="<%= i %>" required>
+                                                <label for="star<%= i %>" title="<%= i %> stars"></label>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="review" class="form-label">Your Review</label>
+                                        <textarea class="form-control" id="review" name="review" rows="4" required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">Submit Review</button>
+                                </form>
+                            </div>
+                        <% } else { %>
+                            <div class="alert alert-info mt-4">
+                                Please <a href="/login">login</a> to submit a review.
+                            </div>
                         <% } %>
                     </div>
-                    <small class="text-muted">
-                        <%= new Date(review.createdAt).toLocaleDateString() %>
-                    </small>
-                </div>
-                <div class="review-content">
-                    <% if(review.userId) { %>
-                        <h6 class="mb-2"><%= review.userId.name %></h6>
-                    <% } %>
-                    <p class="mb-0"><%= review.review %></p>
-                </div>
-                <% if(user && review.userId && user._id.toString() === review.userId._id.toString()) { %>
-                    <div class="mt-2">
-                        <form action="/delete-review/<%= review._id %>/<%= product._id %>" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-danger" 
-                                    onclick="return confirm('Are you sure you want to delete this review?')">
-                                <i class="fas fa-trash-alt"></i> Delete
-                            </button>
-                        </form>
+            
+                    <!-- Right Column: Review List -->
+                    <div class="col-md-8">
+                        <div class="reviews-list">
+                            <% if(reviews.length > 0) { %>
+                                <% reviews.forEach(review => { %>
+                                    <div class="review-card mb-3 p-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="reviewer-info">
+                                                <% if(review.userId) { %>
+                                                    <h6 class="mb-1"><%= review.userId.name %></h6>
+                                                <% } %>
+                                                <div class="stars">
+                                                    <% for(let i = 1; i <= 5; i++) { %>
+                                                        <i class="fas fa-star <%= i <= review.rating ? 'text-warning' : 'text-muted' %>"></i>
+                                                    <% } %>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">
+                                                <%= new Date(review.createdAt).toLocaleDateString() %>
+                                            </small>
+                                        </div>
+                                        <p class="review-text mb-2"><%= review.review %></p>
+                                        <% if(user && review.userId && user._id.toString() === review.userId._id.toString()) { %>
+                                            <div class="mt-2">
+                                                <form action="/delete-review/<%= review._id %>/<%= product._id %>" method="POST" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                            onclick="return confirm('Are you sure you want to delete this review?')">
+                                                        <i class="fas fa-trash-alt"></i> Delete Review
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                <% }); %>
+                            <% } else { %>
+                                <div class="text-center p-4">
+                                    <p class="text-muted">No reviews yet. Be the first to review this product!</p>
+                                </div>
+                            <% } %>
+                        </div>
                     </div>
-                <% } %>
+                </div>
             </div>
-        <% }); %>
-    <% } else { %>
-        <p class="text-muted">No reviews yet. Be the first to review this product!</p>
-    <% } %>
-</div>
-
-        
-    </div>
-
     <%-include("../../views/partials/user/footer")%>
     <script>
       

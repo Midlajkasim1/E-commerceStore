@@ -39,7 +39,8 @@ const getProducts = async (req, res) => {
                     data: productData,
                     currentPage: page,
                     totalPages: totalPages,
-                    cat: category
+                    cat: category,
+                    message:req.flash('success')
                 });
             } else {
                 res.render('page-404');
@@ -219,65 +220,112 @@ const unblockProduct = async (req,res)=>{
 }
 
 //edit product
-
-const getEditProduct = async (req,res)=>{
+const getEditProduct = async (req, res) => {
     try {
         const id = req.params.id;
-        
-        const product = await Product.findOne({_id:id});
+        const product = await Product.findOne({ _id: id }).populate('category');
         const category = await Category.find({});
-        res.render('editProduct',{
-            product:product,
-            cat:category,
-            
-        })
+        res.render('editProduct', {
+            product: product,
+            cat: category,
+        });
     } catch (error) {
-        res.redirect('/pagerror')
+        res.redirect('/pagerror');
     }
-}
-
-//
-const editProduct = async (req,res)=>{
-    try {        
+};
+const editProduct = async (req, res) => {
+    try {
         const id = req.params.id;
-        const product = await Product.findOne({_id:id});
-        const data =req.body;
-        const categoryId = await Category.findOne({ name: data.category });
-        const existingProduct = await Product.findOne({
-            productName:data.productName,   
-            _id:{$ne:id}
+        console.log('Product ID to update:', id);
+        console.log('Received data:', req.body);
+        console.log('Received files:', req.files);
 
-        })  
-        if(existingProduct){
-            return res.status(400).json({error:"Product with name already exists. Please try with another name"})
+        // Validate if ID exists
+        if (!id) {
+            req.flash('error', 'Product ID is required');
+            return res.redirect('/admin/products');
         }
-        const images = [];
-        if(req.files && req.files.length>0){
-            for(let i=0;i<req.files.length;i++){
-                images.push(req.files[i].filename);
-            }
-        }
-        const updateFields ={
-            productName:data.productName,
-            description:data.description,
-            category:categoryId._id,
-            regularPrice:data.regularPrice,
-            salePrice:data.salePrice,
-            quantity:data.quantity,
-            size:data.size,
-            color:data.color
 
+        // First check if product exists
+        const existingProduct = await Product.findById(id);
+        if (!existingProduct) {
+            req.flash('error', 'Product not found');
+            return res.redirect('/admin/products');
         }
-        if(req.files.length>0){
-            updateFields.$push ={productImage:{$each:images}};
+
+        const data = req.body;
+
+        // Validate category
+        const categoryId = await Category.findById(data.category);
+        if (!categoryId) {
+            req.flash('error', 'Invalid category');
+            return res.redirect('/admin/products');
         }
-        await Product.findByIdAndUpdate(id,updateFields,{new:true});
-        res.redirect('/admin/products');
+
+        // Check for duplicate product name
+        const duplicateProduct = await Product.findOne({
+            productName: data.productName,
+            _id: { $ne: id }
+        });
+
+        if (duplicateProduct) {
+            req.flash('error', 'Product name already exists');
+            return res.redirect(`/admin/products/editProduct/${id}`);
+        }
+
+        // Process images
+        const images = req.files?.map(file => file.filename) || [];
+
+        // Process size data
+        const sizeData = {
+            sizeS: parseInt(data.sizeS) || 0,
+            sizeM: parseInt(data.sizeM) || 0,
+            sizeL: parseInt(data.sizeL) || 0,
+            sizeXL: parseInt(data.sizeXL) || 0,
+            sizeXXL: parseInt(data.sizeXXL) || 0
+        };
+
+        // Calculate total quantity from all sizes
+        const totalQuantity = Object.values(sizeData).reduce((sum, stock) => sum + stock, 0);
+
+        // Prepare update data
+        const updateFields = {
+            productName: data.productName,
+            description: data.description,
+            category: categoryId._id,
+            regularPrice: parseFloat(data.regularPrice),
+            salePrice: parseFloat(data.salePrice),
+            quantity: totalQuantity,
+            color: data.color,
+            size: sizeData
+        };
+
+        if (images.length > 0) {
+            updateFields.productImage = images;
+        }
+
+        // Update product status based on total quantity
+        updateFields.status = totalQuantity > 0 ? "Available" : "out of stock";
+
+        // Perform update
+        await Product.findByIdAndUpdate(
+            id,
+            updateFields,
+            { new: true, runValidators: true }
+        );
+
+        // Add flash message for successful update
+        req.flash('success', 'Product updated successfully');
+
+        // Redirect to products listing page
+        return res.redirect('/admin/products');
+
     } catch (error) {
-        console.error(error);
-        res.redirect('/pageerror');
+        console.error('Error in editProduct:', error);
+        req.flash('error', 'Error updating product');
+        return res.redirect('/admin/products');
     }
-}
+};
 //
 const deleteSingle = async (req, res) => {
     try {

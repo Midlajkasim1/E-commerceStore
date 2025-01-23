@@ -44,6 +44,7 @@ const getAddToCart = async (req, res) => {
         return res.render('cart', {
             cart: cartItems,
             total,
+            user: req.user || req.session.user,  // Add this line explicitly
             messages: {
                 success: req.flash('success'),
                 error: req.flash('error')
@@ -133,13 +134,12 @@ const addToCartByGet = async (req, res) => {
 };
 const updateCartQuantity = async (req, res) => {
     try {
-        const { productId, action ,size} = req.body;
+        const { productId, action, size } = req.body;
 
-        // Find cart and populate product details
         const userCart = await Cart.findOne({ userId: req.user._id })
             .populate({
                 path: 'items.productId',
-                select: 'productName salePrice'
+                select: 'productName salePrice size',
             });
 
         if (!userCart) {
@@ -148,7 +148,7 @@ const updateCartQuantity = async (req, res) => {
         }
 
         const itemIndex = userCart.items.findIndex(
-            item => item.productId._id.toString() === productId && item.size ===size
+            (item) => item.productId._id.toString() === productId && item.size === size
         );
 
         if (itemIndex === -1) {
@@ -156,33 +156,40 @@ const updateCartQuantity = async (req, res) => {
             return res.redirect('/cart');
         }
 
-        // Update quantity
+        const product = await Product.findById(productId);
+        if (!product) {
+            req.flash('error', 'Product not found');
+            return res.redirect('/cart');
+        }
+
+        const sizeKey = `size${size}`;
+        const currentStock = product.size[sizeKey] || 0;
+        const currentQuantity = userCart.items[itemIndex].quantity;
+
         if (action === 'increase') {
+            if (currentQuantity + 1 > currentStock) {
+                req.flash('warning', `Maximum stock reached. Only ${currentStock} items available for this product in size ${size}.`);
+                return res.redirect('/cart');
+            }
             userCart.items[itemIndex].quantity += 1;
         } else if (action === 'decrease') {
-            if (userCart.items[itemIndex].quantity > 1) {
+            if (currentQuantity > 1) {
                 userCart.items[itemIndex].quantity -= 1;
-            } 
-
+            }
         }
 
-        // Update total price for the item if it still exists
-        if (userCart.items[itemIndex]) {
-            userCart.items[itemIndex].totalPrice = 
-                userCart.items[itemIndex].quantity * 
-                userCart.items[itemIndex].productId.salePrice;
-        }
+        userCart.items[itemIndex].totalPrice =
+            userCart.items[itemIndex].quantity * userCart.items[itemIndex].productId.salePrice;
 
         await userCart.save();
-        req.flash('success', 'Cart updated successfully');
-        return res.redirect('/cart');
 
+        res.redirect('/cart');
     } catch (error) {
-        console.error('Error in updateCartQuantity:', error);
         req.flash('error', 'Error updating cart quantity');
-        return res.redirect('/cart');
+        res.redirect('/cart');
     }
 };
+
 const removeFromCart = async (req, res) => {
     try {
         const { productId, size } = req.body;

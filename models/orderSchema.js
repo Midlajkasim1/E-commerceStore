@@ -10,7 +10,7 @@ const orderSchema = new mongoose.Schema({
    },
    orderedItems:[{
     product:{
-        type:Schema.Types.orderId,
+        type: Schema.Types.ObjectId,  // Changed from orderId to ObjectId
         ref:"Product",
         required:true
     },
@@ -57,7 +57,12 @@ const orderSchema = new mongoose.Schema({
     type:Boolean,
     default:false
 
-   }
+   },
+   paymentMethod: {
+    type: String,
+    required: true,
+    enum: ['COD']  
+}
 
 })
 

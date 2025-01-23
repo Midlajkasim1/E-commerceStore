@@ -5,8 +5,6 @@ const Review = require('../../models/reviewSchema');
 
 
 
-
-
 const productDetails = async (req,res)=>{
     try {
         const userId = req.session.user;
@@ -14,69 +12,57 @@ const productDetails = async (req,res)=>{
         const productId = req.query.id;
         const product = await Product.findById(productId).populate('category');
         const findcategory = product.category;
-        const categoryOffer = findcategory ?.categoryOffer || 0;
+        const categoryOffer = findcategory?.categoryOffer || 0;
         const productOffer = product.productOffer || 0;
         const totalOffer = categoryOffer + productOffer;
 
-
- // Fetch reviews for this product
+        // Fetch reviews for this product
         const reviews = await Review.find({ productId })
-        .populate('userId', 'name')
-        .sort({ createdAt: -1 });
+            .populate('userId', 'name')
+            .sort({ createdAt: -1 });
 
         // Calculate average rating
         const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
         const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(1) : 0;
         const totalReviews = reviews.length;
 
+        // Modified: Get all sizes with their stock status
+        const availableSizes = ['sizeS', 'sizeM', 'sizeL', 'sizeXL', 'sizeXXL'].map(sizeKey => ({
+            label: sizeKey.replace('size', ''), // Convert sizeS to S
+            stock: product.size[sizeKey] || 0,  // If size doesn't exist, stock is 0
+        }));
 
-        // Get available sizes (sizes with stock > 0)
-        const availableSizes = [];
-        for (const sizeKey of ['sizeS', 'sizeM', 'sizeL', 'sizeXL', 'sizeXXL']) {
-            if (product.size[sizeKey] > 0) {
-                availableSizes.push({
-                    label: sizeKey.replace('size', ''), // Convert sizeS to S
-                    stock: product.size[sizeKey],
-                });
-            }
-        }
+        const allProducts = await Product.find({category: findcategory});
 
-
-
-        const allProducts=await Product.find({category: findcategory})
-
-        const randomNum=new Set()
+        const randomNum = new Set();
         
-        while(randomNum.size<3){
-            const num=Math.floor(Math.random()*10)
-            if(num<=allProducts.length){
-                randomNum.add(num)
+        while(randomNum.size < 3){
+            const num = Math.floor(Math.random() * 10);
+            if(num <= allProducts.length){
+                randomNum.add(num);
             }
         }
 
-        const ranNum=Array.from(randomNum)                
+        const ranNum = Array.from(randomNum);                
          
-        res.render("productDetails",{
-            user:userData,
-            product:product,
-            quantity:product.quantity,
-            totalOffer:totalOffer,
-            category:findcategory,
-            ranNum:ranNum,
+        res.render("productDetails", {
+            user: userData,
+            product: product,
+            quantity: product.quantity,
+            totalOffer: totalOffer,
+            category: findcategory,
+            ranNum: ranNum,
             allProducts: allProducts,
-            availableSizes: availableSizes, 
-            reviews: reviews,              // Add reviews
-            averageRating: averageRating,  // Add average rating
-            totalReviews: totalReviews,    // Add total reviews count
-            messages: {}, // Pass an empty messages object by default
-
-
+            availableSizes: availableSizes,
+            reviews: reviews,
+            averageRating: averageRating,
+            totalReviews: totalReviews,
+            messages: req.flash() // Added flash messages handling
         });
 
     } catch (error) {
-        console.log("error for product details",error);
-        res.redirect('/pageNotFound')
-        
+        console.log("error for product details", error);
+        res.redirect('/pageNotFound');
     }
 }
 
