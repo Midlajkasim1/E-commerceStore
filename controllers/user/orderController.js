@@ -175,7 +175,6 @@ const getOrderMoreDetails = async (req, res) => {
          
     }
 }
-
 const cancelProductOrder = async (req, res) => {
     try {
         const { productId, orderId } = req.body;
@@ -191,7 +190,7 @@ const cancelProductOrder = async (req, res) => {
             return res.status(404).json({ success: false, message: "Order not found." });
         }
 
-        // Find the product in the ordered items
+        // Find the specific product in the ordered items
         const productItem = order.orderedItems.find(item => item.product.toString() === productId);
 
         if (!productItem) {
@@ -219,6 +218,22 @@ const cancelProductOrder = async (req, res) => {
             await product.save();
         }
 
+        // Update the overall order status based on the status of all products
+        const allProducts = order.orderedItems;
+        if (allProducts.every(item => item.status === "Delivered")) {
+            order.status = "Delivered";
+        } else if (allProducts.some(item => item.status === "Shipped")) {
+            order.status = "Shipped";
+        } else if (allProducts.some(item => item.status === "Processing")) {
+            order.status = "Processing";
+        } else if (allProducts.every(item => item.status === "Cancelled")) {
+            order.status = "Cancelled";
+        } else if (allProducts.some(item => item.status === "Returned")) {
+            order.status = "Returned";
+        } else {
+            order.status = "Pending";
+        }
+
         // Save the updated order
         await order.save();
 
@@ -229,7 +244,6 @@ const cancelProductOrder = async (req, res) => {
         return res.status(500).json({ success: false, message: "An error occurred while canceling the product." });
     }
 };
-
 
 const returnProductOrder = async (req, res) => {
     try {
@@ -272,6 +286,22 @@ const returnProductOrder = async (req, res) => {
             product.size[selectedSize] += productItem.quantity; // Restore stock
             product.quantity += productItem.quantity; // Restore total quantity
             await product.save();
+        }
+
+        // Update the overall order status based on the status of all products
+        const allProducts = order.orderedItems;
+        if (allProducts.every(item => item.status === "Delivered")) {
+            order.status = "Delivered";
+        } else if (allProducts.some(item => item.status === "Shipped")) {
+            order.status = "Shipped";
+        } else if (allProducts.some(item => item.status === "Processing")) {
+            order.status = "Processing";
+        } else if (allProducts.some(item => item.status === "Cancelled")) {
+            order.status = "Cancelled";
+        } else if (allProducts.some(item => item.status === "Returned")) {
+            order.status = "Returned";
+        } else {
+            order.status = "Pending";
         }
 
         // Save the updated order

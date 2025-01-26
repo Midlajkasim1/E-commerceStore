@@ -45,6 +45,6 @@ router.post('/products/editProduct/deleteImage/:id',adminCheck,productController
 router.get('/order',adminCheck,orderController.getOrder)
 router.get('/orderdetail/:id', adminCheck, orderController.getOrderDetails);
 router.post('/order/status-update/:id',adminCheck,orderController.updateStatus)
-router.post('/order/productStus')
+// router.post('/order/productStus')
 
 module.exports = router;

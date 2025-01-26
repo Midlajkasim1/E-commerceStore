@@ -42,7 +42,6 @@ const getOrder = async (req, res) => {
                 path: 'orderedItems.product',
                 select: 'name price' // Select specific product fields
             })
-
             .sort({ createOn: -1 })
             .skip(skip)
             .limit(limit);
@@ -57,10 +56,9 @@ const getOrder = async (req, res) => {
             totalPages: Math.ceil(totalOrders / limit),
             search: search,
             status: status,
-            user: req.user || req.session.user ,
+            user: req.user || req.session.user,
             successMessage: req.flash('err'),
         });
-
 
     } catch (error) {
         console.error('Error fetching orders:', error);
@@ -69,7 +67,7 @@ const getOrder = async (req, res) => {
             error: error
         });
     }
-}
+};
 const getOrderDetails = async (req, res) => {
     try {
         const orderId = req.params.id;
@@ -107,53 +105,77 @@ const getOrderDetails = async (req, res) => {
          
     }
 }
-        
-const updateStatus = async (req,res )=>{
+const updateStatus = async (req, res) => {
     try {
-        const orderId = req.params.id;
-        // console.log(orderId);
-        const {orderStatus} =req.body;
-        
-   const validStatus = ["Pending","Processing","Shipped","Delivered","Cancel","ReturnRequest","Returned"];
-   if(!validStatus.includes(orderStatus)){
-    req.flash('err','not correct status code');
-    res.redirect('/admin/orders');
-   }
+        const orderId = req.params.id; // Get the order ID from the URL
+        const { orderStatus, productId } = req.body; // Get the new status and product ID from the form
 
-    const order = await Order.findById(orderId);
-    if(!order){
-        req.flash('err','Order not found');
-        return res.redirect('/admin/order')
-    }
+        console.log("Order ID:", orderId); // Debugging
+        console.log("Product ID:", productId); // Debugging
+        console.log("Order Status:", orderStatus); // Debugging
 
-    const  hasCanceledOrReturnedProduct = order.orderedItems.some(item=>
-        item.status ==='Cancelled' || item.status === 'Returned'
-    );
+        // Validate the orderStatus
+        const validStatus = ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Return Request", "Returned"];
+        if (!validStatus.includes(orderStatus)) {
+            req.flash('err', 'Not a valid status code');
+            return res.redirect(`/admin/orderdetail/${orderId}`);
+        }
 
-    if ( hasCanceledOrReturnedProduct) {
-        req.flash('err', 'Cannot update status: Some products have been canceled or returned by the user.');
-        return res.redirect(`/admin/orderdetail/${orderId}`);
-    }
+        // Find the order by ID
+        const order = await Order.findById(orderId);
+        if (!order) {
+            req.flash('err', 'Order not found');
+            return res.redirect('/admin/orders');
+        }
 
+        // If productId is provided, update the status of the specific product
+        if (productId) {
+            const productToUpdate = order.orderedItems.find(item => item._id.toString() === productId);
+            if (!productToUpdate) {
+                req.flash('err', 'Product not found in the order');
+                return res.redirect(`/admin/orderdetail/${orderId}`);
+            }
 
+            // Check if the product is already cancelled or returned
+            if (productToUpdate.status === "Cancelled" || productToUpdate.status === "Returned") {
+                req.flash('err', 'Cannot update status: Product has already been cancelled or returned.');
+                return res.redirect(`/admin/orderdetail/${orderId}`);
+            }
 
+            // Update the status of the specific product
+            productToUpdate.status = orderStatus;
+        }
 
+        // Update the overall order status based on the product status
+        const allProducts = order.orderedItems;
+        if (allProducts.every(item => item.status === "Delivered")) {
+            order.status = "Delivered";
+        } else if (allProducts.some(item => item.status === "Out for Delivery")) {
+            order.status = "Out for Delivery";
+        } else if (allProducts.some(item => item.status === "Shipped")) {
+            order.status = "Shipped";
+        } else if (allProducts.some(item => item.status === "Processing")) {
+            order.status = "Processing";
+        } else if (allProducts.some(item => item.status === "Cancelled")) {
+            order.status = "Cancelled";
+        } else if (allProducts.some(item => item.status === "Returned")) {
+            order.status = "Returned";
+        } else {
+            order.status = "Pending";
+        }
 
- const newOrderStatus =   await Order.findByIdAndUpdate(
-          orderId,{$set:{status:orderStatus}},{new:true}
-   );
-   if (!newOrderStatus) {
-    req.flash('err', 'Order not found');
-    return res.redirect('/admin/order');
-}
-req.flash('err', 'Order status updated successfully');
-     res.redirect('/admin/order')
-        
+        // Save the updated order
+        await order.save();
+
+        req.flash('err', 'Status updated successfully');
+        return res.redirect('/admin/order'); // Redirect to the order listing page
+
     } catch (error) {
-        console.error("error",error)
+        console.error("Error updating status:", error);
+        req.flash('err', 'Failed to update status');
+        return res.redirect(`/admin/orderdetail/${req.params.id}`);
     }
 };
-
 module.exports={
     getOrder,
     getOrderDetails,

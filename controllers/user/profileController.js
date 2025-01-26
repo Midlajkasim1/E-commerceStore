@@ -11,13 +11,59 @@ const getUserProfile = async (req,res)=>{
         const addressData = await Address.findOne({userId: userId})
         res.render('profile',{
             user:userData,
-            userAddress:addressData
+            userAddress:addressData,
+            message:req.flash('')
         })
     } catch (error) {
         console.error('profile page not found',error);
         res.redirect('/pageNotFound')
     }
 }
+//
+const getEditProfile = async (req,res)=>{
+ try {
+    const userId = req.session.user;
+    const userData = await User.findById(userId);
+    res.render('edit-userProfile', {
+        user: userData,
+        message: req.flash('')
+    });
+ } catch (error) {
+    
+ }
+
+}
+
+const editProfile =async (req,res)=>{
+    try {
+        const userId = req.session.user;
+        const {name,phone} = req.body;
+        if (!name || !phone) {
+            req.flash('err', 'Name and phone are required.');
+            return res.redirect('/edit-profile');
+        }
+        const updateUser = await User.findByIdAndUpdate(userId,
+            {name,phone},
+            {new:true}
+        )
+        if (!updateUser) {
+            req.flash('err', 'User not found.');
+            return res.redirect('/edit-profile');
+        }
+        req.flash('success', 'Profile updated successfully.');        res.redirect('/userProfile');
+
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        req.flash('err', 'Failed to update profile. Please try again.');
+        res.redirect('/edit-profile');
+    }
+}
+
+
+
+
+
+
 
 //password
 const changePassword = async (req, res) => {
@@ -26,49 +72,48 @@ const changePassword = async (req, res) => {
 
         // Validate input
         if (!currentPassword || !newPassword || !confirmNewPassword) {
-            return res.status(400).send('All fields are required.');
+            req.flash('err', 'All fields are required.');
+            return res.redirect('/userProfile');
         }
+
         if (newPassword !== confirmNewPassword) {
-            return res.status(400).send('New password and confirm password must match.');
+            req.flash('err', 'New password and confirm password must match.');
+            return res.redirect('/userProfile');
         }
 
         // Check if user is logged in
         if (!req.session.user) {
-            return res.status(401).send('You must be logged in to change your password.');
+            req.flash('err', 'You must be logged in to change your password.');
+            return res.redirect('/login');
         }
 
         // Find user in the database
-        console.log('Session Data:', req.session); // Debugging session content
-        const user = await User.findById(req.session.user); // Using req.session.user
+        const user = await User.findById(req.session.user);
         if (!user) {
-            return res.status(404).send('User not found.');
+            req.flash('err', 'User not found.');
+            return res.redirect('/userProfile');
         }
 
         // Check current password
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
-            return res.status(401).send('Current password is incorrect.');
+            req.flash('err', 'Current password is incorrect.');
+            return res.redirect('/userProfile');
         }
 
         // Hash new password and update
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
         await user.save();
-        console.log("password updated");
-        
 
-        res.redirect('/userProfile'); // Redirect to profile page after success
+        req.flash('success', 'Password updated successfully.');
+        return res.redirect('/userProfile');
     } catch (error) {
         console.error('Error changing password:', error);
-        res.status(500).send('Server error. Please try again later.');
+        req.flash('err', 'Server error. Please try again later.');
+        return res.redirect('/userProfile');
     }
 };
-
-
-
-
-
-
 
 
 
@@ -291,6 +336,8 @@ const deleteAddress = async (req, res) => {
 };
 module.exports={
     getUserProfile,
+    getEditProfile,
+    editProfile,
     getAddress,
     postAddAdress,
     getEditAddress,

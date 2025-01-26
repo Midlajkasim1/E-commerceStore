@@ -51,6 +51,8 @@ router.get('/productDetails',productController.productDetails);
 
 //profile management
 router.get('/userProfile',userAuth,profileController.getUserProfile);
+router.get('/edit-userProfile',userAuth,profileController.getEditProfile);
+router.post('/edit-userProfile',userAuth,profileController.editProfile);
 
 
 
