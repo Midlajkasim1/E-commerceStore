@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+   <style>
+    
+
+/* Main Content Styles */
+.main-content {
+    flex: 1;
+    padding: 22px !important;
+    margin-top: 45px !important;
+}
+  
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    margin-right: 20px;
+}
+
+.search-bar input {
+    background: transparent;
+    border: none;
+    color: #8b8b8b;
+    padding: 8px;
+    width: 200px;
+    font-size: 0.9rem;
+}
+
+.search-bar i {
+    color: #8b8b8b;
+}
+
+.add-user-btn {
+    background-color: #4ade80;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Table Styles */
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #1e2227;
+    border-radius: 8px;
+}
+
+.users-table th {
+    text-align: left;
+    padding: 15px;
+    color: #8b8b8b;
+    font-weight: normal;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #2d3035;
+}
+
+.users-table td {
+    padding: 15px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #2d3035;
+}
+
+.user-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+}
+
+.block-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.unblock-btn {
+    background-color: #4ade80;
+    color: black;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.action-icon {
+    color: #8b8b8b;
+    margin-left: 15px;
+    cursor: pointer;
+}
+
+/* Pagination Styles */
+.pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 20px;
+    gap: 5px;
+}
+
+.showing-text {
+    color: #8b8b8b;
+    font-size: 0.9rem;
+    margin-right: auto;
+}
+
+.page-item {
+    padding: 8px 12px;
+    color: #8b8b8b;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.page-item.active {
+    background-color: #4ade80;
+    color: black;
+    border-radius: 5px;
+}
+#msg{
+color: green;
+}
+
+
+   </style>
+</head>
+<body>
+    
+    <div class="container">
+        <div class="top-header">
+            <div class="profile-section">
+                <img src="/images/admin-pro.jpeg" alt="Admin">
+            </div>
+        </div>
+        <!-- Sidebar -->
+        <%- include("../../views/partials/admin/header") %>
+
+        <!-- Main Content -->
+       
+        <div class="main-content">
+            <div class="header">
+                <h1>Orders</h1>
+                <% if (successMessage && successMessage.length > 0) { %>
+                          <p id="msg"><%=successMessage %></p>
+                    <% } %>
+                <div class="search-bar">
+                    <form action="" method="get">
+                        <input type="text" name="search" placeholder="Search orders" value="">
+                        <i class="fas fa-search"></i>
+                    </form>
+                </div>
+            
+            </div>
+
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>USER NAME</th>
+                        <th>Date</th>
+                        <th>Total Amount</th>
+                        <th>Status</th>
+                        <th>Payment Method</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% orders.forEach(function(order) { %>
+                    <tr>
+                        <td><%= order.orderId %></td>
+                        <td><%= order.userId ? order.userId.name : 'N/A' %></td>
+                        <td><%= order.createOn.toLocaleDateString() %></td>
+                        <td>₹<%= order.finalAmount.toFixed(2) %></td>
+                        <td>
+                            <span class="btn btn-<%= 
+                                order.status === 'Pending' ? 'warning' :
+                                order.status === 'Processing' ? 'info' :
+                                order.status === 'Shipped' ? 'primary' :
+                                order.status === 'Delivered' ? 'success' :
+                                order.status === 'Cancel' ? 'danger' :
+                                order.status === 'Return Request' ? 'secondary' :
+                                'dark'
+                            %>">
+                                <%= order.status %>
+                            </span>
+                        </td>
+                        <td>COD</td>
+                        <td>
+                            <a href="/admin/orderdetail/<%= order._id %>" class="btn btn-white border btn-sm">View</a>
+                        </td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+            <div class="pagination">
+                <span class="showing-text">
+                    SHOWING <%= ((currentPage - 1) * 10) + 1 %> - 
+                    <%= Math.min(currentPage * 10, orders.length) %>
+                </span>
+                
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                    <div class="page-item <%= i === currentPage ? 'active' : '' %>">
+                        <a href="/admin/orders?page=<%= i %>&search=<%= search %>"><%= i %></a>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    </div>
+</body>
+</html>

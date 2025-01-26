@@ -17,34 +17,6 @@
             color: #666;
         }
 
-        .sidebar {
-            position: sticky;
-            top: 20px;
-        }
-
-        .nav-link {
-            color: #2c3e50;
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
-            background-color: #f8f9fa;
-            color: #088178;
-            padding-left: 25px;
-        }
-
-        .nav-link.active {
-            background-color: #edf7f7;
-            color: #088178;
-        }
-
-        .nav-link i {
-            margin-right: 10px;
-        }
-
         .orders-card {
             background: #ffffff;
             border-radius: 12px;
@@ -104,47 +76,8 @@
                 margin-bottom: 30px;
             }
         }
+
         .tracking-timeline {
-        position: relative;
-        padding-left: 50px;
-    }
-
-    .tracking-timeline::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 2px;
-        height: 100%;
-        background-color: #e9ecef;
-    }
-
-    .tracking-item {
-        position: relative;
-        padding-bottom: 20px;
-    }
-
-    .tracking-item::before {
-        content: '';
-        position: absolute;
-        left: -54px;
-        top: 0;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background-color: #888;
-    }
-
-    .tracking-item.completed::before {
-        background-color: #28a745;
-    }
-
-    .tracking-item.pending::before {
-        background-color: #ffc107;
-    }
-
-      /* Previous styles remain the same */
-      .tracking-timeline {
             position: relative;
             padding-left: 50px;
         }
@@ -189,11 +122,93 @@
             padding: 5px 12px;
             font-size: 0.8rem;
         }
+
+        .orders-card .card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .orders-card .card-body {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .orders-card .card-body .col-md-4 {
+            flex: 0 0 33.333333%;
+            max-width: 33.333333%;
+            padding: 15px;
+        }
+
+        @media (max-width: 767px) {
+            .orders-card .card-body .col-md-4 {
+                flex: 0 0 50%;
+                max-width: 50%;
+            }
+        }
+
+        @media (max-width: 575px) {
+            .orders-card .card-body .col-md-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+        }
+
+        /* Additional styles for proper alignment and line cap */
+        .order-item .row {
+            align-items: center;
+        }
+
+        .order-item .col-md-2,
+        .order-item .col-md-1 {
+            display: flex;
+            align-items: center;
+        }
+
+        .order-item .col-md-2 img {
+            margin-right: 10px;
+        }
+
+        .order-item .col-md-2 h6,
+        .order-item .col-md-2 p {
+            margin: 0;
+        }
+
+        .order-item .col-md-2:last-child {
+            justify-content: flex-end;
+        }
+
+        .order-item .order-status {
+            margin-right: 10px;
+        }
+
+        .order-item .btn {
+            white-space: nowrap;
+        }
+
+        /* Line cap for more than two products */
+        .order-item .product-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .order-item .product-list .product-item {
+            flex: 1 1 calc(50% - 10px);
+            display: flex;
+            align-items: center;
+        }
+
+        @media (max-width: 767px) {
+            .order-item .product-list .product-item {
+                flex: 1 1 100%;
+            }
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 </head>
 <body>
-    <%-include("../../views/partials/user/header")%>
+    <%- include("../../views/partials/user/header") %>
 
     <div class="container my-4">
         <!-- Breadcrumb -->
@@ -204,197 +219,72 @@
         </div>
 
         <div class="row mt-4">
-            <!-- Sidebar (copied from profile page) -->
-                <%-include("../../views/partials/user/profileSidebar")%>
-
+            <!-- Sidebar -->
+            <%- include("../../views/partials/user/profileSidebar") %>
 
             <!-- Orders Content -->
             <div class="col-lg-9">
                 <div class="orders-card">
                     <h4 class="mb-4">My Orders</h4>
-                    
-                    <!-- Sample Order Item -->
+
                     <% if (orders && orders.length > 0) { %>
                         <% orders.forEach(function(order) { %>
-                            <div class="card mb-3">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">Order #<%= order.orderId %></h5>
-                                    <span class="badge <%= order.statusClass %> order-status-badge">
-                                        <%= order.status %>
-                                    </span>
-                                </div>
+                            <div class="card mb-3 order-item">
                                 <div class="card-body">
-                                    <div class="row">
-                                        <!-- Order Items -->
-                                        <div class="col-md-4">
-                                            <% order.orderedItems.forEach(function(item) { %>
-                                                <div class="d-flex mb-2">
-                                                    <img 
-                                                    src="<%= item.product.images && item.product.images.length > 0 ? item.product.images[0] : '/path/to/default/image.jpg' %>" 
-                                                    alt="<%= item.product.name %>" 
-                                                    class="img-thumbnail me-3" 
-                                                    style="width: 80px; height: 80px; object-fit: cover;"
-                                                >
-                                                    <div>
-                                                        <h6 class="mb-1"><%= item.product.name %></h6>
-                                                        <p class="mb-0">
-                                                            Qty: <%= item.quantity %> | 
-                                                            Size: <%= item.size %> | 
-                                                            ₹<%= item.price %>
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            <% }); %>
-                                        </div>
-            
-                                        <!-- Order Tracking -->
-                                        <div class="col-md-4">
-                                            <h6>Order Tracking</h6>
-                                            <div class="tracking-timeline">
-                                                <% 
-                                                const trackingSteps = [
-                                                    { title: 'Order Placed', completed: true },
-                                                    { title: 'Processing', completed: order.status !== 'Pending' },
-                                                    { title: 'Shipped', completed: ['Shipped', 'Delivered'].includes(order.status) },
-                                                    { title: 'Out for Delivery', completed: order.status === 'Delivered' },
-                                                    { title: 'Delivered', completed: order.status === 'Delivered' }
-                                                ];
-                                                
-                                                trackingSteps.forEach(function(step, index) { %>
-                                                    <div class="tracking-item <%= step.completed ? 'completed' : '' %>">
-                                                        <h6><%= step.title %></h6>
+                                    <div class="row align-items-center">
+                                        <!-- Product List -->
+                                        <div class="col-md-8">
+                                            <div class="product-list">
+                                                <% order.orderedItems.slice(0, 2).forEach(function(item) { %>
+                                                    <div class="product-item">
+                                                        <img 
+                                                            src="/uploads/re-image/<%= item.product.productImage[0] %>" 
+                                                            alt="<%= item.product.name %>" 
+                                                            class="img-thumbnail" 
+                                                            style="width: 80px; height: 80px; object-fit: cover;"
+                                                        >
+                                                        <div>
+                                                            <h6 class="mb-0"><%= item.product.productName %></h6>
+                                                            <p class="mb-0">Qty: <%= item.quantity %> | Size: <%= item.size %></p>
+                                                        </div>
                                                     </div>
                                                 <% }); %>
+                                                <% if (order.orderedItems.length > 2) { %>
+                                                    <div class="product-item">
+                                                        <p class="mb-0 text-muted">+<%= order.orderedItems.length - 2 %> more</p>
+                                                    </div>
+                                                <% } %>
                                             </div>
                                         </div>
-            
-                    </div>
 
+                                        <!-- Price -->
+                                        <div class="col-md-2">
+                                            <p class="fw-bold mb-0">₹<%= order.finalAmount %></p>
+                                        </div>
 
-                     <!-- Order Details -->
-                     <div class="col-md-4">
-                        <h6>Order Summary</h6>
-                        <p class="mb-1"><strong>Order Date:</strong> <%= order.formattedDate %></p>
-                        <p class="mb-1"><strong>Total Amount:</strong> ₹<%= order.finalAmount %></p>
-                        <% if (order.trackingInfo && order.trackingInfo.trackingNumber) { %>
-                            <p class="mb-1">
-                                <strong>Tracking Number:</strong> 
-                                <%= order.trackingInfo.trackingNumber %>
-                            </p>
-                        <% } %>
-                    </div>
+                                        <!-- Order Status and Details Button -->
+                                        <div class="col-md-2 d-flex align-items-center justify-content-end">
+                                            <span class="order-status <%= order.status.toLowerCase() %>">
+                                                <%= order.status %>
+                                            </span>
+                                            <a href="/details/<%= order._id %>" class="btn btn-outline-primary btn-sm ms-2">
+                                                Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="alert alert-info">
+                            You have no orders yet.
+                        </div>
+                    <% } %>
                 </div>
             </div>
         </div>
-    <% }); %>
-<% } else { %>
-    <div class="alert alert-info">
-        You have no orders yet.
     </div>
-<% } %>
-</div>
-                
-                </div>
-            </div>
 
-
-
-
-
-        </div>
-    </div>
-  </div>
-  </div>
-    <%-include("../../views/partials/user/footer")%>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-    const orderDetailsModal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
-    
-    // Function to populate modal with order details
-    function showOrderDetails(order) {
-        // Populate product details
-        document.getElementById('orderNumberDisplay').textContent = order.orderNumber;
-        document.getElementById('productImage').src = order.productImage;
-        document.getElementById('productName').textContent = order.productName;
-        document.getElementById('productQuantity').textContent = order.quantity;
-        document.getElementById('productSize').textContent = order.size;
-        document.getElementById('productPrice').textContent = order.price.toLocaleString('en-IN');
-
-        // Populate tracking timeline
-        const timelineContainer = document.getElementById('trackingTimeline');
-        timelineContainer.innerHTML = ''; // Clear previous content
-        
-        order.trackingSteps.forEach((step, index) => {
-            const stepElement = document.createElement('div');
-            stepElement.classList.add('tracking-item');
-            
-            // Add completed/pending classes based on order status
-            if (index < order.currentStep) {
-                stepElement.classList.add('completed');
-            } else if (index === order.currentStep) {
-                stepElement.classList.add('pending');
-            }
-
-            stepElement.innerHTML = `
-                <h6>${step.title}</h6>
-                <p class="text-muted">${step.timestamp || 'Not yet processed'}</p>
-            `;
-
-            timelineContainer.appendChild(stepElement);
-        });
-
-        // Populate shipping details
-        document.getElementById('shippingAddress').innerHTML = `
-            ${order.shippingName}<br>
-            ${order.shippingAddress}<br>
-            ${order.shippingCity}, ${order.shippingState} ${order.shippingPincode}<br>
-            Contact: ${order.shippingPhone}
-        `;
-        document.getElementById('trackingNumber').textContent = order.trackingNumber;
-        document.getElementById('courierName').textContent = order.courierName;
-
-        // Show the modal
-        orderDetailsModal.show();
-    }
-
-    // Attach event listeners to all view details buttons
-    document.querySelectorAll('.view-order-details').forEach(button => {
-        button.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            // Sample order data (replace with actual data retrieval)
-            const orderData = {
-                orderNumber: '12345',
-                productImage: '/api/placeholder/250/250',
-                productName: 'Stylish Winter Jacket',
-                quantity: 1,
-                size: 'L',
-                price: 2999,
-                currentStep: 1,
-                trackingSteps: [
-                    { title: 'Order Placed', timestamp: '20 Jan 2024, 10:30 AM' },
-                    { title: 'Order Confirmed', timestamp: '20 Jan 2024, 11:15 AM' },
-                    { title: 'Shipped', timestamp: null },
-                    { title: 'Out for Delivery', timestamp: null },
-                    { title: 'Delivered', timestamp: null }
-                ],
-                shippingName: 'John Doe',
-                shippingAddress: '123 Main Street',
-                shippingCity: 'Cityville',
-                shippingState: 'State',
-                shippingPincode: '12345',
-                shippingPhone: '+91 9876543210',
-                trackingNumber: '#TRK987654321',
-                courierName: 'SpeedPost Express'
-            };
-
-            showOrderDetails(orderData);
-        });
-    });
-});
-</script>
-
+    <%- include("../../views/partials/user/footer") %>
 </body>
 </html>

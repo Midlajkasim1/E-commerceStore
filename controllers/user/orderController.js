@@ -1,6 +1,7 @@
 const Order = require('../../models/orderSchema');
 const Cart = require('../../models/cartSchema');
 const Product = require('../../models/productSchema');
+const Address = require('../../models/addressSchema');
 const { v4: uuidv4 } = require('uuid');
 
 const placeOrder = async (req, res) => {
@@ -114,44 +115,180 @@ const placeOrder = async (req, res) => {
 
 const getOrderDetails = async (req, res) => {
     try {
-        const userId = req.session.user;
-        
-        const orders = await Order.find({ userId })
-            .populate({
-                path: 'orderedItems.product',
-                model: 'Product',
-                select: 'name images price size'  // Explicitly select fields
-            })
-            .populate('address')  // Ensure address is populated
+        const userId = req.session.user;  // This appears to be the ID string directly
+        // console.log('Getting addresses for user ID:', userId);        
+        const orders = await Order.find({ userId: userId })
+            .populate('orderedItems.product')  // Ensure address is populated
             .sort({ createOn: -1 });
+            console.log(orders);
+            
 
         res.render('order', { 
-            orders: orders.map(order => ({
-                ...order.toObject(),
-                formattedDate: order.createOn.toLocaleDateString(),
-                statusClass: getStatusClass(order.status)
-            }))
+            orders: orders,
+            user: req.user || req.session.user  // Add this line explicitly
+
         });
     } catch (error) {
         console.error('Error fetching order details:', error);
         res.redirect('/pageNotFound');
     }
 };
-// Helper function to map status to CSS class
-const getStatusClass = (status) => {
-    const statusMap = {
-        'Pending': 'bg-warning',
-        'Processing': 'bg-info',
-        'Shipped': 'bg-primary',
-        'Delivered': 'bg-success',
-        'Cancel': 'bg-danger',
-        'Return Request': 'bg-secondary',
-        'Returned': 'bg-dark'
-    };
-    return statusMap[status] || 'bg-secondary';
+
+
+const getOrderMoreDetails = async (req, res) => {
+    try {
+        const userId = req.session.user;
+
+        const orderId = req.params.id;
+        console.log("order id is :",orderId);
+        const orders = await Order.findById(orderId).populate('orderedItems.product') ;
+
+
+        // console.log('address id is ',orders.address);
+        const address = await Address.findOne({
+            "address._id": orders.address,  
+          });
+        //   console.log('new addr',address)
+
+          let selectedAddress;
+
+    if (address) {
+      selectedAddress = address.address.find((value) => value._id.toString() === orders.address.toString());
+    //   console.log("Matched Address:", selectedAddress);
+      return res.render('viewOrderDetails',{
+        user: req.user || req.session.user ,
+        order:orders,
+        address:selectedAddress,
+        message:req.flash('err')
+
+      })
+
+
+    } else {
+      console.log("No address found");
+    }
+    console.log(orders)
+        
+    }catch{
+       
+        res.status(500).send('server error');
+         
+    }
+}
+
+const cancelProductOrder = async (req, res) => {
+    try {
+        const { productId, orderId } = req.body;
+
+        if (!productId || !orderId) {
+            return res.status(400).json({ success: false, message: "Order ID and Product ID are required." });
+        }
+
+        // Find the order
+        const order = await Order.findById(orderId);
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found." });
+        }
+
+        // Find the product in the ordered items
+        const productItem = order.orderedItems.find(item => item.product.toString() === productId);
+
+        if (!productItem) {
+            return res.status(404).json({ success: false, message: "Product not found in the order." });
+        }
+
+        // Check if the product is already canceled
+        if (productItem.status === 'Cancelled') {
+            return res.status(400).json({ success: false, message: "Product is already canceled." });
+        }
+
+        // Update the product status to 'Cancelled'
+        productItem.status = 'Cancelled';
+
+        // Update the product stock
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ success: false, message: "Product not found." });
+        }
+
+        const selectedSize = `size${productItem.size}`; // Convert size to the correct format (e.g., sizeM)
+        if (product.size && product.size[selectedSize] !== undefined) {
+            product.size[selectedSize] += productItem.quantity; // Restore stock
+            product.quantity += productItem.quantity; // Restore total quantity
+            await product.save();
+        }
+
+        // Save the updated order
+        await order.save();
+
+        return res.status(200).json({ success: true, message: "Product canceled successfully.", order });
+
+    } catch (error) {
+        console.error("Error while canceling the product:", error);
+        return res.status(500).json({ success: false, message: "An error occurred while canceling the product." });
+    }
+};
+
+
+const returnProductOrder = async (req, res) => {
+    try {
+        const { productId, orderId } = req.body;
+
+        if (!productId || !orderId) {
+            return res.status(400).json({ success: false, message: "Order ID and Product ID are required." });
+        }
+
+        // Find the order
+        const order = await Order.findById(orderId);
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found." });
+        }
+
+        // Find the product in the ordered items
+        const productItem = order.orderedItems.find(item => item.product.toString() === productId);
+
+        if (!productItem) {
+            return res.status(404).json({ success: false, message: "Product not found in the order." });
+        }
+
+        // Check if the product is already returned
+        if (productItem.status === 'Returned') {
+            return res.status(400).json({ success: false, message: "Product is already returned." });
+        }
+
+        // Update the product status to 'Returned'
+        productItem.status = 'Returned';
+
+        // Update the product stock
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ success: false, message: "Product not found." });
+        }
+
+        const selectedSize = `size${productItem.size}`; // Convert size to the correct format (e.g., sizeM)
+        if (product.size && product.size[selectedSize] !== undefined) {
+            product.size[selectedSize] += productItem.quantity; // Restore stock
+            product.quantity += productItem.quantity; // Restore total quantity
+            await product.save();
+        }
+
+        // Save the updated order
+        await order.save();
+
+        return res.status(200).json({ success: true, message: "Product return request submitted successfully.", order });
+
+    } catch (error) {
+        console.error("Error while returning the product:", error);
+        return res.status(500).json({ success: false, message: "An error occurred while returning the product." });
+    }
 };
 
 module.exports = {
     placeOrder,
-    getOrderDetails
+    getOrderDetails,
+    getOrderMoreDetails,
+    cancelProductOrder,
+    returnProductOrder
 };

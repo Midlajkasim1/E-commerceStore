@@ -3,7 +3,8 @@ const router = express.Router();
 const adminController = require('../controllers/admin/adminController');
 const customerController = require('../controllers/admin/customerController');
  const categoryController = require('../controllers/admin/categoryController');
- const productController = require('../controllers/admin/productController')
+ const productController = require('../controllers/admin/productController');
+ const orderController = require('../controllers/admin/orderController');
 const {userAuth,adminAuth,adminCheck} = require("../middlewares/auth");
 const multer = require('multer');
 const storage = require('../helpers/multer');
@@ -38,7 +39,12 @@ router.get('/products/blockProduct',adminCheck,productController.blockProduct);
 router.get('/products/unblockProduct',adminCheck,productController.unblockProduct)
 router.get('/products/editProduct/:id',adminCheck,productController.getEditProduct)
 router.post('/products/editProduct/:id',adminCheck,uploads.array("images",4),productController.editProduct);
-router.post('/products/editProduct/deleteImage/:id',adminCheck,productController.deleteSingle)
+router.post('/products/editProduct/deleteImage/:id',adminCheck,productController.deleteSingle);
 
+//order
+router.get('/order',adminCheck,orderController.getOrder)
+router.get('/orderdetail/:id', adminCheck, orderController.getOrderDetails);
+router.post('/order/status-update/:id',adminCheck,orderController.updateStatus)
+router.post('/order/productStus')
 
 module.exports = router;

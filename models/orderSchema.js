@@ -29,7 +29,12 @@ const orderSchema = new mongoose.Schema({
      },
      size: {
         type: String
-     }
+     },
+     status: { 
+        type: String,
+        default: "Pending",
+        enum: ["Pending", "Cancelled", "Returned"]
+    }
     }],
     totalPrice: {
       type: Number,
@@ -52,7 +57,11 @@ const orderSchema = new mongoose.Schema({
     status: {
      type: String,
      required: true,
-     enum: ["Pending","Processing","Shipped","Delivered","Cancel","Return Request","Returned"]
+     enum: ["Pending","Processing","Shipped","Out for Delivery","Delivered","Cancel","Return Request","Returned"]
+    },
+    paymentMethod: {
+        type: String,
+        required: true, 
     },
     createOn: {
      type: Date,

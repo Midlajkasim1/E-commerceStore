@@ -96,5 +96,11 @@ router.post('/place-order', userAuth, ordercontroller.placeOrder);
 
 //order
 router.get('/profile/order',userAuth,ordercontroller.getOrderDetails)
-// router.get('/details/:orderId',userAuth,ordercontroller.getOrderDetails);
+router.get('/details/:id',userAuth,ordercontroller.getOrderMoreDetails);
+router.post('/order/cancel-product',userAuth,ordercontroller.cancelProductOrder);
+router.post('/order/return-product',userAuth,ordercontroller.returnProductOrder);
+
+
+
+
 module.exports= router;

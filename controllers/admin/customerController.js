@@ -8,7 +8,6 @@ const customerInfo = async (req, res) => {
     
     const limit = 10;  // Define your limit (e.g., 10 users per page)
 
-    // Query the database for users matching the search term and pagination
     const userData = await User.find({
       isAdmin: false,
       $or: [
@@ -38,7 +37,7 @@ if(req.session.admin){
   
   res.render('customers', { 
     data: userData, 
-    search: search,                          // Pass search term to the view
+    search: search,                          
     totalPages: totalPages, 
     currentPage: page 
   });
