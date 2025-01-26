@@ -142,7 +142,7 @@
             <div class="heading_s1">
                 <h3>Email Verification Page</h3>
             </div>
-            <form id="otpForm" action="/resetEmail-otp" method="post" onsubmit="return validateOTPForm()">
+            <form id="otpForm" action="/resetEmail-otp" method="post" onsubmit="return validateOTPForm(event)">
                 <div class="form-group">
                     <label for="otp">Enter OTP:</label>
                     <input type="text" id="otp" name="otp" class="form-control" required maxlength="6" pattern="\d*" />
@@ -160,9 +160,9 @@
                 </div>
               
             </form>
-            <div class="text-muted text-center pt-25">
+            <!-- <div class="text-muted text-center pt-25">
                 Already verified? <a class="text-decoration-none"  href="/login">Login now</a>
-            </div>
+            </div> -->
         </div>
     </div>
 
@@ -188,7 +188,7 @@
         }
         startTimer();
 
-        function validateOTPForm() {
+        function validateOTPForm(event) {
             const otpInput = document.getElementById("otp").value;
             $.ajax({
                 type: "POST",

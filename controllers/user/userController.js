@@ -424,66 +424,88 @@ const resetPassword = async (req, res) => {
 const loadShoppingPage = async (req, res) => {
     try {
         const user = req.session.user;
-        const userData = await User.findOne({_id: user});
-        const categories = await Category.find({isListed: true});
-        const categoriesIds = categories.map((category) => category._id.toString());
-        const page = parseInt(req.query.page) || 1;
-        const sort = req.query.sort || 'default';
-        const limit = 9;
-        const skip = (page - 1) * limit;
+        const userData = await User.findOne({ _id: user });
+        const categories = await Category.find({ isListed: true }).lean();
+        const categoriesIds = categories.map(category => category._id.toString());
 
-        // Base query
+        // Get query parameters
+        const search = req.query.query || ""; // Global search query
+        const selectedCategory = req.query.category || ""; // Selected category
+        const sort = req.query.sort || "default"; // Sorting option
+        const page = parseInt(req.query.page) || 1; // Pagination
+        const limit = 9; // Items per page
+        const skip = (page - 1) * limit;
+        const gt = parseFloat(req.query.gt) || 0; // Price greater than
+        const lt = parseFloat(req.query.lt) || Infinity; // Price less than
+
+        // Base query for products
         const baseQuery = {
             isBlocked: false,
-            category: {$in: categoriesIds},
-            quantity: {$gt: 0},
+            quantity: { $gt: 0 },
         };
+
+        // Add search filter if a search query is provided
+        if (search) {
+            baseQuery.productName = { $regex: search, $options: "i" }; // Case-insensitive search
+        }
+
+        // Add category filter if a category is selected
+        if (selectedCategory) {
+            baseQuery.category = selectedCategory;
+        } else {
+            baseQuery.category = { $in: categoriesIds }; // Search across all categories
+        }
+
+        // Add price filter if price range is provided
+        if (req.query.gt || req.query.lt) {
+            baseQuery.salePrice = { $gt: gt, $lt: lt };
+        }
 
         // Determine sort options
         let sortOption = {};
-        switch(sort) {
-            case 'priceHighToLow':
+        switch (sort) {
+            case "priceHighToLow":
                 sortOption = { salePrice: -1 };
                 break;
-            case 'priceLowToHigh':
+            case "priceLowToHigh":
                 sortOption = { salePrice: 1 };
                 break;
-            case 'nameAtoZ':
+            case "nameAtoZ":
                 sortOption = { productName: 1 };
                 break;
-            case 'nameZtoA':
+            case "nameZtoA":
                 sortOption = { productName: -1 };
                 break;
             default:
-                sortOption = { createdOn: -1 };
+                sortOption = { createdOn: -1 }; // Default sorting by newest
         }
 
-        // Get products with sorting
+        // Fetch products with pagination and sorting
         const products = await Product.find(baseQuery)
             .sort(sortOption)
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
 
         const totalProducts = await Product.countDocuments(baseQuery);
-        const totalPages = Math.ceil(totalProducts/limit);
+        const totalPages = Math.ceil(totalProducts / limit);
 
-        const categoriesWithIds = categories.map((category) => ({
-            _id: category._id,
-            name: category.name
-        }));
-
-        res.render('shop', {
+        // Render the shop page with the results
+        res.render("shop", {
             user: userData,
-            products: products,
-            category: categoriesWithIds,
-            totalProducts: totalProducts,
+            products,
+            categories,
+            totalPages,
             currentPage: page,
-            totalPages: totalPages,
+            search,
+            selectedCategory,
             currentSort: sort,
-
+            gt, // Pass price range to the view
+            lt,
         });
     } catch (error) {
-        res.redirect('/pageNotfound');
+        console.error("Error loading the shop page:", error);
+        res.redirect("/pageNotFound");
     }
 };
  //
@@ -603,134 +625,157 @@ const loadShoppingPage = async (req, res) => {
         
     }
  }
- //
- const searchProducts = async (req,res)=>{
+ // products
+ const searchProducts = async (req, res) => {
     try {
         const user = req.session.user;
-        const userData = await User.findOne({_id:user});
-        const search = req.body.query || ""; 
-        
-        const categories = await Category.find({isListed:true}).lean();
-        const categoriesIds = categories.map(category=>category._id.toString());
-        let searchResult = [];
-        if(req.session.filteredProducts && req.session.filteredProducts.length>0){
-            searchResult = req.session.filteredProducts.filter(product=>{
-              product.productName.toLowerCase().includes(search.toLowerCase())  
-            })
-        }else{
-            searchResult = await Product.find({
-                productName:{$regex:".*"+search+".*",$options:"i"},
-                isBlocked:false,
-                quantity:{$gt:0},
-                category:{$in:categoriesIds}
-            })
+        const search = req.body.query || ""; // Search query
+        const selectedCategory = req.query.category || req.body.category || ""; // Selected category (from query or body)
+        const currentPage = parseInt(req.query.page) || 1; // Current page for pagination
+        const itemsPerPage = 6; // Number of items per page
+
+        // Fetch user data if logged in
+        const userData = user ? await User.findOne({ _id: user }).lean() : null;
+
+        // Fetch all listed categories
+        const categories = await Category.find({ isListed: true }).lean();
+        const categoriesIds = categories.map(category => category._id.toString());
+
+        // Build the base query
+        const baseQuery = {
+            productName: { $regex: search, $options: "i" }, // Case-insensitive search
+            isBlocked: false,
+            quantity: { $gt: 0 },
+        };
+
+        // Add category filter if a category is selected
+        if (selectedCategory) {
+            baseQuery.category = selectedCategory; // Filter by selected category
+        } else {
+            baseQuery.category = { $in: categoriesIds }; // Search across all categories
         }
-        searchResult.sort((a,b)=>new Date(b.createdOn)-new Date(a.createdOn));
-        let itemsPerPage = 6;
-        let currentPage = parseInt(req.query.page) || 1;
-        let startIndex = (currentPage-1)*itemsPerPage;
-        let endIndex = startIndex + itemsPerPage;
-        let totalPages = Math.ceil(searchResult.length/itemsPerPage);
-        const currentProduct = searchResult.slice(startIndex,endIndex);
-        res.render('shop',{
-            search:search,
-            user:userData,
-            products:currentProduct,
-            category:categories,
+
+        // Fetch products with pagination and sorting
+        const totalProducts = await Product.countDocuments(baseQuery);
+        const totalPages = Math.ceil(totalProducts / itemsPerPage);
+
+        const products = await Product.find(baseQuery)
+            .sort({ createdOn: -1 }) // Sort by creation date (newest first)
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage)
+            .lean();
+
+        // Render the shop page with the results
+        res.render('shop', {
+            search,
+            user: userData,
+            products,
+            category: categories,
             totalPages,
             currentPage,
-            count: searchResult.length,
-
-        })
-
-    } catch (error) {
-        console.log("error:",error);
-        res.redirect('/pageNotFound');
-    }
- }
- //phone
-
-
- //email change
- 
- const getchangeEmail = async (req,res) =>{
-    try {
-        res.render('changeEmail',{message:req.flash('err')})
-    } catch (error) {
-        console.error('profile page not found');
-        res.redirect('/pageNotFound')
-
-    }
-}
-
-const changeEmailValid = async (req, res) => {
-    try {
-        const { email } = req.body;
-        console.log("Entered email:", email);
-        
-        // Retrieve the logged-in user's data from the session
-        const currentUser = await User.findById(req.session.user);
-        if (!currentUser) {
-            return res.render('changeEmail', { message: 'User not logged in.' });
-        }
-
-        // Get the current user's email
-        const originalEmail = currentUser.email;
-
-        // Check if the entered email matches the current email
-        if (email !== originalEmail) {
-            return res.render('changeEmail', {
-                message: 'The entered email does not match your current email.',
-            });
-        }
-
-        // If email matches, send the OTP
-        const otp = generateOtp();
-        const emailSent = await sendVerificationEmail(email, otp);
-        
-        if (emailSent) {
-            // Store OTP and email in session for verification later
-            req.session.userOtp = otp;
-            req.session.userEmail = email;  //
-            req.session.newEmail = email;
-            
-            // Render the OTP verification page
-            res.render('emailChangOtp');
-            console.log('OTP sent to:', email);
-            console.log('OTP:', otp);
-        } else {
-            return res.json('email-error');
-        }
+            count: totalProducts, // Total number of products matching the query
+            selectedCategory, // Pass the selected category to the view
+        });
 
     } catch (error) {
-        console.error("Error during email change:", error);
+        console.error("Error in searchProducts:", error);
+        req.flash('error', 'Something went wrong. Please try again.');
         res.redirect('/pageNotFound');
     }
 };
+ //email update
 
-
-const resetEmailOtp = async (req,res) =>{
+const getupdateEmail = async(req,res)=>{
     try {
-        const enteredOtp = req.body.otp;
-        if(enteredOtp===req.session.userOtp){
-            console.log("otp match");
+        res.render('newEmail', {
+            user: req.user || req.session.user , 
 
-            res.json({success:true,redirectUrl:'/update-email'});
-        }else{
-            console.log( "not match");
-            
-            res.json({success:false,message:"OTP not matching"})
-        }
+            message: req.flash('err'),
+            smsg:req.flash('sucess')
+        });
     } catch (error) {
-        res.status(500).json({success:false,message:"An error occured. Please try again"})
+        console.error('Get reset password error:', error);
+        req.flash('error', 'Something went wrong. Please try again.');
+        res.redirect('/pageNotFound');
     }
 }
 
+const updateEmail = async (req,res)=>{
+    try {
+        const {newEmail} =req.body;
+       const userId = req.session.user;
+       const currentUser = await User.findById(userId);
+               if (!currentUser) {
+                req.flash('err','User not logged in.');
+                return res.redirect('/login')
+               }
+               const existingUser = await User.findOne({ email: newEmail });
+               if (existingUser) {
+                   req.flash('err', 'This email is already in use by another account.');
+                   return res.redirect('/update-email');
+               }
+
+               const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; 
+               if (!emailRegex.test(newEmail)) {
+                   req.flash('err', 'Please enter a valid email address.');
+                   return res.redirect('/update-email');
+               }
+       
+
+               const originalEmail = currentUser.email;
+               if(newEmail===originalEmail){
+             req.flash('err','The email is similar')
+             return res.redirect('/update-email');
+               }
+                const otp = generateOtp();
+        const emailSent = await sendVerificationEmail(newEmail, otp);
+        if (emailSent) {
+                        req.session.userOtp = otp;
+                        req.session.userEmail = newEmail;  //
+                        req.session.newEmail = newEmail;
+                        
+                        res.render('emailChangOtp');
+                        console.log('OTP sent to:', newEmail);
+                        console.log('OTP:', otp);
+                    } else {
+                        req.flash('err', 'Failed to send verification email. Please try again.');
+                        res.redirect('/update-email');                    }
+
+    } catch (error) {
+        console.error("Error during email change:", error);
+                res.redirect('/pageNotFound');
+    }
+}
+
+const resetEmailOtp = async (req, res) => {
+    try {
+        const enteredOtp = req.body.otp;
+
+        if (enteredOtp === req.session.userOtp) {
+            console.log("OTP match");
+
+            const newEmail = req.session.newEmail;
+            const userId = req.session.user;
+
+            await User.findByIdAndUpdate(userId, { email: newEmail });
+
+            req.session.userOtp = null;
+            req.session.newEmail = null;
+
+            res.json({ success: true, redirectUrl: '/userProfile' });
+        } else {
+            console.log("OTP not match");
+            res.json({ success: false, message: "OTP not matching" });
+        }
+    } catch (error) {
+        console.error("Error during email reset:", error);
+        res.status(500).json({ success: false, message: "An error occurred. Please try again" });
+    }
+};
 const resendEmailChangeOtp = async (req,res)=>{
   try {
     console.log("entered");
-    const email = req.session.userEmail; // Get email from session
-
+    const email = req.session.userEmail; 
 
     if(!email){
         return res.status(400).json({message:"Email not found in session"});
@@ -753,29 +798,7 @@ const resendEmailChangeOtp = async (req,res)=>{
   }
 }
 
-const getupdateEmail = async(req,res)=>{
-    try {
-        res.render('newEmail', {
-            message: req.flash('err'),
-            smsg:req.flash('sucess')
-        });
-    } catch (error) {
-        console.error('Get reset password error:', error);
-        req.flash('error', 'Something went wrong. Please try again.');
-        res.redirect('/pageNotFound');
-    }
-}
 
-const updateEmail = async(req,res)=>{
-    try {
-        const newEmail = req.body.newEmail;
-        const userId = req.session.user;
-        await User.findByIdAndUpdate(userId,{email:newEmail});
-        res.redirect('/userProfile')
-    } catch (error) {
-        res.redirect('/pageNotFound')
-    }
-}
 
 
 
@@ -800,8 +823,6 @@ module.exports = {
     resendResetOtp,
     resetPassword,
     logout,
-    getchangeEmail,
-    changeEmailValid,
     resetEmailOtp,
     resendEmailChangeOtp,
     getupdateEmail,

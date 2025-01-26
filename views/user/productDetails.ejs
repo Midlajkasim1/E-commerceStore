@@ -61,71 +61,40 @@
             padding: 0 15px;
         }
 
-        /* Full Width Breadcrumb Styles */
-        .breadcrumb {
-            display: flex;
-            align-items: center;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            color: #ffffff;
-        }
+       /* Breadcrumb Container */
+.breadcrumb {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
+    margin: 10px 0;
+}
 
-        .breadcrumb a {
-            color: #ffffff;
-            text-decoration: none;
-            opacity: 0.9;
-            transition: opacity 0.3s;
-        }
+/* Breadcrumb Links */
+.breadcrumb a {
+    text-decoration: none;
+    color: #0073e6;
+}
 
-        .breadcrumb a:hover {
-            opacity: 1;
-        }
+.breadcrumb a:hover {
+    text-decoration: underline;
+    color: #005bb5;
+}
 
-        .breadcrumb span {
-            margin: 0 10px;
-            color: rgba(255, 255, 255, 0.7);
-        }
+/* Breadcrumb Separator */
+.breadcrumb .separator {
+    margin: 0 5px;
+    color: #999;
+}
+
+/* Current Page (Non-clickable) */
+.breadcrumb .current {
+    color: #666;
+    font-weight: bold;
+}
 
 
 
-
-  /* Banner and Breadcrumb Fixes */
-  .product-details-banner {
-        background: linear-gradient(rgba(8, 129, 120, 0.9), rgba(8, 129, 120, 0.8));
-        padding: 40px 0;
-        margin-bottom: 40px;
-        width: 100%;
-        position: relative;
-    }
-
-    .banner-content {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 15px;
-    }
-
-    .product-details-banner .breadcrumb {
-        display: flex;
-        align-items: center;
-        list-style: none;
-        margin: 0;
-        padding: 0;
-    }
-
-    .product-details-banner .breadcrumb a {
-        color: #ffffff;
-        text-decoration: none;
-        font-size: 14px;
-        transition: opacity 0.3s;
-    }
-
-    .product-details-banner .breadcrumb span {
-        color: rgba(255, 255, 255, 0.7);
-        margin: 0 10px;
-    }
-/*  */
-
+  
 
   /* Container Fixes */
   .main-content {
@@ -171,12 +140,88 @@
             padding: 0 10px;
         }
     }
+/* Banner Container */
+.product-details-banner {
+    background: linear-gradient(rgba(17, 18, 18, 0.9), rgba(8, 129, 120, 0.8)), 
+                url('/api/placeholder/1200/300') center/cover; /* Add a background image if needed */
+    padding: 40px 1px;
+    margin-bottom: 40px;
+    position: relative;
+    text-align: center;
+    color: #ffffff;
+}
 
+/* Banner Content */
+.banner-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
 
+/* Banner Title */
+.banner-content h1 {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
+/* Banner Subtitle */
+.banner-content p {
+    font-size: 18px;
+    max-width: 600px;
+    margin: 0 auto;
+    opacity: 0.9;
+}
 
+/* Breadcrumb Styles */
+.product-details-banner .breadcrumb {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    color: #ffffff;
+    justify-content: center; /* Center breadcrumb */
+}
 
+.product-details-banner .breadcrumb a {
+    color: #ffffff;
+    text-decoration: none;
+    opacity: 0.9;
+    transition: opacity 0.3s;
+}
 
+.product-details-banner .breadcrumb a:hover {
+    opacity: 1;
+}
+
+.product-details-banner .breadcrumb span {
+    margin: 0 10px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .product-details-banner {
+        padding: 50px 0;
+    }
+
+    .banner-content h1 {
+        font-size: 32px;
+    }
+
+    .banner-content p {
+        font-size: 16px;
+        padding: 0 20px;
+    }
+
+    .product-details-banner .breadcrumb {
+        font-size: 13px;
+    }
+}
 
 
         /* Enhanced Product Gallery */
@@ -950,55 +995,8 @@
         font-size: 16px;
     }
 }
-.product-details-banner {
-    background: linear-gradient(rgba(8, 129, 120, 0.9), rgba(8, 129, 120, 0.8));
-    padding: 20px 0;
-    margin-bottom: 40px;
-}
 
-.banner-content {
-    text-align: left;
-}
 
-/* Updated breadcrumb styles */
-.product-details-banner .breadcrumb {
-    margin: 0;
-    padding: 0;
-    font-size: 14px;
-    color: #ffffff;
-}
-
-.product-details-banner .breadcrumb a {
-    color: #ffffff;
-    text-decoration: none;
-    opacity: 0.9;
-    transition: opacity 0.3s;
-}
-
-.product-details-banner .breadcrumb a:hover {
-    opacity: 1;
-}
-
-.product-details-banner .breadcrumb span {
-    margin: 0 10px;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-/* Remove the original breadcrumb-wrap since we integrated it into the banner */
-.breadcrumb-wrap {
-    display: none;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .product-details-banner {
-        padding: 15px 0;
-    }
-    
-    .product-details-banner .breadcrumb {
-        font-size: 13px;
-    }
-}
 .stock-info {
     font-size: 12px;
     color: #28a745;
@@ -1074,16 +1072,19 @@
 </head>
 <body>
     <%-include("../../views/partials/user/header")%>
-
+    <div class="container my-4">
+    <div class="breadcrumb">
+        <a href="/">Home</a>
+        <span>/</span>
+        <a href="/shop">Shop</a>
+        <span>/</span>
+       
+    </div>
     <div class="product-details-banner">
         <div class="banner-content">
-            <div class="breadcrumb">
-                <a href="/">Home</a>
-                <span>/</span>
-                <a href="/shop">Shop</a>
-                <span>/</span>
-                <%= product.productName %>
-            </div>
+            <h1>Our Collection</h1>
+            <p>Discover our curated selection of premium products</p>
+            
         </div>
     </div>
    
@@ -1334,6 +1335,7 @@
                     </div>
                 </div>
             </div>
+        </div>
     <%-include("../../views/partials/user/footer")%>
     <script>
       

@@ -63,14 +63,18 @@
     </style>
 </head>
 <body>
+    <%-include("../../views/partials/user/header")%>
+
     <section class="content-main">
+
         <div class="container">
+
             <div class="row justify-content-center">
                 <div class="col-md-6 col-lg-4">
                     <div class="card card-login">
                         <div class="card-body p-4">
                             <h4 class="card-title text-center mb-4">Update Your Email</h4>
-                            <form method="post" action="/update-email" onsubmit="return validateEmailForm()">
+                            <form method="post" action="/update-email" >
                                 <div class="mb-3">
                                     <label for="email" class="form-label">New Email Address</label>
                                     <input 
@@ -84,9 +88,11 @@
                                     <div class="error-message" id="email-error"></div>
                                 </div>
                                 <div class="mb-4">
-                                    <button type="submit" class="btn btn-primary w-100">
+                                    <button type="submit" class="btn btn-success w-100">
                                         Update Email
                                     </button>
+                                    <h4 class="error-message"><%=message%></h4>
+                                    
                                 </div>
                             </form>
                         </div>
@@ -95,5 +101,7 @@
             </div>
         </div>
     </section>
+    <%-include("../../views/partials/user/footer")%>
+
 </body>
 </html>

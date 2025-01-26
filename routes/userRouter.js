@@ -58,12 +58,18 @@ router.post('/edit-userProfile',userAuth,profileController.editProfile);
 
 
 //change email
-router.get('/changeEmail',userAuth,userController.getchangeEmail);
-router.post('/changeEmail',userAuth,userController.changeEmailValid);
-router.post('/resetEmail-otp',userAuth,userController.resetEmailOtp);
-router.post('/resendEmailChange-otp',userAuth,userController.resendEmailChangeOtp)
+// router.get('/changeEmail',userAuth,userController.getchangeEmail);
+// router.post('/changeEmail',userAuth,userController.changeEmailValid);
 router.get('/update-email',userAuth,userController.getupdateEmail);
 router.post('/update-email',userAuth,userController.updateEmail);
+router.post('/resetEmail-otp',userAuth,userController.resetEmailOtp);
+router.post('/resendEmailChange-otp',userAuth,userController.resendEmailChangeOtp)
+
+
+
+
+
+
 //change password
 router.post('/change-password',userAuth,profileController.changePassword);
 
