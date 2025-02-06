@@ -55,22 +55,16 @@ const userSchema = new mongoose.Schema({
         type:String,
       //  required:true
     },
-    redeemed:{
-   type:Boolean,
-//    default:false
+
+    redeemedUser: {
+        type: Schema.Types.ObjectId,
+        ref: "Coupon",
+        default: null
     },
-    redeemedUser:[{
-        type:Schema.Types.ObjectId,
-        ref:"User",
-        // required:true
-    }],
     searchHistory:[{
         category:{
             type:Schema.Types.ObjectId,
             ref:"Category"
-        },
-        brand:{
-            type:String
         },
         searchOn:{
             type:Date,

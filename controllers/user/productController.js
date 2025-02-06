@@ -16,48 +16,54 @@ const productDetails = async (req,res)=>{
         const productOffer = product.productOffer || 0;
         const totalOffer = categoryOffer + productOffer;
 
-        // Fetch reviews for this product
+       
         const reviews = await Review.find({ productId })
             .populate('userId', 'name')
             .sort({ createdAt: -1 });
 
-        // Calculate average rating
         const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
         const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(1) : 0;
         const totalReviews = reviews.length;
 
-        // Modified: Get all sizes with their stock status
         const availableSizes = ['sizeS', 'sizeM', 'sizeL', 'sizeXL', 'sizeXXL'].map(sizeKey => ({
-            label: sizeKey.replace('size', ''), // Convert sizeS to S
-            stock: product.size[sizeKey] || 0,  // If size doesn't exist, stock is 0
+            label: sizeKey.replace('size', ''), 
+            stock: product.size[sizeKey] || 0, 
         }));
 
-        const allProducts = await Product.find({category: findcategory});
-
-        const randomNum = new Set();
+        const allProducts = await Product.find({ category: findcategory, _id: { $ne: productId } });
+        // const randomNum = new Set();
         
-        while(randomNum.size < 3){
-            const num = Math.floor(Math.random() * 10);
-            if(num <= allProducts.length){
-                randomNum.add(num);
-            }
-        }
+        // while(randomNum.size < 3){
+        //     const num = Math.floor(Math.random() * 10);
+        //     if(num <= allProducts.length){
+        //         randomNum.add(num);
+        //     }
+        // }
 
-        const ranNum = Array.from(randomNum);                
-         
+        // const ranNum = Array.from(randomNum);                
+        const similarProducts = [];
+const availableProducts = [...allProducts]; // Create a copy to avoid mutating the original array
+
+while (similarProducts.length < 3 && availableProducts.length > 0) {
+    const randomIndex = Math.floor(Math.random() * availableProducts.length);
+    const selectedProduct = availableProducts.splice(randomIndex, 1)[0]; // Remove the selected product
+    similarProducts.push(selectedProduct);
+}
+
         res.render("productDetails", {
             user: userData,
             product: product,
             quantity: product.quantity,
             totalOffer: totalOffer,
             category: findcategory,
-            ranNum: ranNum,
+            // ranNum: ranNum,
+            similarProducts:similarProducts,
             allProducts: allProducts,
             availableSizes: availableSizes,
             reviews: reviews,
             averageRating: averageRating,
             totalReviews: totalReviews,
-            messages: req.flash() // Added flash messages handling
+            messages: req.flash() 
         });
 
     } catch (error) {
@@ -70,7 +76,7 @@ const productDetails = async (req,res)=>{
 const submitReview = async (req, res) => {
     try {
         const { productId, rating, review } = req.body;
-        // Use req.session.user instead of req.session.userId to match your session structure
+     
         const userId = req.session.user;
 
         if (!userId) {
@@ -78,14 +84,14 @@ const submitReview = async (req, res) => {
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-        // Check if user has already reviewed this product
+       
         const existingReview = await Review.findOne({ userId, productId });
         if (existingReview) {
             req.flash('error', "You've already reviewed this product");
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-        // Create new review
+       
         const newReview = new Review({
             userId,
             productId,
@@ -94,7 +100,7 @@ const submitReview = async (req, res) => {
         });
         await newReview.save();
 
-        // Update product's average rating and total reviews
+       
         const allReviews = await Review.find({ productId });
         const totalRating = allReviews.reduce((sum, rev) => sum + rev.rating, 0);
         const averageRating = totalRating / allReviews.length;
@@ -132,13 +138,13 @@ const deleteReview = async (req, res) => {
         const reviewId = req.params.reviewId;
         const productId = req.params.productId;
         
-        // Check if user is logged in
+       
         if (!req.session.user) {
             req.flash('error', 'Please login to delete review');
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-        // Find the review
+       
         const review = await Review.findById(reviewId);
         
         if (!review) {
@@ -146,16 +152,16 @@ const deleteReview = async (req, res) => {
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-        // Check if the logged-in user is the review author
+      
         if (review.userId.toString() !== req.session.user.toString()) {
             req.flash('error', 'You are not authorized to delete this review');
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-        // Delete the review
+       
         await Review.findByIdAndDelete(reviewId);
 
-        // Update product's average rating and total reviews
+       
         const remainingReviews = await Review.find({ productId });
         
         let newAverageRating = 0;
@@ -164,7 +170,7 @@ const deleteReview = async (req, res) => {
             newAverageRating = totalRating / remainingReviews.length;
         }
 
-        // Update the product with new rating and review count
+      
         await Product.findByIdAndUpdate(productId, {
             averageRating: newAverageRating.toFixed(1),
             totalReviews: remainingReviews.length

@@ -176,6 +176,7 @@ const updateStatus = async (req, res) => {
         return res.redirect(`/admin/orderdetail/${req.params.id}`);
     }
 };
+
 module.exports={
     getOrder,
     getOrderDetails,

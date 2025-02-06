@@ -150,9 +150,10 @@ const addProductOffer = async (req,res)=>{
         const {productId,percentage} = req.body;
         const findProduct = await Product.findOne({_id:productId});
         const findCategory = await Category.findOne({_id:findProduct.category})
-         if(findCategory.categoryOffer>percentage){
-          return res.json({status:false,message:"This products category already has a category offer"});
-         }
+        if(findCategory.categoryOffer > percentage) {
+            return res.json({status: false, message: "This products category already has a category offer"});
+        }
+        // findProduct.originalSalePrice = findProduct.salePrice;
          findProduct.salePrice = findProduct.salePrice-Math.floor(findProduct.regularPrice*(percentage/100))
          findProduct.productOffer =  parseInt(percentage);
           await findProduct.save();
@@ -171,20 +172,18 @@ const removeProductOffer = async (req, res) => {
         const { productId } = req.body;
         console.log('Received productId:', productId);
 
-        const product = await Product.findOne({ _id: productId });
-        if (!product) {
+        const findProduct = await Product.findOne({ _id: productId });
+        if (!findProduct) {
             return res.status(404).json({ status: false, message: "Product not found" });
         }
 
-        // Calculate new price
-        const percentage = product.productOffer;
-        const newPrice = product.regularPrice; // Reset to regular price
+        const percentage = findProduct.productOffer;
+        // const newPrice = product.originalSalePrice; 
         
-        // Update product
-        product.salePrice = newPrice;
-        product.productOffer = 0;
+        findProduct.salePrice = findProduct.salePrice + Math.floor(findProduct.regularPrice * (percentage/100));
+        findProduct.productOffer = 0;
         
-        await product.save();
+        await findProduct.save();
         console.log('Product updated successfully');
         
         // Send only ONE response

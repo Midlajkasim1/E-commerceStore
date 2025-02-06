@@ -2,11 +2,27 @@ const Order = require('../../models/orderSchema');
 const Cart = require('../../models/cartSchema');
 const Product = require('../../models/productSchema');
 const Address = require('../../models/addressSchema');
+const Coupon = require('../../models/couponSchema');
+const User = require('../../models/userSchema');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
+
+
+
+const createRazorpayOrder = async (amount, receipt) => {
+    return await razorpayInstance.orders.create({
+        amount: amount * 100, // Convert to paise
+        currency: 'INR',
+        receipt: receipt,
+        payment_capture: 1
+    });
+};
+
 
 const placeOrder = async (req, res) => {
     try {
-        const { addressId, paymentMethod } = req.body;
+        const { addressId, paymentMethod  } = req.body;
         const userId = req.session.user;
 
         if (!userId || !addressId || !paymentMethod) {
@@ -25,48 +41,26 @@ const placeOrder = async (req, res) => {
             });
         }
 
-        // Check stock availability and update stock
-        for (const item of cart.items) {
-            const product = await Product.findById(item.productId._id);
-            if (!product) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Product ${item.productId._id} not found`
-                });
-            }
-
-            const selectedSize = `size${item.size}`; // Convert M to sizeM format
-
-            // Check if size exists and has sufficient stock
-            if (!product.size || typeof product.size[selectedSize] === 'undefined' || product.size[selectedSize] < item.quantity) {
-                return res.status(400).json({
-                    success: false,
-                    message: `${product.name} in size ${item.size} is out of stock`
-                });
-            }
-
-            // Create update object with the correct size key
-            const updateObj = {
-                $inc: {
-                    [`size.${selectedSize}`]: -item.quantity,
-                    quantity: -item.quantity
+        // Coupon handling
+    
+        const user = await User.findById(userId);
+        if (user && user.redeemedUser) {
+            const coupon = await Coupon.findById(user.redeemedUser);
+            if (coupon) {
+                discount = coupon.offerPrice;
+                if (!coupon.usedUsers.includes(userId)) {
+                    coupon.usedUsers.push(userId);
+                    await coupon.save();
                 }
-            };
-
-            // Update stock
-            const updatedProduct = await Product.findByIdAndUpdate(
-                product._id,
-                updateObj,
-                { new: true } // This returns the updated document
-            );
-
-            if (!updatedProduct) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Failed to update stock for ${product.name}`
-                });
+                user.redeemedUser = null;
+                await user.save();
             }
         }
+
+        const subtotal = cart.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+        const shipping = 100;
+        const tax = 20;
+        const finalAmount = subtotal + shipping + tax - discount;
 
         const orderedItems = cart.items.map(item => ({
             product: item.productId._id,
@@ -75,17 +69,35 @@ const placeOrder = async (req, res) => {
             size: item.size
         }));
 
-        const subtotal = cart.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-        const shipping = 100;
-        const tax = 20;
-        const finalAmount = subtotal + shipping + tax;
-
         const orderId = uuidv4();
+
+        // If payment method is Razorpay, create order first
+        if (paymentMethod === 'RAZORPAY') {
+            console.log('Razorpay Order Details:', {
+                finalAmount,
+                orderId,
+                discount
+            });
+            const razorpayOrder = await createRazorpayOrder(finalAmount, orderId);
+            console.log('Razorpay Response:', razorpayOrder);
+
+            return res.status(200).json({
+                success: true,
+                orderId,
+                razorpayOrderId: razorpayOrder.id,
+                amount: razorpayOrder.amount,
+                key: razorpayInstance.key_id,
+                discount
+            });
+        }
+
+
         const order = new Order({
             orderId,
             userId,
             orderedItems,
             totalPrice: subtotal,
+            discount,
             shipping,
             tax,
             finalAmount,
@@ -96,6 +108,45 @@ const placeOrder = async (req, res) => {
         });
 
         await order.save();
+              // Stock availability check and update
+              for (const item of cart.items) {
+                const product = await Product.findById(item.productId._id);
+                if (!product) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Product ${item.productId._id} not found`
+                    });
+                }
+    
+                const selectedSize = `size${item.size}`;
+    
+                if (!product.size || typeof product.size[selectedSize] === 'undefined' || product.size[selectedSize] < item.quantity) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `${product.name} in size ${item.size} is out of stock`
+                    });
+                }
+    
+                const updateObj = {
+                    $inc: {
+                        [`size.${selectedSize}`]: -item.quantity,
+                        quantity: -item.quantity
+                    }
+                };
+    
+                const updatedProduct = await Product.findByIdAndUpdate(
+                    product._id,
+                    updateObj,
+                    { new: true }
+                );
+    
+                if (!updatedProduct) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Failed to update stock for ${product.name}`
+                    });
+                }
+            }
         await Cart.findOneAndUpdate({ userId }, { $set: { items: [] }}, { new: true });
 
         return res.status(200).json({
@@ -112,6 +163,121 @@ const placeOrder = async (req, res) => {
         });
     }
 };
+//
+// Add a new route to verify payment
+const verifyPayment = async (req, res) => {
+    try {
+        const {
+            razorpayPaymentId,
+            razorpayOrderId,
+            razorpaySignature,
+            orderId,
+            addressId,
+            discount
+        } = req.body;
+
+        const userId = req.session.user;
+
+        // Verify signature
+        const shasum = crypto.createHmac('sha256', razorpayInstance.key_secret);
+        shasum.update(`${razorpayOrderId}|${razorpayPaymentId}`);
+        const digest = shasum.digest('hex');
+
+        if (digest !== razorpaySignature) {
+            return res.status(400).json({
+                success: false,
+                message: 'Payment verification failed'
+            });
+        }
+
+        // Get cart details for order creation
+        const cart = await Cart.findOne({ userId }).populate('items.productId');
+        if (!cart || !cart.items.length) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cart is empty'
+            });
+        }
+
+        // Calculate order amounts with discount
+        const subtotal = cart.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+        const shipping = 100;
+        const tax = 20;
+        const discountAmount = parseFloat(discount) || 0;
+        const finalAmount = subtotal + shipping + tax - discountAmount;
+
+        // Create ordered items array
+        const orderedItems = cart.items.map(item => ({
+            product: item.productId._id,
+            quantity: item.quantity,
+            price: item.price,
+            size: item.size,
+            status: 'Processing'
+        }));
+
+        // Create order with discounted amount
+        const order = new Order({
+            orderId,
+            userId,
+            orderedItems,
+            totalPrice: subtotal,
+            finalAmount,
+            discount: discountAmount,  // Explicitly set the discount
+            shipping,
+            tax,
+            address: addressId,
+            status: 'Processing',
+            paymentMethod: 'RAZORPAY',
+            paymentDetails: {
+                razorpayPaymentId,
+                razorpayOrderId,
+                razorpaySignature
+            },
+            createOn: new Date()
+        });
+        
+        await order.save();
+
+        // Update product stock
+        for (const item of cart.items) {
+            const product = await Product.findById(item.productId._id);
+            if (product) {
+                const selectedSize = `size${item.size}`;
+                const updateObj = {
+                    $inc: {
+                        [`size.${selectedSize}`]: -item.quantity,
+                        quantity: -item.quantity
+                    }
+                };
+                await Product.findByIdAndUpdate(product._id, updateObj);
+            }
+        }
+
+        // Clear cart
+        await Cart.findOneAndUpdate(
+            { userId }, 
+            { $set: { items: [] }},
+            { new: true }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: 'Payment verified and order placed successfully',
+            orderId: order.orderId
+        });
+
+    } catch (error) {
+        console.error('Payment verification error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Payment verification failed: ' + error.message
+        });
+    }
+};
+
+
+
+
 
 const getOrderDetails = async (req, res) => {
     try {
@@ -315,8 +481,16 @@ const returnProductOrder = async (req, res) => {
     }
 };
 
+
+//razorpay
+const razorpayInstance = new Razorpay({
+    key_id:"rzp_test_ax31K21pHYTV8z",
+    key_secret:"jZindVIE58oehKnqH45fY4sW"
+})
+
 module.exports = {
     placeOrder,
+    verifyPayment,
     getOrderDetails,
     getOrderMoreDetails,
     cancelProductOrder,

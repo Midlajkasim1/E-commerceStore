@@ -6,6 +6,7 @@ const profileController = require('../controllers/user/profileController');
 const cartController = require('../controllers/user/cartController');
 const checkoutController = require('../controllers/user/checkoutController');
 const ordercontroller =require('../controllers/user/orderController');
+const wishlistController = require('../controllers/user/wishlistController');
 const passport = require('passport');
 const { userAuth,blockCheck } = require('../middlewares/auth');
 
@@ -20,9 +21,9 @@ router.post('/resend-otp',userController.resendOtp)
 
 router.get('/',blockCheck, userController.loadHomePage);
 router.get('/shop',blockCheck,userController.loadShoppingPage);
-router.get('/filter',userController.filterProduct);
-router.get('/filterPrice',userController.filterByPrice);
-router.post('/search',userController.searchProducts);
+// router.get('/filter',userController.filterProduct);
+// router.get('/filterPrice',userController.filterByPrice);
+// router.post('/search',userController.searchProducts);
 
 
 router.get('/auth/google',passport.authenticate('google'))
@@ -58,8 +59,7 @@ router.post('/edit-userProfile',userAuth,profileController.editProfile);
 
 
 //change email
-// router.get('/changeEmail',userAuth,userController.getchangeEmail);
-// router.post('/changeEmail',userAuth,userController.changeEmailValid);
+
 router.get('/update-email',userAuth,userController.getupdateEmail);
 router.post('/update-email',userAuth,userController.updateEmail);
 router.post('/resetEmail-otp',userAuth,userController.resetEmailOtp);
@@ -76,7 +76,7 @@ router.post('/change-password',userAuth,profileController.changePassword);
 
 //address 
 router.get('/myaddress',userAuth,profileController.getAddress);
-router.post('/addAddress',userAuth,profileController.postAddAdress);
+router.post('/addAddress',userAuth,profileController.postAddAddress);
 router.get('/editAddress',userAuth,profileController.getEditAddress);
 router.post('/editAddress',userAuth,profileController.editAddress);
 router.get('/deleteAddress',userAuth,profileController.deleteAddress);
@@ -101,6 +101,7 @@ router.post('/checkout/edit-address', checkoutController.checkOuteditAddress);
 
 // router.post('/place-order',userAuth,checkoutController.placeOrder );
 router.post('/place-order', userAuth, ordercontroller.placeOrder);
+router.post('/verify-payment',userAuth,ordercontroller.verifyPayment);
 
 //order
 router.get('/profile/order',userAuth,ordercontroller.getOrderDetails)
@@ -108,7 +109,14 @@ router.get('/details/:id',userAuth,ordercontroller.getOrderMoreDetails);
 router.post('/order/cancel-product',userAuth,ordercontroller.cancelProductOrder);
 router.post('/order/return-product',userAuth,ordercontroller.returnProductOrder);
 
+//widshlist            
+router.get('/wishlist',userAuth,wishlistController.getWishlist)
+router.post('/addToWishlist',userAuth,wishlistController.addToWishlist);
+router.get('/removeFromWishlist',userAuth,wishlistController.removeProduct);
 
-
+// userRouter.post('/applycouoponcode',applyCoupon)
+// userRouter.post('/removecoupon',removeCoupon)
+router.post('/applycouponcode',userAuth,checkoutController.applyCoupon);
+router.post('/removecoupon',userAuth,checkoutController.removeCoupon)
 
 module.exports= router;

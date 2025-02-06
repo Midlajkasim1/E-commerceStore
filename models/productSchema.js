@@ -28,6 +28,11 @@ const productSchema = new mongoose.Schema({
     type:Number,
     default:0
   },
+  originalSalePrice: {
+    type: Number,
+    default: null
+  },
+  
   quantity:{
     type:Number,
     default:true

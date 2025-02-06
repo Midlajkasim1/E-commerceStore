@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coupon Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        .main-content {
+            margin-left: 163px !important;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .search-bar {
+            position: relative;
+            flex-grow: 1;
+            max-width: 300px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 8px 35px 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .search-bar i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .add-user-btn {
+            background-color: #8B5CF6;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .add-user-btn:hover {
+            background-color: #7C3AED;
+            color: white;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color:  #1e2227;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .users-table th {
+            background-color: #f8f9fa;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .users-table td {
+            padding: 12px 15px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+        }
+
+        .custom-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .custom-badge-success {
+            background-color: #10B981;
+            color: white;
+        }
+
+        .custom-badge-danger {
+            background-color: #EF4444;
+            color: white;
+        }
+
+        .btn-icon {
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .pagination a {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            color: #374151;
+            text-decoration: none;
+        }
+
+        .pagination .active {
+            background-color: #8B5CF6;
+            color: white;
+            border-color: #8B5CF6;
+        }
+
+        .btn-action {
+            width: 70px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .btn-action:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <%- include("../../views/partials/admin/header") %>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Coupons</h1>
+            <div class="search-bar">
+                <form action="" method="get">
+                    <input type="text" name="search" placeholder="Search Coupons" value="">
+                    <i class="fas fa-search"></i>
+                </form>
+            </div>
+            <div class="profile-container">
+                <div class="profile-section">
+                    <a href="/admin/coupon/add-coupon" class="add-user-btn">ADD COUPON +</a>
+                </div>
+            </div>
+        </div>
+
+        <table class="users-table">
+            <thead>
+                <tr>
+                    
+                    <th>Coupon Name</th>
+                    <th>Created On</th>
+                    <th>Expires On</th>
+                    <th>Offer Price</th>
+                    <th>Min. Purchase</th>
+                    <th>Status</th>
+                    <th>List/Unlist</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                <%for(let i=0;i<coupons.length;i++){%>
+                <tr>
+                    
+                    <td><%=coupons[i].name%></td>
+                    <td><%=new Date(coupons[i].createOn).toLocaleDateString('en-US')%></td>
+                    <td><%=new Date(coupons[i].expireOn)%></td>
+                    <td><%=coupons[i].offerPrice%></td>
+                    <td><%=coupons[i].minimumPrice%></td>  
+                    <td>
+                    <%if(coupons[i].isList){%>
+                        <span class="custom-badge custom-badge-success">Active</span>
+                        <%}else{%>
+                            <span class="custom-badge custom-badge-danger">Deactive</span>
+                  <%}%>
+                    </td>
+                    <td>
+                        <%if(coupons[i].isList){%>
+                            <button class="btn btn-danger">
+                            <a href="/admin/coupon/list-coupon?id=<%=coupons[i]._id%>" class="btn-action">Unlist</a>
+                        </button>
+                        <%}else{%>
+                            <button class="btn btn-success">
+                                <a href="/admin/coupon/unlist-coupon?id=<%=coupons[i]._id%>" class="btn-action">List</a>
+                            </button>
+                            <%}%>
+                    </td>
+                    <td>
+                        <a href="/admin/coupon/edit-coupon/<%= coupons[i]._id %>" class="btn btn-primary btn-icon" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                    <td>
+                        <a href="/admin/coupon/delete-coupon/<%= coupons[i]._id %>" class="btn btn-primary btn-icon" title="delete">
+                            <i class="fa fa-trash"></i>  
+                        </a>
+                    </td>
+                </tr>
+             
+                <%}%>
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            <a href="#">&laquo; Previous</a>
+            <a href="#" class="active">1</a>
+            <a href="#">2</a>
+            <a href="#">3</a>
+            <a href="#">Next &raquo;</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+    <script>
+
+    </script>
+</body>
+</html>

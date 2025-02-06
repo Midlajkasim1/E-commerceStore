@@ -18,7 +18,7 @@
         <h4 class="text-danger text-center"></h4>
         <form class="form-container" method="POST" action="/admin/category/editCategory/<%= category._id %>">
             <label for="category-name">Category Name:</label>
-            <input type="text" id="category-name" name="name" placeholder="Enter category name" required >
+            <input type="text" id="category-name" name="name" value="<%=category.name%>" placeholder="Enter category name" required >
             <div id="name-error" class="error-message"></div>
             <label for="description">Description:</label>
             <textarea id="description" name="description" rows="5" placeholder="Enter category description" required><%= category.description %></textarea>

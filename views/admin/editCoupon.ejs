@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Coupon</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Include SweetAlert CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        /* Your existing styles */
+    </style>
+</head>
+<body>
+    <%- include("../../views/partials/admin/header") %>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Edit Coupon</h1>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Coupon Details</h5>
+            </div>
+            <div class="card-body">
+                <form id="couponForm" action="/admin/coupon/edit-coupon" method="POST" class="needs-validation" novalidate>
+                    <input type="hidden" id="couponId" name="couponId" value="<%= findCoupon._id %>">              
+                                                 <body onload="setDefaultStartDate()">
+                    </body>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="couponName" class="form-label required">Coupon Name</label>
+                              <input 
+                                type="text" 
+                                class="form-control" 
+                                id="couponName" 
+                                name="couponName" 
+                                placeholder=" Enter coupon name" 
+                                required
+                                value="<%= findCoupon.name%>"
+                                pattern="[A-Z0-9]+"
+                            >
+                            <div class="error-message" id="couponNameError"></div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="startDate" class="form-label required">Start Date</label>
+                            <input 
+                                type="date" 
+                                class="form-control" 
+                                id="startDate" 
+                                name="startDate" 
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="expiryDate" class="form-label required">Expiry Date</label>
+                            <input 
+                                type="date" 
+                                class="form-control" 
+                                id="expiryDate" 
+                                value="<%=findCoupon.expireOn%>"
+                                name="expiryDate" 
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="maxUsage" class="form-label required">Offer Price</label>
+                            <input 
+                                type="number" 
+                                class="form-control" 
+                                id="maxUsage" 
+                                name="offerPrice"
+                                value="<%=findCoupon.offerPrice%>" 
+                                placeholder="Enter maximum usage limit"
+                                min="1"
+                                required
+                            >
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="minimumPurchase" class="form-label required">Minimum Price</label>
+                            <input 
+                                type="number" 
+                                class="form-control" 
+                                id="minimumPurchase" 
+                                name="minimumPrice" 
+                                value="<%=findCoupon.minimumPrice%>"
+                                placeholder="Enter minimum purchase amount"
+                                min="1"
+                                required
+                            >
+                        </div>
+
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="/admin/coupon" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Update Coupon</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Include SweetAlert JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('couponForm');
+            const couponNameInput = document.getElementById('couponName');
+            const couponNameError = document.getElementById('couponNameError');
+            const startDateInput = document.getElementById('startDate');
+            const expiryDateInput = document.getElementById('expiryDate');
+
+            // Set minimum date as today for start date
+            const today = new Date().toISOString().split('T')[0];
+            startDateInput.setAttribute('min', today);
+
+            // Validate coupon code format
+            couponNameInput.addEventListener('input', function() {
+                const value = this.value.toUpperCase();
+                this.value = value;
+                
+                if (!/^[A-Z0-9]+$/.test(value)) {
+                    couponNameError.textContent = 'Only uppercase letters and numbers are allowed';
+                } else {
+                    couponNameError.textContent = '';
+                }
+            });
+
+            // Update expiry date minimum based on start date
+            startDateInput.addEventListener('change', function() {
+                expiryDateInput.setAttribute('min', this.value);
+                if (expiryDateInput.value && expiryDateInput.value < this.value) {
+                    expiryDateInput.value = this.value;
+                }
+            });
+
+          
+        
+
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            console.log('Sending Data:', jsonData); // Debugging
+
+            fetch('/admin/coupon/edit-coupon', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(jsonData),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: data.message,
+                        }).then(() => {
+                            window.location.href = '/admin/coupon';
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: data.message || 'Failed to update coupon',
+                        });
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'An error occurred while updating the coupon.',
+                    });
+                });
+        });
+
+    });z
+
+
+        function setDefaultStartDate(){
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = (today.getMonth()+1).toString().padStart(2,"0");
+            const day = today.getDate().toString().padStart(2,"0");
+            document.getElementById('startDate').value =  `${year}-${month}-${day}`
+        }
+    </script> 
+</body>
+</html>

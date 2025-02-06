@@ -48,6 +48,8 @@
                         <th> Name</th>
                         <th>Description</th>
                         <th>Date</th>
+                        <th>Offer Price</th>
+                        <th>Offer</th>
                         <th>Status</th>
                         <th>List/Unlist</th>
                         <th>Edit</th>
@@ -64,6 +66,24 @@
                             month: 'long', 
                             day: 'numeric' 
                         }) %></td>
+                        <td>
+                            <% if (category.categoryOffer > 0) { %>
+                                <%= category.categoryOffer %>%
+                            <% } else { %>
+                                0%
+                            <% } %>
+                        </td>
+                        <td>
+                            <% if (category.categoryOffer === 0) { %>
+                                <button class="btn btn-info" onclick="addCategoryOffer('<%= category._id %>', event)">
+                                    Add Offer
+                                </button>
+                            <% } else { %>
+                                <button class="btn btn-danger" onclick="removeCategoryOffer('<%= category._id %>')">
+                                    Remove Offer
+                                </button>
+                            <% } %>
+                        </td>
                         <td>
                           <% if(category.isListed){%>
                             <span class="custom-badge custom-badge-success custom-badge-rounded-pill" style="width: 60px;">Listed</span>
@@ -112,5 +132,73 @@
         </div>
     </div>
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Add Category Offer
+async function addCategoryOffer(categoryId, event) {
+    event.preventDefault();
+    const { value: percentage } = await Swal.fire({
+        title: 'Offer in percentage',
+        input: 'number',
+        inputLabel: 'Percentage',
+        inputPlaceholder: '%'
+    });
+
+    if (percentage) {
+        $.ajax({
+            url: '/admin/category/addCategoryOffer',
+            method: 'post',
+            data: {
+                categoryId: categoryId,
+                percentage: percentage
+            },
+            success: (response) => {
+                if (response.status === true) {
+                    location.reload();
+                    Swal.fire('Offer Added', 'The category offer has been added successfully', 'success');
+                } else {
+                    Swal.fire('Failed', response.message || 'Failed to add offer', 'error');
+                }
+            },
+            error: () => {
+                Swal.fire('Error', 'Failed to add offer. Please try again.', 'error');
+            }
+        });
+    }
+}
+
+// Remove Category Offer
+function removeCategoryOffer(categoryId) {
+    Swal.fire({
+        title: 'Remove Offer',
+        text: 'Are you sure you want to remove this category offer?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, remove it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: '/admin/category/removeCategoryOffer',
+                method: 'post',
+                data: { categoryId: categoryId },
+                success: (response) => {
+                    if (response.status === true) {
+                        location.reload();
+                        Swal.fire('Offer Removed', 'The category offer has been removed successfully', 'success');
+                    } else {
+                        Swal.fire('Failed', response.message || 'Failed to remove offer', 'error');
+                    }
+                },
+                error: () => {
+                    Swal.fire('Error', 'Failed to remove offer. Please try again.', 'error');
+                }
+            });
+        }
+    });
+}
+    </script>
 </body>
 </html>

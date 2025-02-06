@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 const {Schema} = mongoose;
 const couponSchema = new mongoose.Schema({
+    // couponId:{
+    //   type:String,
+    //   required:true
+    // },
     name:{
         type:String,
         required:true,
@@ -27,10 +31,15 @@ const couponSchema = new mongoose.Schema({
         type:Boolean,
         default:true
     },
-    userId:[{
-      type:mongoose.Schema.Types.ObjectId,
-      ref:"User"
+
+    usedUsers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
     }]
+    // userId:[{
+    //   type:mongoose.Schema.Types.ObjectId,
+    //   ref:"User"
+    // }]
 })
 
 const Coupon = mongoose.model("Coupon",couponSchema);
