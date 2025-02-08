@@ -7,6 +7,7 @@ const cartController = require('../controllers/user/cartController');
 const checkoutController = require('../controllers/user/checkoutController');
 const ordercontroller =require('../controllers/user/orderController');
 const wishlistController = require('../controllers/user/wishlistController');
+const WalletController = require('../controllers/user/walletController');
 const passport = require('passport');
 const { userAuth,blockCheck } = require('../middlewares/auth');
 
@@ -117,6 +118,12 @@ router.get('/removeFromWishlist',userAuth,wishlistController.removeProduct);
 // userRouter.post('/applycouoponcode',applyCoupon)
 // userRouter.post('/removecoupon',removeCoupon)
 router.post('/applycouponcode',userAuth,checkoutController.applyCoupon);
-router.post('/removecoupon',userAuth,checkoutController.removeCoupon)
+router.post('/removecoupon',userAuth,checkoutController.removeCoupon);
+
+//wallet
+router.get('/wallet',userAuth,WalletController.getWallet)
+// router.get('/wallet/transactions', userAuth, WalletController.getTransactions);
+router.get('/wallet/history', userAuth, WalletController.getTransactionHistory);
+// router.get('/get-wallet-balance',userAuth,ordercontroller.getWalletBalance)
 
 module.exports= router;

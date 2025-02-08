@@ -596,6 +596,41 @@
           </div>
         </div>
       </div>
+
+
+<!-- Wallet Payment -->
+<div class="card border mb-2">
+  <div class="card-header bg-white p-0">
+    <div class="payment-option">
+      <input class="form-check-input" type="radio" name="paymentMethod" id="wallet" value="WALLET">
+      <label class="form-check-label w-100 p-3" for="wallet" data-bs-toggle="collapse" data-bs-target="#walletCollapse">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-wallet2 me-3 fs-4"></i>
+          <div>
+            <span class="fw-bold">Wallet Payment</span>
+            <p class="mb-0 text-muted small">Pay using your wallet balance</p>
+          </div>
+        </div>
+      </label>
+    </div>
+  </div>
+  <div id="walletCollapse" class="collapse" data-bs-parent="#paymentAccordion">
+    <div class="card-body bg-light">
+      <div class="text-center">
+        <p class="mb-2">Available Balance: ₹<span id="walletBalance"><%= wallet%></span></p>
+        <button class="btn btn-primary px-4" onclick="initiateWalletPayment()">
+          <i class="bi bi-wallet2"></i> Pay with Wallet
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
       
     </div>
   </div>
@@ -909,78 +944,123 @@
           }
         }
         async function placeOrder() {
-          const selectedAddress = document.querySelector('.saved-address.selected');
-          const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
+    const selectedAddress = document.querySelector('.saved-address.selected');
+    const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
+    const discountInput = document.getElementById('appliedDiscount');
 
-          if (!selectedAddress || !selectedPayment) {
+    // Check if address and payment method are selected
+    if (!selectedAddress || !selectedPayment) {
+        await Swal.fire({
+            icon: 'warning',
+            title: 'Please Select',
+            text: 'Please select both shipping address and payment method',
+            confirmButtonColor: '#088178'
+        });
+        return;
+    }
+
+    // Handle different payment methods
+    switch (selectedPayment.value) {
+        case 'RAZORPAY':
             await Swal.fire({
-              icon: 'warning',
-              title: 'Please Select',
-              text: 'Please select both shipping address and payment method',
-              confirmButtonColor: '#088178'
+                icon: 'info',
+                title: 'Complete Payment',
+                text: 'Please click the "Pay Securely" button in the Razorpay section to complete your payment',
+                confirmButtonText: 'Okay',
+                confirmButtonColor: '#088178',
+                showCancelButton: true,
+                cancelButtonText: 'Change Payment Method'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Scroll to Razorpay section
+                    document.getElementById('razorpayCollapse').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
             });
             return;
-          }
 
-          let loadingAlert;
-
-          try {
-            loadingAlert = Swal.fire({
-              title: 'Processing Order',
-              html: 'Please wait while we confirm your order...',
-              allowOutsideClick: false,
-              showConfirmButton: false,
-              didOpen: () => {
-                Swal.showLoading();
-              }
-            });
-
-            const response = await fetch('/place-order', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                addressId: selectedAddress.dataset.addressId,
-                paymentMethod: selectedPayment.value,
-                discount: discount
-              })
-            });
-
-            const result = await response.json();
-            Swal.close();
-
-            console.log('Order Response:', result);
-
-            if (result.success && result.orderId) {
-              await Swal.fire({
-                icon: 'success',
-                title: 'Order Placed Successfully!',
-                text: 'Thank you for your purchase',
-                confirmButtonColor: '#088178',
-                timer: 2000,
-                timerProgressBar: true
-              });
-
-              window.location.href = '/';
-            } else {
-              throw new Error(result.message || 'Failed to place order');
-            }
-          } catch (error) {
-            console.error('Order placement error:', error);
-
-            if (loadingAlert) Swal.close();
-
+        case 'WALLET':
             await Swal.fire({
-              icon: 'error',
-              title: 'Oops...',
-              text: error.message || 'Failed to place order. Please try again.',
-              confirmButtonColor: '#088178'
+                icon: 'info',
+                title: 'Complete Payment',
+                text: 'Please click the "Pay with Wallet" button in the Wallet section to complete your payment',
+                confirmButtonText: 'Okay',
+                confirmButtonColor: '#088178',
+                showCancelButton: true,
+                cancelButtonText: 'Change Payment Method'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Scroll to Wallet section
+                    document.getElementById('walletCollapse').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
             });
-          }
-        }
+            return;
 
+        case 'COD':
+            // Process COD order
+            const discount = discountInput ? parseFloat(discountInput.value) || 0 : 0;
+            let loadingAlert;
 
+            try {
+                loadingAlert = Swal.fire({
+                    title: 'Processing Order',
+                    html: 'Please wait while we confirm your order...',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const response = await fetch('/place-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        addressId: selectedAddress.dataset.addressId,
+                        paymentMethod: 'COD',
+                        discount: discount
+                    })
+                });
+
+                const result = await response.json();
+                Swal.close();
+
+                if (result.success && result.orderId) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Order Placed Successfully!',
+                        text: 'Thank you for your purchase',
+                        confirmButtonColor: '#088178',
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+
+                    window.location.href = '/';
+                } else {
+                    throw new Error(result.message || 'Failed to place order');
+                }
+            } catch (error) {
+                console.error('Order placement error:', error);
+
+                if (loadingAlert) Swal.close();
+
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: error.message || 'Failed to place order. Please try again.',
+                    confirmButtonColor: '#088178'
+                });
+            }
+            break;
+    }
+}
         // Add event listeners for address selection
         document.querySelectorAll('.saved-address').forEach(address => {
           address.addEventListener('click', function () {
@@ -1120,7 +1200,24 @@ async function removeCoupon(event) {
   }
 }
 //razorpay
-// Frontend JavaScript
+// // Frontend JavaScript
+// document.getElementById('razorpay').addEventListener('click', function() {
+//     Swal.fire({
+//         icon: 'info',
+//         title: 'Razorpay Payment',
+//         text: 'You have selected Razorpay as your payment method. Please proceed to pay securely.',
+//         confirmButtonColor: '#088178'
+//     });
+// });
+
+// document.getElementById('wallet').addEventListener('click', function() {
+//     Swal.fire({
+//         icon: 'info',
+//         title: 'Wallet Payment',
+//         text: 'You have selected Wallet as your payment method. Please proceed to pay using your wallet balance.',
+//         confirmButtonColor: '#088178'
+//     });
+// });
 async function initiateRazorpay() {
     try {
         const selectedAddress = document.querySelector('input[name="address"]:checked');
@@ -1173,6 +1270,7 @@ async function initiateRazorpay() {
             description: 'Purchase Payment',
             order_id: orderData.razorpayOrderId,
             handler: async function(response) {
+              
                 try {
                     const verifyResponse = await fetch('/verify-payment', {
                         method: 'POST',
@@ -1244,4 +1342,84 @@ async function initiateRazorpay() {
         });
     }
 }
-      </script>
+   //wallet
+   // Function to fetch and display wallet balance
+async function fetchWalletBalance() {
+  try {
+    const response = await fetch('/get-wallet-balance');
+    const data = await response.json();
+    if (data.success) {
+      document.getElementById('walletBalance').textContent = data.balance.toFixed(2);
+    }
+  } catch (error) {
+    console.error('Error fetching wallet balance:', error);
+  }
+}
+
+// Call this when page loads
+document.addEventListener('DOMContentLoaded', fetchWalletBalance);
+
+async function initiateWalletPayment() {
+  try {
+    const selectedAddress = document.querySelector('input[name="address"]:checked');
+    const discount = parseFloat(document.getElementById('appliedDiscount').value) || 0;
+
+    if (!selectedAddress) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Address Required',
+        text: 'Please select a delivery address before proceeding with payment',
+        confirmButtonColor: '#088178'
+      });
+      return;
+    }
+
+    const loadingAlert = Swal.fire({
+      title: 'Processing Payment',
+      html: 'Please wait while we process your payment...',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    const response = await fetch('/place-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        addressId: selectedAddress.value,
+        paymentMethod: 'WALLET',
+        discount: discount
+      })
+    });
+
+    const result = await response.json();
+    loadingAlert.close();
+
+    if (result.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Payment Successful!',
+        text: 'Your order has been placed successfully',
+        confirmButtonColor: '#088178',
+        timer: 2000,
+        timerProgressBar: true
+      });
+      window.location.href = '/profile/order';
+    } else {
+      throw new Error(result.message || 'Insufficient wallet balance');
+    }
+  } catch (error) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'Payment Failed',
+      text: error.message || 'Failed to process payment. Please try again.',
+      confirmButtonColor: '#088178'
+    });
+  }
+}
+   
+   </script>

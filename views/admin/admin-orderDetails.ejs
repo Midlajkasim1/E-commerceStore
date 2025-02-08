@@ -162,6 +162,12 @@
                                                                         </p>
                                                                     </div>
                                                                 </div>
+                                                                <% if (item.status === 'Cancelled' && item.cancellationReason) { %>
+                                                                    <div class="mt-2">
+                                                                        <div class="mb-2">Cancellation Reason:   <%= item.cancellationReason %></div>
+                                                                        
+                                                                    </div>
+                                                                <% } %>
 
 
                                                                 <!-- Update status form for each product -->

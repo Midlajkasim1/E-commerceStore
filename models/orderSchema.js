@@ -34,7 +34,11 @@ const orderSchema = new mongoose.Schema({
         type: String,
         default: "Pending",
         enum: ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Returned"] 
-    }
+    },
+    cancellationReason: {
+        type: String,
+        default: null
+      }
     }],
     totalPrice: {
       type: Number,

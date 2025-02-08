@@ -94,6 +94,49 @@
             color: #6c757d;
             cursor: pointer;
         }
+        .referral-container {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px dashed #088178;
+    }
+
+    .referral-container .form-control {
+        font-family: monospace;
+        font-size: 1.1em;
+        letter-spacing: 1px;
+        background-color: white;
+    }
+
+    .referral-container .btn-outline-primary {
+        border-color: #088178;
+        color: #088178;
+    }
+
+    .referral-container .btn-outline-primary:hover {
+        background-color: #088178;
+        color: white;
+    }
+
+    #copySuccess {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background-color: #088178;
+        color: white;
+        border-radius: 8px;
+        display: none;
+        z-index: 1000;
+        animation: fadeInOut 2s ease-in-out;
+    }
+
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateY(-20px); }
+        20% { opacity: 1; transform: translateY(0); }
+        80% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-20px); }
+    }
     </style>
 </head>
 
@@ -152,6 +195,29 @@
                             </div>
                         </div>
                     </form>
+                </div>
+
+                <div class="profile-card">
+                    <h4 class="mb-4">My Referral Code</h4>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="referral-container">
+                                <label class="form-label">Share this code with friends to earn rewards</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="text" class="form-control" value="<%=user.myCode%>" id="referralCode" readonly>
+                                    <button class="btn btn-outline-primary" onclick="copyReferralCode()">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    Your friend gets ₹50 and you get ₹100 when they sign up using your code!
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="copySuccess">
+                    Referral code copied successfully!
                 </div>
                 <!-- Change Password Card -->
                 <div class="profile-card">
@@ -218,6 +284,27 @@
                 icon.classList.toggle('bi-eye-slash');
             });
         });
+
+
+        // 
+        function copyReferralCode() {
+        const referralCode = document.getElementById('referralCode');
+        referralCode.select();
+        referralCode.setSelectionRange(0, 99999); // For mobile devices
+        
+        navigator.clipboard.writeText(referralCode.value).then(() => {
+            // Show success message
+            const copySuccess = document.getElementById('copySuccess');
+            copySuccess.style.display = 'block';
+            
+            // Hide success message after animation
+            setTimeout(() => {
+                copySuccess.style.display = 'none';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+    }
     </script>
 </body>
 

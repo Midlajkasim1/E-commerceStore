@@ -55,6 +55,9 @@ const userSchema = new mongoose.Schema({
         type:String,
       //  required:true
     },
+    myCode:{
+        type:String,
+    },
 
     redeemedUser: {
         type: Schema.Types.ObjectId,

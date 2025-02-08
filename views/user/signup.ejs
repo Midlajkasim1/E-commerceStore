@@ -51,6 +51,12 @@
                     <label for="confirm-password">Confirm Password</label>
                     <input type="password" id="cPassword" name="cPassword" placeholder="Confirm your password" >
                 </div>
+                <!-- referal code -->
+                <div class="input-container">
+                  <label for="referralCode">Referral Code (Optional)</label>
+                  <input type="text" id="referralCode" name="referralCode" placeholder="Enter referral code if you have one">
+              </div>
+              <div id="error-6" class="error-message"></div>
                 <div id="error-5" class="error-message"></div>
                 <%if(locals.message && message.length>0){%>
                     <div class="alert alert-danger text-center">
@@ -157,6 +163,20 @@
             error5.innerHTML=""
            }
         }
+    const referralCodeId = document.getElementById("referralCode");
+const error6 = document.getElementById('error-6');
+
+function referralCodeValidation() {
+    const referralCode = referralCodeId.value.trim();
+    if (referralCode !== "" && !/^[A-F0-9]{8}$/.test(referralCode)) {
+        error6.style.display = "block";
+        error6.innerHTML = "Invalid referral code format";
+        return false;
+    }
+    error6.style.display = "none";
+    error6.innerHTML = "";
+    return true;
+}
 
         document.addEventListener("DOMContentLoaded",()=>{
             signform.addEventListener("submit",(e)=>{
@@ -164,6 +184,7 @@
               emailValidateChecking();
               phoneValidateChecking();
               passValidateChecking();
+              referralCodeValidation();
               if(
                 !nameid ||
                 !emailid ||

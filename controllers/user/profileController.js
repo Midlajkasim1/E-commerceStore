@@ -50,7 +50,8 @@ const editProfile =async (req,res)=>{
             req.flash('err', 'User not found.');
             return res.redirect('/edit-profile');
         }
-        req.flash('success', 'Profile updated successfully.');        res.redirect('/userProfile');
+        req.flash('success', 'Profile updated successfully.');       
+         res.redirect('/userProfile');
 
     } catch (error) {
         console.error('Error updating profile:', error);

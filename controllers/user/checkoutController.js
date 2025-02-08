@@ -3,6 +3,7 @@ const Product = require('../../models/productSchema');
 const Cart = require('../../models/cartSchema');
 const Address = require('../../models/addressSchema');
 const Coupon = require('../../models/couponSchema');
+const Wallet = require('../../models/walletSchema');
 const mongoose = require('mongoose');
 
 
@@ -23,6 +24,10 @@ const getCheckout = async (req, res) => {
         if (!userCart) {
             return res.redirect('/cart');
         }
+        let wallet = await Wallet.findOne({ userId: req.session.user });
+        if (!wallet) {
+            wallet = { balance: 0 }; 
+        }
 
         const cartItems = userCart.items.map(item => ({
             productId: item.productId._id,
@@ -33,6 +38,7 @@ const getCheckout = async (req, res) => {
             price: item.price,
             salePrice: item.productId.salePrice,
             totalPrice: item.totalPrice,
+           
         }));
 
         const subtotal = cartItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
@@ -54,6 +60,7 @@ const getCheckout = async (req, res) => {
             shipping,
             tax,
             total,
+            wallet: wallet.balance, 
             user: req.user || req.session.user ,
             message:req.flash()
         });

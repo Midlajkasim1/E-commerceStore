@@ -1,8 +1,10 @@
 const User = require('../../models/userSchema');
 const Category = require('../../models/categorySchema');
 const Product = require('../../models/productSchema');
+const Wallet = require('../../models/walletSchema');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const env = require('dotenv').config();
 
 
@@ -57,12 +59,14 @@ async function sendVerificationEmail(email, otp) {
 }
 
 
-
+const generateReferralCode = () => {
+    return crypto.randomBytes(4).toString('hex').toUpperCase();
+};
 
 // Signup 
 const signup = async (req, res) => {
     try {
-        const { name, phone, email, password, cPassword } = req.body;
+        const { name, phone, email, password, cPassword,referralCode  } = req.body;
 
         if (!name || !phone || !email || !password || !cPassword) {
             req.flash('err','All fields are required')
@@ -80,6 +84,16 @@ const signup = async (req, res) => {
             return res.redirect("/signup");
         }
 
+        const myCode = generateReferralCode();
+        let referrerUser = null;
+        if (referralCode) {
+            referrerUser = await User.findOne({ myCode: referralCode });
+            if (!referrerUser) {
+                req.flash('err', 'Invalid referral code');
+                return res.redirect("/signup");
+            }
+        }
+
         const otp = generateOtp();
         const emailSent = await sendVerificationEmail(email, otp);
         if (!emailSent) {
@@ -88,7 +102,8 @@ const signup = async (req, res) => {
         }
 
         req.session.userOtp = otp;
-        req.session.userData = { name, phone, email, password };
+        req.session.userData = { name, phone, email, password ,myCode,
+            referralCode: referralCode || null };
 
         console.log("Session data saved:", req.session);
         res.render("verifyOtp");
@@ -112,17 +127,68 @@ const securePassword = async (password)=>{
 const verifyOtp = async (req, res) => {
     try {
       const {otp} = req.body;
+      // Check if session and userData exist
+      if (!req.session || !req.session.userOtp || !req.session.userData) {
+        return res.status(400).json({
+            success: false,
+            message: "Session expired or invalid. Please try again."
+        });
+    }
       if(otp===req.session.userOtp){
-        const user = req.session.userData
-        const passwordHash = await securePassword(user.password);
-        const saveUserData = new User({
-            name:user.name,
-            email:user.email,
-            phone:user.phone,
-            password:passwordHash,
-        })
-        await saveUserData.save();
-        req.session.user = saveUserData._id;
+        const userData = req.session.userData;
+        const passwordHash = await securePassword(userData.password);
+        const newUser = new User({
+            name: userData.name,
+            email: userData.email,
+            phone: userData.phone,
+            password: passwordHash,
+            myCode: userData.myCode || generateReferralCode(), // Generate if not exists
+            referalCode: userData.referralCode // Store the referral code used during signup
+        });
+        await newUser.save();
+           // Create wallet for new user
+           const newWallet = new Wallet({
+            user: newUser._id,
+            balance: 0,
+            transaction: []
+        });
+        await newWallet.save();
+
+        // Handle referral rewards if referral code was used
+        if (userData.referralCode) {
+            const referrer = await User.findOne({ myCode: userData.referralCode });
+            if (referrer) {
+                // Update referrer's wallet (₹100 bonus)
+                const referrerWallet = await Wallet.findOne({ user: referrer._id });
+                if (referrerWallet) {
+                    referrerWallet.balance += 100;
+                    referrerWallet.transaction.push({
+                        amount: 100,
+                        type: 'credit',
+                        transactionId: crypto.randomBytes(8).toString('hex'),
+                        productName: ['Referral Bonus']
+                    });
+                    await referrerWallet.save();
+                }
+
+                // Update new user's wallet (₹50 bonus)
+                newWallet.balance += 50;
+                newWallet.transaction.push({
+                    amount: 50,
+                    type: 'credit',
+                    transactionId: crypto.randomBytes(8).toString('hex'),
+                    productName: ['Welcome Bonus']
+                });
+                await newWallet.save();
+            }
+        }
+
+
+
+
+        req.session.user = newUser._id;
+        req.session.userOtp = null;
+        req.session.userData = null;
         res.json({success:true,redirectUrl:"/"})
 
       }else{

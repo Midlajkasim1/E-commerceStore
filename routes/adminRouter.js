@@ -6,15 +6,17 @@ const customerController = require('../controllers/admin/customerController');
  const productController = require('../controllers/admin/productController');
  const orderController = require('../controllers/admin/orderController');
  const couponController = require('../controllers/admin/couponController');
-const {userAuth,adminAuth,adminCheck} = require("../middlewares/auth");
+ const salesReportController = require('../controllers/admin/salesReportController');
+const {adminAuth,adminCheck} = require("../middlewares/auth");
 const multer = require('multer');
 const storage = require('../helpers/multer');
+const { downloadExcelReport } = require('../controllers/admin/salesReportController');
 const uploads = multer({storage:storage});
 
 
 router.get('/login',adminController.loadlogin);
 router.post('/login',adminController.login)
-router.get('/dashboard', adminAuth,adminController.loadDashboard);
+router.get('/dashboard', adminCheck,adminController.loadDashboard);
 router.get('/pageerror',adminController.pageerror)
 router.post("/logout",adminController.logout)
 
@@ -58,6 +60,11 @@ router.get('/coupon/unlist-coupon',adminCheck,couponController.unListCoupon);
 router.get('/coupon/edit-coupon/:id',adminCheck,couponController.getEditCoupon);
 router.post('/coupon/edit-coupon',adminCheck,couponController.editCoupon);
 router.get('/coupon/delete-coupon/:id',adminCheck,couponController.deleteCoupon);
+
+//sales Report
+// router.get('/sales-report',adminCheck,salesReportController.getSalesReport);
+router.get('/sales-report/excel', adminCheck, adminController.downloadExcelReport);
+router.get('/sales-report/pdf', adminCheck, adminController.downloadPdfReport);
 
 
 

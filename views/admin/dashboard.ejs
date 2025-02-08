@@ -3,147 +3,456 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/style/dashboard.css">
+    <title>Urban Row - Admin Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        :root {
+            --sidebar-width: 250px;
+            --purple-color: #8B5CF6;
+            --dark-bg: #111827;
+            --darker-bg: #1F2937;
+            --card-bg: #1F2937;
+            --accent-blue: #0d6efd;
+            --text-gray: #8b92a9;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--dark-bg);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 20px;
+            border-right: 1px solid #374151;
+            z-index: 1000;
+        }
+
+        .brand-name {
+            color: white;
+            font-size: 18px;
+            margin-bottom: 30px;
+            padding-left: 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            color: #9CA3AF;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .nav-item i {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: var(--purple-color);
+            color: white;
+        }
+
+        .nav-item.logout {
+            color: #EF4444;
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .nav-item.logout:hover {
+            background-color: #EF4444;
+            color: white;
+        }
+
+        /* Top Header Styles */
+        .top-header {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--sidebar-width);
+            height: 60px;
+            background-color: var(--dark-bg);
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 900;
+        }
+
+        .profile-section img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 2px solid #374151;
+            object-fit: cover;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding-top: 60px;
+            min-height: 100vh;
+        }
+
+        .content-wrapper {
+            padding: 20px;
+        }
+
+        /* Card Styles */
+        .card {
+            background-color: var(--card-bg);
+            border: none;
+            border-radius: 10px;
+        }
+
+        .stat-card {
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Table Styles */
+        .table {
+            color: white;
+        }
+
+        .status-badge {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+        }
+
+        /* Form Control Styles */
+        .form-select {
+            background-color: var(--card-bg);
+            border-color: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .form-select:focus {
+            background-color: var(--card-bg);
+            border-color: var(--accent-blue);
+            color: white;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        /* Chart containers */
+        .chart-container {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        .text-muted {
+            color: white!important;
+        }
+        .card-title{
+            color: white!important;
+
+        }
+        .mb-0{
+            color: white;
+        }
+    </style>
 </head>
 <body>
-   
-   
-
-       
-        <%- include("../../views/partials/admin/header") %>
-        <h4 class="mb-4">Dashboard</h4>
-        <!-- <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stats-value">29</div>
-                    <div class="stats-label">Total users</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-icon">
-                        <i class="fas fa-box"></i>
-                    </div>
-                    <div class="stats-value">34</div>
-                    <div class="stats-label">Items sold</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stats-value">₹ 15889</div>
-                    <div class="stats-label">Total Sales</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stats-value">12</div>
-                    <div class="stats-label">Pending Orders</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center">
-            <h5>Top sold Products</h5>
-            <div class="d-flex gap-3 align-items-center">
-                <input type="text" class="date-input" placeholder="To">
-                <input type="text" class="date-input" placeholder="From">
-                <button class="download-btn">
-                    PDF
-                    <i class="fas fa-download"></i>
+    <div class="sidebar">
+        <div class="brand-name">Urban row</div>
+        <nav>
+            <a href="/admin/dashboard" class="nav-item active">
+                <i class="fas fa-home"></i>
+                Dashboard
+            </a>
+            <a href="/admin/products" class="nav-item">
+                <i class="fas fa-box"></i>
+                Product
+            </a>
+            <a href="/admin/order" class="nav-item">
+                <i class="fas fa-shopping-cart"></i>
+                Orders
+            </a>
+            <a href="/admin/users" class="nav-item">
+                <i class="fas fa-users"></i>
+                Users
+            </a>
+            <a href="/admin/category" class="nav-item">
+                <i class="fas fa-tags"></i>
+                Categories
+            </a>
+            <a href="/admin/coupon" class="nav-item">
+                <i class="fas fa-ticket"></i>
+                Coupon
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-image"></i>
+                Banner
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                Settings
+            </a>
+            <form method="post" action="/admin/logout">
+                <button type="submit" class="nav-item logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
                 </button>
+            </form>
+        </nav>
+    </div>
+
+    <div class="top-header">
+        <div class="profile-section">
+            <img src="/images/admin-pro.jpeg" alt="Admin">
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="content-wrapper">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Dashboard Overview</h2>
+                <div class="d-flex gap-3">
+                    <select class="form-select" id="dateRange">
+                        <option value="daily">Last 24 Hours</option>
+                        <option value="weekly">Last Week</option>
+                        <option value="monthly">Last Month</option>
+                        <option value="yearly">Last Year</option>
+                    </select>
+                    <button class="btn btn-success" onclick="downloadReport('excel')">
+                        <i class="fas fa-file-excel me-2"></i>Excel Report
+                    </button>
+                    <button class="btn btn-danger" onclick="downloadReport('pdf')">
+                        <i class="fas fa-file-pdf me-2"></i>PDF Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card stat-card text-white p-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted">Total Sales</h6>
+                                <h3>₹<%= totalSales.toLocaleString() %></h3>
+                            </div>
+                            <div class="fs-1 text-success">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2  <%= salesGrowth >= 0 ? 'text-success' : 'text-danger' %>"">
+                            <small><i class="fas fa-arrow-<%= salesGrowth >= 0 ? 'up' : 'down' %>"></i>  </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card text-white p-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted">Total Orders</h6>
+                                <h3><%= totalOrders.toLocaleString() %></h3>
+                            </div>
+                            <div class="fs-1 text-primary">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-success">
+                            <small><i class="fas fa-arrow-up"></i>This Month:</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card text-white p-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted">Total Users</h6>
+                                <h3><%= totalUsers.toLocaleString() %></h3>
+                            </div>
+                            <div class="fs-1 text-info">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-success">
+                            <small><i class="fas fa-arrow-up"></i> Active users this month</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card text-white p-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted">Total Discount</h6>
+                                <h3>₹<%= totalDiscounts.toLocaleString() %></h3>
+                            </div>
+                            <div class="fs-1 text-warning">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-danger">
+                            <small><i class="fas fa-arrow-down"></i>Including coupons & offers</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card p-3">
+                        <h5 class="card-title">Sales Overview</h5>
+                        <canvas id="salesChart" height="300"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3">
+                        <h5 class="card-title">Order Status</h5>
+                        <canvas id="orderStatusChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+
+              <!-- Purchase History Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">User Purchase History</h5>
+        </div>
+        <div class="card">
+            <!-- <div class="card-header">
+                <h5 class="mb-0">Top Customers</h5>
+            </div> -->
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Email</th>
+                                <th>Total Orders</th>
+                                <th>Total Spent</th>
+                                <th>Last Purchase</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% userPurchaseHistory.forEach(user => { %>
+                                <tr>
+                                    <td><%= user.name %></td>
+                                    <td><%= user.email %></td>
+                                    <td><%= user.totalOrders %></td>
+                                    <td>₹<%= user.totalSpent.toLocaleString() %></td>
+                                    <td><%= new Date(user.lastPurchase).toLocaleDateString() %></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-
-        <div class="products-table">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>PRODUCT IMAGE</th>
-                        <th>PRODUCT NAME</th>
-                        <th>CATEGORY</th>
-                        <th>AMOUNT</th>
-                        <th>REVENUE</th>
-                        <th>QTY SOLD</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>#11225</td>
-                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
-                        <td>Shirt</td>
-                        <td>Shirt</td>
-                        <td>$ 120</td>
-                        <td>$ 1276.45</td>
-                        <td>5</td>
-                    </tr>
-                    <tr>
-                        <td>#11226</td>
-                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
-                        <td>Shirt</td>
-                        <td>Shirt</td>
-                        <td>$ 85.25</td>
-                        <td>$ 369.95</td>
-                        <td>5</td>
-                    </tr>
-                    <tr>
-                        <td>#11227</td>
-                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
-                        <td>Pants</td>
-                        <td>Shirt</td>
-                        <td>$ 25.25</td>
-                        <td>$ 863.45</td>
-                        <td>4</td>
-                    </tr>
-                    <tr>
-                        <td>#11228</td>
-                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
-                        <td>Pants</td>
-                        <td>Pants</td>
-                        <td>$ 100</td>
-                        <td>$ 127.45</td>
-                        <td>2</td>
-                    </tr>
-                    <tr>
-                        <td>#11229</td>
-                        <td><img src="/api/placeholder/40/50" class="product-img" alt="Product"></td>
-                        <td>Bag</td>
-                        <td>Bag</td>
-                        <td>$ 80</td>
-                        <td>$ 86.00</td>
-                        <td>2</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <span class="text-muted">SHOWING 1 OF 10</span>
-                <nav>
-                    <ul class="pagination mb-0">
-                        <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-left"></i></a></li>
-                        <li class="page-item"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link active" href="#">3</a></li>
-                        <li class="page-item"><a class="page-link" href="#">4</a></li>
-                        <li class="page-item"><a class="page-link" href="#">8</a></li>
-                        <li class="page-item"><a class="page-link" href="#">9</a></li>
-                        <li class="page-item"><a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a></li>
-                    </ul>
-                </nav>
-            </div>
+    </div>
         </div>
-    </div> -->
-</body>
-</html>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script>
+        // Sales Chart
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Sales',
+                    data: [12000, 19000, 15000, 25000, 22000, 30000],
+                    borderColor: '#0d6efd',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            color: 'white'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: 'white'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Order Status Chart
+        const orderCtx = document.getElementById('orderStatusChart').getContext('2d');
+        new Chart(orderCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Delivered', 'Pending', 'Processing'],
+                datasets: [{
+                    data: [63, 25, 12],
+                    backgroundColor: ['#198754', '#ffc107', '#0dcaf0']
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: 'white'
+                        }
+                    }
+                }
+            }
+        });
+        function downloadReport(type) {
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 1);
+    const endDate = new Date();
+    
+    const params = new URLSearchParams({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+    });
+
+    const url = `/admin/sales-report/${type}?${params.toString()}`;
+    window.open(url, '_blank');
+}
+
+    </script>
+    
