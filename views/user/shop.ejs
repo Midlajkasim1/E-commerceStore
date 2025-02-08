@@ -222,7 +222,6 @@
             /* Increased height for 3 lines */
             overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 3;
             /* Changed to show 3 lines */
             -webkit-box-orient: vertical;
             line-height: 1.5;
@@ -554,15 +553,9 @@
                     }
                 }
 
-                // Call this when page loads
                 document.addEventListener("DOMContentLoaded", setSelectedSort);
-                // Add to cart functionality
-                document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-                    button.addEventListener('click', function () {
-                        alert('Item added to cart!');
-                    });
-                });
-                //
+            
+  
 
                 function addToWishlist(productId) {
                     $.ajax({

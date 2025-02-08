@@ -49,7 +49,8 @@ router.post('/products/editProduct/deleteImage/:id',adminCheck,productController
 //order
 router.get('/order',adminCheck,orderController.getOrder)
 router.get('/orderdetail/:id', adminCheck, orderController.getOrderDetails);
-router.post('/order/status-update/:id',adminCheck,orderController.updateStatus)
+router.post('/order/status-update/:id',adminCheck,orderController.updateStatus);
+router.post('/order/approve-return/:orderId', adminCheck, orderController.approveReturnRequest);
 
 //coupon
 router.get('/coupon',adminCheck,couponController.getCoupon);

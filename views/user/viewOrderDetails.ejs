@@ -86,6 +86,9 @@
             justify-content: space-between;
             align-items: center;
             margin: 20px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
         }
 
         .tracking-step {
@@ -132,6 +135,13 @@
             background-color: #28a745;
         }
 
+        .order-item {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
         /* Product Image Styles */
         .product-image {
             width: 120px;
@@ -170,11 +180,12 @@
         .order-details-section strong {
             color: #333;
         }
+
         .cancel-reason {
-        font-size: 0.9rem;
-        margin-bottom: 10px;
-        width: 200px;
-    }
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            width: 200px;
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 </head>
@@ -203,111 +214,128 @@
                                 <h5>Order Details</h5>
                             </div>
                             <div class="card-body">
-                                <!-- Tracking Progress -->
-                                <!-- Tracking Progress -->
-                             <!-- Tracking Progress -->
-<div class="tracking-progress">
-    <!-- Order Placed -->
-    <div class="tracking-step <%= ['Pending', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) ? 'completed' : '' %>">
-        <div class="icon">✔</div>
-        <p>Order Placed</p>
-    </div>
-    <div class="tracking-line <%= ['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) ? 'completed' : '' %>"></div>
+                                <!-- Ordered Items Section with Individual Tracking -->
+                                <% for(let i=0; i < order.orderedItems.length; i++) { %>
+                                    <div class="order-item">
+                                        <!-- Individual Product Tracking -->
+                                        <div class="tracking-progress">
+                                            <!-- Order Placed -->
+                                            <div
+                                                class="tracking-step <%= ['Pending', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderedItems[i].status) ? 'completed' : '' %>">
+                                                <div class="icon">✔</div>
+                                                <p>Order Placed</p>
+                                            </div>
+                                            <div
+                                                class="tracking-line <%= ['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderedItems[i].status) ? 'completed' : '' %>">
+                                            </div>
 
-    <!-- Order Processed -->
-    <div class="tracking-step <%= ['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) ? 'completed' : '' %>">
-        <div class="icon">✔</div>
-        <p>Order Processed</p>
-    </div>
-    <div class="tracking-line <%= ['Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) ? 'completed' : '' %>"></div>
+                                            <!-- Order Processed -->
+                                            <div
+                                                class="tracking-step <%= ['Processing', 'Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderedItems[i].status) ? 'completed' : '' %>">
+                                                <div class="icon">✔</div>
+                                                <p>Processing</p>
+                                            </div>
+                                            <div
+                                                class="tracking-line <%= ['Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderedItems[i].status) ? 'completed' : '' %>">
+                                            </div>
 
-    <!-- Shipped -->
-    <div class="tracking-step <%= ['Shipped', 'Out for Delivery', 'Delivered'].includes(order.status) ? 'completed' : '' %>">
-        <div class="icon">🚚</div>
-        <p>Shipped</p>
-    </div>
-    <div class="tracking-line <%= ['Out for Delivery', 'Delivered'].includes(order.status) ? 'completed' : '' %>"></div>
+                                            <!-- Shipped -->
+                                            <div
+                                                class="tracking-step <%= ['Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderedItems[i].status) ? 'completed' : '' %>">
+                                                <div class="icon">🚚</div>
+                                                <p>Shipped</p>
+                                            </div>
+                                            <div
+                                                class="tracking-line <%= ['Out for Delivery', 'Delivered'].includes(order.orderedItems[i].status) ? 'completed' : '' %>">
+                                            </div>
 
-    <!-- Out for Delivery -->
-    <div class="tracking-step <%= ['Out for Delivery', 'Delivered'].includes(order.status) ? 'completed' : '' %>">
-        <div class="icon">📦</div>
-        <p>Out for Delivery</p>
-    </div>
-    <div class="tracking-line <%= order.status === 'Delivered' ? 'completed' : '' %>"></div>
+                                            <!-- Out for Delivery -->
+                                            <div
+                                                class="tracking-step <%= ['Out for Delivery', 'Delivered'].includes(order.orderedItems[i].status) ? 'completed' : '' %>">
+                                                <div class="icon">📦</div>
+                                                <p>Out for Delivery</p>
+                                            </div>
+                                            <div
+                                                class="tracking-line <%= order.orderedItems[i].status === 'Delivered' ? 'completed' : '' %>">
+                                            </div>
 
-    <!-- Delivered -->
-    <div class="tracking-step <%= order.status === 'Delivered' ? 'completed' : '' %>">
-        <div class="icon">✔</div>
-        <p>Delivered</p>
-    </div>
-</div>
+                                            <!-- Delivered -->
+                                            <div
+                                                class="tracking-step <%= order.orderedItems[i].status === 'Delivered' ? 'completed' : '' %>">
+                                                <div class="icon">✔</div>
+                                                <p>Delivered</p>
+                                            </div>
+                                        </div>
 
-                                <!-- Ordered Items Section -->
-                                <!-- Ordered Items Section -->
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <h5>Ordered Items</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <% for(let i = 0; i < order.orderedItems.length; i++) { %>
-                                            <div class="d-flex align-items-center mb-3">
-                                                <!-- Product Image -->
-                                                <img src="/uploads/re-image/<%= order.orderedItems[i].product.productImage[0] %>"
-                                                    alt="no image" class="product-image me-3">
-                                                <!-- Product Details -->
-                                                <div class="flex-grow-1">
-                                                    <h6><%= order.orderedItems[i].product.productName %></h6>
-                                                    <p><strong>Quantity:</strong> <%= order.orderedItems[i].quantity %></p>
-                                                    <p><strong>Price:</strong> ₹<%= order.orderedItems[i].price %></p>
-                                                    <p><strong>Size:</strong> <%= order.orderedItems[i].size %></p>
-                                                </div>
-                                                <!-- Cancel Button -->
-                                                <% if (order.orderedItems[i].status === 'Pending' || order.orderedItems[i].status === 'Processing' || order.orderedItems[i].status === 'Shipped' || order.orderedItems[i].status === 'Out for Delivery') { %>
-                                                    <div class="d-flex flex-column align-items-end">
-                                                        <select class="form-select mb-2 cancel-reason" style="width: 200px;" 
-                                                                data-order-id="<%= order._id %>"
-                                                                data-product-id="<%= order.orderedItems[i].product._id %>"
-                                                                <%= order.orderedItems[i].status === 'Cancelled' ? 'disabled' : '' %>>
-                                                            <option value="">Select Cancellation Reason</option>
-                                                            <option value="Changed My Mind">Changed My Mind</option>
-                                                            <option value="Found a Cheaper Alternative">Found a Cheaper Alternative</option>
-                                                            <option value="Incorrect Item Ordered">Incorrect Item Ordered</option>
-                                                            <option value="Delivery Taking Too Long">Delivery Taking Too Long</option>
-                                                            <option value="qProduct Quality Concern">Product Quality Concern</option>
-                                                            <option value="Other Reason">Other Reason</option>
-                                                        </select>
-                                                        <button class="btn btn-danger btn-sm cancel-product" 
-                                                                data-order-id="<%= order._id %>"
-                                                                data-product-id="<%= order.orderedItems[i].product._id %>"
-                                                                <%= order.orderedItems[i].status === 'Cancelled' ? 'disabled' : '' %>>
-                                                            <% if (order.orderedItems[i].status === 'Cancelled') { %>
-                                                                Cancelled
-                                                            <% } else { %>
-                                                                Cancel Order
-                                                            <% } %>
-                                                        </button>
-                                                    </div>
-                                                <% } else if (order.orderedItems[i].status === 'Delivered' && order.orderedItems[i].status !== 'Returned') { %>
-                                                    <button class="btn btn-warning btn-sm return-product"
+                                        <!-- Product Details -->
+                                        <div class="d-flex align-items-center mt-3">
+                                            <img src="/uploads/re-image/<%= order.orderedItems[i].product.productImage[0] %>"
+                                                alt="no image" class="product-image me-3">
+                                            <div class="flex-grow-1">
+                                                <h6>
+                                                    <%= order.orderedItems[i].product.productName %>
+                                                </h6>
+                                                <p><strong>Quantity:</strong>
+                                                    <%= order.orderedItems[i].quantity %>
+                                                </p>
+                                                <p><strong>Price:</strong> ₹<%= order.orderedItems[i].price %>
+                                                </p>
+                                                <p><strong>Size:</strong>
+                                                    <%= order.orderedItems[i].size %>
+                                                </p>
+                                                <p><strong>Status:</strong>
+                                                    <%= order.orderedItems[i].status %>
+                                                </p>
+                                            </div>
+
+                                            <!-- Cancel/Return Button Section -->
+                                            <div class="d-flex flex-column align-items-end">
+                                                <% if (order.orderedItems[i].status==='Pending' ||
+                                                    order.orderedItems[i].status==='Processing' ||
+                                                    order.orderedItems[i].status==='Shipped' ||
+                                                    order.orderedItems[i].status==='Out for Delivery' ) { %>
+                                                    <select class="form-select mb-2 cancel-reason"
                                                         data-order-id="<%= order._id %>"
                                                         data-product-id="<%= order.orderedItems[i].product._id %>">
-                                                        Return
+                                                        <option value="">Select Cancellation Reason</option>
+                                                        <option value="Changed My Mind">Changed My Mind</option>
+                                                        <option value="Found a Cheaper Alternative">Found a Cheaper
+                                                            Alternative</option>
+                                                        <option value="Incorrect Item Ordered">Incorrect Item Ordered
+                                                        </option>
+                                                        <option value="Delivery Taking Too Long">Delivery Taking Too
+                                                            Long</option>
+                                                        <option value="Product Quality Concern">Product Quality Concern
+                                                        </option>
+                                                        <option value="Other Reason">Other Reason</option>
+                                                    </select>
+                                                    <button class="btn btn-danger btn-sm cancel-product"
+                                                        data-order-id="<%= order._id %>"
+                                                        data-product-id="<%= order.orderedItems[i].product._id %>">
+                                                        Cancel Order
                                                     </button>
-                                                <% } else { %>
-                                                    <button class="btn btn-secondary btn-sm" disabled>
-                                                        <% if (order.orderedItems[i].status === 'Cancelled') { %>
-                                                            Cancelled
-                                                        <% } else if (order.orderedItems[i].status === 'Returned') { %>
-                                                            Returned
+                                                    <% } else if (order.orderedItems[i].status==='Delivered' ) { %>
+                                                        <select class="form-select mb-2 return-reason" data-order-id="<%= order._id %>" data-product-id="<%= order.orderedItems[i].product._id %>">
+                                                            <option value="">Select Return Reason</option>
+                                                            <option value="Wrong Size">Wrong Size</option>
+                                                            <option value="Defective Product">Defective Product</option>
+                                                            <option value="Not as Described">Not as Described</option>
+                                                            <option value="Better Alternative Found">Better Alternative Found</option>
+                                                            <option value="Quality Issues">Quality Issues</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
+                                                        <button class="btn btn-warning btn-sm return-product" data-order-id="<%= order._id %>" data-product-id="<%= order.orderedItems[i].product._id %>">
+                                                            Return
+                                                        </button>
                                                         <% } else { %>
-                                                            Completed
-                                                        <% } %>
-                                                    </button>
-                                                <% } %>
+                                                            <button class="btn btn-secondary btn-sm" disabled>
+                                                                <%= order.orderedItems[i].status %>
+                                                            </button>
+                                                            <% } %>
                                             </div>
-                                        <% } %>
+                                        </div>
                                     </div>
-                                </div>
+                                    <% } %>
                             </div>
                         </div>
 
@@ -317,7 +345,9 @@
                                 <h5>Order Summary</h5>
                             </div>
                             <div class="card-body">
-                                <p><strong>Order Date:</strong> 2023-10-01</p>
+                                <p><strong>Order Date:</strong>
+                                    <%= order.createOn.toLocaleDateString() %>
+                                </p>
                                 <p><strong>Subtotal:</strong> ₹<%= order.totalPrice %>
                                 </p>
                                 <p><strong>Total:</strong> ₹<%= order.finalAmount %>
@@ -351,15 +381,149 @@
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
             <script>
                 // Cancel Product
+                // document.querySelectorAll('.cancel-product').forEach(button => {
+                //     button.addEventListener('click', async () => {
+                //         const orderId = button.getAttribute('data-order-id');
+                //         const productId = button.getAttribute('data-product-id');
+
+                //         // SweetAlert2 confirmation dialog
+                //         const result = await Swal.fire({
+                //             title: 'Are you sure?',
+                //             text: "You won't be able to revert this!",
+                //             icon: 'warning',
+                //             showCancelButton: true,
+                //             confirmButtonColor: '#3085d6',
+                //             cancelButtonColor: '#d33',
+                //             confirmButtonText: 'Yes, cancel it!'
+                //         });
+
+                //         // If user confirms, proceed with the cancellation
+                //         if (result.isConfirmed) {
+                //             try {
+                //                 const response = await fetch('/order/cancel-product', {
+                //                     method: 'POST',
+                //                     headers: {
+                //                         'Content-Type': 'application/json',
+                //                     },
+                //                     body: JSON.stringify({ orderId, productId }),
+                //                 });
+
+                //                 const result = await response.json();
+
+                //                 if (result.success) {
+                //                     Swal.fire({
+                //                         icon: 'success',
+                //                         title: 'Success!',
+                //                         text: result.message,
+                //                         confirmButtonText: 'OK',
+                //                     }).then(() => {
+                //                         location.reload(); // Refresh the page to reflect changes
+                //                     });
+                //                 } else {
+                //                     Swal.fire({
+                //                         icon: 'error',
+                //                         title: 'Error!',
+                //                         text: result.message,
+                //                         confirmButtonText: 'OK',
+                //                     });
+                //                 }
+                //             } catch (error) {
+                //                 console.error('Error:', error);
+                //                 Swal.fire({
+                //                     icon: 'error',
+                //                     title: 'Error!',
+                //                     text: 'An error occurred while canceling the product.',
+                //                     confirmButtonText: 'OK',
+                //                 });
+                //             }
+                //         }
+                //     });
+                // });
+
+                // // Return Product
+                // document.querySelectorAll('.return-product').forEach(button => {
+                //     button.addEventListener('click', async () => {
+                //         const orderId = button.getAttribute('data-order-id');
+                //         const productId = button.getAttribute('data-product-id');
+
+                //         // SweetAlert2 confirmation dialog
+                //         const result = await Swal.fire({
+                //             title: 'Are you sure?',
+                //             text: "You won't be able to revert this!",
+                //             icon: 'warning',
+                //             showCancelButton: true,
+                //             confirmButtonColor: '#3085d6',
+                //             cancelButtonColor: '#d33',
+                //             confirmButtonText: 'Yes, return it!'
+                //         });
+
+                //         // If user confirms, proceed with the return
+                //         if (result.isConfirmed) {
+                //             try {
+                //                 const response = await fetch('/order/return-product', {
+                //                     method: 'POST',
+                //                     headers: {
+                //                         'Content-Type': 'application/json',
+                //                     },
+                //                     body: JSON.stringify({ orderId, productId }),
+                //                 });
+
+                //                 const result = await response.json();
+
+                //                 if (result.success) {
+                //                     Swal.fire({
+                //                         icon: 'success',
+                //                         title: 'Success!',
+                //                         text: result.message,
+                //                         confirmButtonText: 'OK',
+                //                     }).then(() => {
+                //                         location.reload();
+                //                     });
+                //                 } else {
+                //                     Swal.fire({
+                //                         icon: 'error',
+                //                         title: 'Error!',
+                //                         text: result.message,
+                //                         confirmButtonText: 'OK',
+                //                     });
+                //                 }
+                //             } catch (error) {
+                //                 console.error('Error:', error);
+                //                 Swal.fire({
+                //                     icon: 'error',
+                //                     title: 'Error!',
+                //                     text: 'An error occurred while returning the product.',
+                //                     confirmButtonText: 'OK',
+                //                 });
+                //             }
+                //         }
+                //     });
+                // });
+
                 document.querySelectorAll('.cancel-product').forEach(button => {
                     button.addEventListener('click', async () => {
                         const orderId = button.getAttribute('data-order-id');
                         const productId = button.getAttribute('data-product-id');
 
+                        // Find the corresponding reason dropdown
+                        const reasonDropdown = document.querySelector(`.cancel-reason[data-order-id="${orderId}"][data-product-id="${productId}"]`);
+                        const cancellationReason = reasonDropdown.value;
+
+                        // Validate that a reason is selected
+                        if (!cancellationReason) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Oops...',
+                                text: 'Please select a cancellation reason',
+                                confirmButtonText: 'OK'
+                            });
+                            return;
+                        }
+
                         // SweetAlert2 confirmation dialog
                         const result = await Swal.fire({
                             title: 'Are you sure?',
-                            text: "You won't be able to revert this!",
+                            text: "You won't be able to revert this cancellation!",
                             icon: 'warning',
                             showCancelButton: true,
                             confirmButtonColor: '#3085d6',
@@ -375,7 +539,11 @@
                                     headers: {
                                         'Content-Type': 'application/json',
                                     },
-                                    body: JSON.stringify({ orderId, productId }),
+                                    body: JSON.stringify({
+                                        orderId,
+                                        productId,
+                                        cancellationReason
+                                    }),
                                 });
 
                                 const result = await response.json();
@@ -410,81 +578,30 @@
                     });
                 });
 
-                // Return Product
-                document.querySelectorAll('.return-product').forEach(button => {
-                    button.addEventListener('click', async () => {
-                        const orderId = button.getAttribute('data-order-id');
-                        const productId = button.getAttribute('data-product-id');
+                //return
+      document.querySelectorAll('.return-product').forEach(button => {
+    button.addEventListener('click', async (event) => {
+        event.preventDefault(); // Prevent default behavior (e.g., form submission)
 
-                        // SweetAlert2 confirmation dialog
-                        const result = await Swal.fire({
-                            title: 'Are you sure?',
-                            text: "You won't be able to revert this!",
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#3085d6',
-                            cancelButtonColor: '#d33',
-                            confirmButtonText: 'Yes, return it!'
-                        });
+        console.log("Return button clicked!"); // Debugging log
 
-                        // If user confirms, proceed with the return
-                        if (result.isConfirmed) {
-                            try {
-                                const response = await fetch('/order/return-product', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({ orderId, productId }),
-                                });
-
-                                const result = await response.json();
-
-                                if (result.success) {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Success!',
-                                        text: result.message,
-                                        confirmButtonText: 'OK',
-                                    }).then(() => {
-                                        location.reload(); 
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error!',
-                                        text: result.message,
-                                        confirmButtonText: 'OK',
-                                    });
-                                }
-                            } catch (error) {
-                                console.error('Error:', error);
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error!',
-                                    text: 'An error occurred while returning the product.',
-                                    confirmButtonText: 'OK',
-                                });
-                            }
-                        }
-                    });
-                });
-
-                document.querySelectorAll('.cancel-product').forEach(button => {
-    button.addEventListener('click', async () => {
         const orderId = button.getAttribute('data-order-id');
         const productId = button.getAttribute('data-product-id');
-        
+
+        console.log("Order ID:", orderId); // Debugging log
+        console.log("Product ID:", productId); // Debugging log
+
         // Find the corresponding reason dropdown
-        const reasonDropdown = document.querySelector(`.cancel-reason[data-order-id="${orderId}"][data-product-id="${productId}"]`);
-        const cancellationReason = reasonDropdown.value;
+        const reasonDropdown = document.querySelector(`.return-reason[data-order-id="${orderId}"][data-product-id="${productId}"]`);
+const returnReason = reasonDropdown.value; // Error occurs here
+        console.log("Return Reason:", returnReason); // Debugging log
 
         // Validate that a reason is selected
-        if (!cancellationReason) {
+        if (!returnReason) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Oops...',
-                text: 'Please select a cancellation reason',
+                text: 'Please select a return reason',
                 confirmButtonText: 'OK'
             });
             return;
@@ -493,26 +610,26 @@
         // SweetAlert2 confirmation dialog
         const result = await Swal.fire({
             title: 'Are you sure?',
-            text: "You won't be able to revert this cancellation!",
+            text: "You won't be able to revert this return!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, cancel it!'
+            confirmButtonText: 'Yes, return it!'
         });
 
-        // If user confirms, proceed with the cancellation
+        // If user confirms, proceed with the return
         if (result.isConfirmed) {
             try {
-                const response = await fetch('/order/cancel-product', {
+                const response = await fetch('/order/return-product', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ 
-                        orderId, 
-                        productId, 
-                        cancellationReason 
+                    body: JSON.stringify({
+                        orderId,
+                        productId,
+                        returnReason
                     }),
                 });
 
@@ -540,14 +657,14 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Error!',
-                    text: 'An error occurred while canceling the product.',
+                    text: 'An error occurred while returning the product.',
                     confirmButtonText: 'OK',
                 });
             }
         }
     });
 });
-          </script>
+            </script>
 </body>
 
 </html>

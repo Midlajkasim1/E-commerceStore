@@ -2,13 +2,14 @@ const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
 const User = require('../../models/userSchema');
 const Order = require('../../models/orderSchema');
+const Wallet = require('../../models/walletSchema');
 const Address = require('../../models/addressSchema');
+const {handleRefund} = require('../user/orderController')
 const mongoose = require('mongoose');
 
 
 const getOrder = async (req, res) => {
     try {
-        // Search and pagination parameters
         let search = req.query.search || "";
         let page = parseInt(req.query.page) || 1;
         let status = req.query.status || "";
@@ -16,40 +17,34 @@ const getOrder = async (req, res) => {
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        // Build search conditions
         const searchConditions = search ? {
             $or: [
                 { orderId: { $regex: search, $options: 'i' } }
             ]
         } : {};
 
-        // Build status conditions
         const statusConditions = status ? { status: status } : {};
 
-        // Combine conditions
         const conditions = {
             ...searchConditions,
             ...statusConditions
         };
 
-        // Find orders with pagination and population
         const orders = await Order.find(conditions)
             .populate({
                 path: 'userId',
-                select: 'name email' // Select specific user fields
+                select: 'name email'
             })
             .populate({
                 path: 'orderedItems.product',
-                select: 'name price' // Select specific product fields
+                select: 'name price'
             })
             .sort({ createOn: -1 })
             .skip(skip)
             .limit(limit);
 
-        // Count total orders for pagination
         const totalOrders = await Order.countDocuments(conditions);
 
-        // Render view with orders and pagination info
         res.render('admin-order', { 
             orders: orders,
             currentPage: page,
@@ -74,7 +69,6 @@ const getOrderDetails = async (req, res) => {
         console.log("order id is :",orderId);
    
 
-        // const orderDetails = await Order.findById(orderId)
 
 
         const orders = await Order.findById(orderId).populate('orderedItems.product');
@@ -90,7 +84,6 @@ const getOrderDetails = async (req, res) => {
 
     if (address) {
       selectedAddress = address.address.find((value) => value._id.toString() === orders.address.toString());
-    //   console.log("Matched Address:", selectedAddress);
     } else {
       console.log("No address found");
     }
@@ -107,46 +100,50 @@ const getOrderDetails = async (req, res) => {
 }
 const updateStatus = async (req, res) => {
     try {
-        const orderId = req.params.id; // Get the order ID from the URL
-        const { orderStatus, productId } = req.body; // Get the new status and product ID from the form
+        const orderId = req.params.id; 
+        const { orderStatus, productId } = req.body; 
 
-        console.log("Order ID:", orderId); // Debugging
-        console.log("Product ID:", productId); // Debugging
-        console.log("Order Status:", orderStatus); // Debugging
+        // console.log("Order ID:", orderId); 
+        // console.log("Product ID:", productId);
+        // console.log("Order Status:", orderStatus); 
 
-        // Validate the orderStatus
         const validStatus = ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Return Request", "Returned"];
         if (!validStatus.includes(orderStatus)) {
             req.flash('err', 'Not a valid status code');
             return res.redirect(`/admin/orderdetail/${orderId}`);
         }
 
-        // Find the order by ID
         const order = await Order.findById(orderId);
         if (!order) {
             req.flash('err', 'Order not found');
             return res.redirect('/admin/orders');
         }
 
-        // If productId is provided, update the status of the specific product
         if (productId) {
             const productToUpdate = order.orderedItems.find(item => item._id.toString() === productId);
             if (!productToUpdate) {
                 req.flash('err', 'Product not found in the order');
                 return res.redirect(`/admin/orderdetail/${orderId}`);
             }
+            if (productToUpdate.status === "Delivered") {
+                req.flash('err', 'Cannot update status: Product has already been delivered');
+                return res.redirect(`/admin/orderdetail/${orderId}`);
+            }
 
-            // Check if the product is already cancelled or returned
+
             if (productToUpdate.status === "Cancelled" || productToUpdate.status === "Returned") {
                 req.flash('err', 'Cannot update status: Product has already been cancelled or returned.');
                 return res.redirect(`/admin/orderdetail/${orderId}`);
             }
+            if (orderStatus === "Delivered" && 
+                (productToUpdate.status === "Cancelled" || productToUpdate.status === "Returned")) {
+                req.flash('err', 'Cannot mark cancelled or returned product as delivered');
+                return res.redirect(`/admin/orderdetail/${orderId}`);
+            }
 
-            // Update the status of the specific product
             productToUpdate.status = orderStatus;
         }
 
-        // Update the overall order status based on the product status
         const allProducts = order.orderedItems;
         if (allProducts.every(item => item.status === "Delivered")) {
             order.status = "Delivered";
@@ -156,19 +153,16 @@ const updateStatus = async (req, res) => {
             order.status = "Shipped";
         } else if (allProducts.some(item => item.status === "Processing")) {
             order.status = "Processing";
-        } else if (allProducts.some(item => item.status === "Cancelled")) {
-            order.status = "Cancelled";
         } else if (allProducts.some(item => item.status === "Returned")) {
             order.status = "Returned";
         } else {
             order.status = "Pending";
         }
 
-        // Save the updated order
         await order.save();
 
         req.flash('err', 'Status updated successfully');
-        return res.redirect('/admin/order'); // Redirect to the order listing page
+        return res.redirect('/admin/order'); 
 
     } catch (error) {
         console.error("Error updating status:", error);
@@ -177,8 +171,106 @@ const updateStatus = async (req, res) => {
     }
 };
 
+const STATUS = {
+    RETURN_REQUEST: 'Return Request',
+    RETURNED: 'Returned'
+};
+
+const approveReturnRequest = async (req, res) => {
+    const { orderId } = req.params;
+    const { productId } = req.body;
+
+    // Validate input
+    if (!orderId || !productId) {
+        return res.status(400).json({
+            success: false,
+            message: "Order ID and Product ID are required."
+        });
+    }
+
+    try {
+        // Find the order
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found."
+            });
+        }
+
+        // Find the product in the order
+        const productItem = order.orderedItems.find(item => item._id.toString() === productId);
+        if (!productItem) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found in the order."
+            });
+        }
+
+        // Check if the product has a pending return request
+        if (productItem.status !== STATUS.RETURN_REQUEST) {
+            return res.status(400).json({
+                success: false,
+                message: "This product does not have a pending return request."
+            });
+        }
+
+        // Find the product in the catalog
+        const product = await Product.findById(productItem.product);
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found in catalog."
+            });
+        }
+
+        // Calculate refund amount
+        const refundAmount = productItem.price * productItem.quantity;
+
+        // Process refund
+        const refundResult = await handleRefund(
+            order.userId,
+            refundAmount,
+            [product.productName],
+            orderId
+        );
+
+        if (!refundResult.success) {
+            throw new Error("Refund processing failed.");
+        }
+
+        // Update product inventory
+        const selectedSize = productItem.size;
+        if (product.size && product.size[selectedSize] !== undefined) {
+            product.size[selectedSize] += productItem.quantity;
+            product.quantity += productItem.quantity;
+            await product.save();
+        }
+
+        // Update product status to Returned
+        productItem.status = STATUS.RETURNED;
+
+        // Update overall order status
+        const allProducts = order.orderedItems;
+        if (allProducts.every(item => item.status === STATUS.RETURNED)) {
+            order.status = STATUS.RETURNED;
+        } else if (allProducts.some(item => item.status === STATUS.RETURN_REQUEST)) {
+            order.status = STATUS.RETURN_REQUEST;
+        }
+
+        await order.save();
+
+        // Redirect with success message
+      return res.redirect('/admin/order')
+
+    } catch (error) {
+        console.error("Error while approving return request:", error);
+    }
+};
+
 module.exports={
     getOrder,
     getOrderDetails,
-    updateStatus
+    updateStatus,
+    approveReturnRequest
 }

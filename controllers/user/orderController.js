@@ -19,7 +19,7 @@ const razorpayInstance = new Razorpay({
 
 const createRazorpayOrder = async (amount, receipt) => {
     return await razorpayInstance.orders.create({
-        amount: amount * 100, // Convert to paise
+        amount: amount * 100, 
         currency: 'INR',
         receipt: receipt,
         payment_capture: 1
@@ -49,7 +49,6 @@ const placeOrder = async (req, res) => {
             });
         }
 
-        // Coupon handling
     
         const user = await User.findById(userId);
         if (user && user.redeemedUser) {
@@ -85,7 +84,6 @@ const placeOrder = async (req, res) => {
 
         const orderId = uuidv4();
 
-        // If payment method is Razorpay, create order first
         if (paymentMethod === 'RAZORPAY') {
             console.log('Razorpay Order Details:', {
                 finalAmount,
@@ -192,7 +190,6 @@ const placeOrder = async (req, res) => {
     }
 };
 //
-// Add a new route to verify payment
 const verifyPayment = async (req, res) => {
     try {
         const {
@@ -206,7 +203,6 @@ const verifyPayment = async (req, res) => {
 
         const userId = req.session.user;
 
-        // Verify signature
         const shasum = crypto.createHmac('sha256', razorpayInstance.key_secret);
         shasum.update(`${razorpayOrderId}|${razorpayPaymentId}`);
         const digest = shasum.digest('hex');
@@ -218,7 +214,6 @@ const verifyPayment = async (req, res) => {
             });
         }
 
-        // Get cart details for order creation
         const cart = await Cart.findOne({ userId }).populate('items.productId');
         if (!cart || !cart.items.length) {
             return res.status(400).json({
@@ -227,14 +222,12 @@ const verifyPayment = async (req, res) => {
             });
         }
 
-        // Calculate order amounts with discount
         const subtotal = cart.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
         const shipping = 100;
         const tax = 20;
         const discountAmount = parseFloat(discount) || 0;
         const finalAmount = subtotal + shipping + tax - discountAmount;
 
-        // Create ordered items array
         const orderedItems = cart.items.map(item => ({
             product: item.productId._id,
             quantity: item.quantity,
@@ -243,7 +236,6 @@ const verifyPayment = async (req, res) => {
             status: 'Processing'
         }));
 
-        // Create order with discounted amount
         const order = new Order({
             orderId,
             userId,
@@ -267,7 +259,6 @@ const verifyPayment = async (req, res) => {
         
         await order.save();
 
-        // Update product stock
         for (const item of cart.items) {
             const product = await Product.findById(item.productId._id);
             if (product) {
@@ -282,7 +273,6 @@ const verifyPayment = async (req, res) => {
             }
         }
 
-        // Clear cart
         await Cart.findOneAndUpdate(
             { userId }, 
             { $set: { items: [] }},
@@ -312,13 +302,10 @@ const handleWalletPayment = async (userId, amount, cartItems) => {
         throw new Error('Insufficient wallet balance');
     }
 
-    // Get product names from cart items, safely handling the product reference
     const productNames = cartItems.map(item => {
-        // Check if productId exists and has a name property
         return item.productId && item.productId.name ? item.productId.name : 'Unknown Product';
     });
     
-    // Create transaction record
     wallet.transaction.push({
         amount: amount,
         transactionId: uuidv4(),
@@ -327,63 +314,25 @@ const handleWalletPayment = async (userId, amount, cartItems) => {
         createdAt: new Date()
     });
 
-    // Update wallet balance
     wallet.balance -= amount;
     await wallet.save();
     
     return true;
 };
-// const getWalletBalance = async (req, res) => {
-//     try {
-//         const userId = req.session.user;
-//         const wallet = await Wallet.findOne({ user: userId });
-        
-//         return res.status(200).json({
-//             success: true,
-//             balance: wallet ? wallet.balance : 0
-//         });
-//     } catch (error) {
-//         console.error('Error fetching wallet balance:', error);
-//         return res.status(500).json({
-//             success: false,
-//             message: 'Failed to fetch wallet balance'
-//         });
-//     }
-// };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//get order details
 const getOrderDetails = async (req, res) => {
     try {
-        const userId = req.session.user;  // This appears to be the ID string directly
-        // console.log('Getting addresses for user ID:', userId);        
+        const userId = req.session.user;  
         const orders = await Order.find({ userId: userId })
-            .populate('orderedItems.product')  // Ensure address is populated
+            .populate('orderedItems.product')  
             .sort({ createOn: -1 });
             console.log(orders);
             
 
         res.render('order', { 
             orders: orders,
-            user: req.user || req.session.user  // Add this line explicitly
+            user: req.user || req.session.user  
 
         });
     } catch (error) {
@@ -476,35 +425,31 @@ const cancelProductOrder = async (req, res) => {
             return res.status(400).json({ success: false, message: "Order ID and Product ID are required." });
         }
 
-        // Find the order
+    
         const order = await Order.findById(orderId);
 
         if (!order) {
             return res.status(404).json({ success: false, message: "Order not found." });
         }
 
-        // Find the specific product in the ordered items
         const productItem = order.orderedItems.find(item => item.product.toString() === productId);
 
         if (!productItem) {
             return res.status(404).json({ success: false, message: "Product not found in the order." });
         }
 
-        // Check if the product is already canceled
         if (productItem.status === 'Cancelled') {
             return res.status(400).json({ success: false, message: "Product is already canceled." });
         }
 
         const refundAmount = productItem.price * productItem.quantity;
 
-         // Update the product stock
          const product = await Product.findById(productId);
          if (!product) {
              return res.status(404).json({ success: false, message: "Product not found." });
          }
          let refundResult = null;
        if(order.paymentMethod !== 'COD'){
-         // Process refund to wallet
          refundResult = await handleRefund(
             userId,
             refundAmount,
@@ -513,19 +458,17 @@ const cancelProductOrder = async (req, res) => {
         );
        }
         
-        // Update the product status to 'Cancelled'
         productItem.status = 'Cancelled';
         productItem.cancellationReason = cancellationReason;
 
        
-        const selectedSize = `size${productItem.size}`; // Convert size to the correct format (e.g., sizeM)
+        const selectedSize = `size${productItem.size}`; 
         if (product.size && product.size[selectedSize] !== undefined) {
-            product.size[selectedSize] += productItem.quantity; // Restore stock
-            product.quantity += productItem.quantity; // Restore total quantity
+            product.size[selectedSize] += productItem.quantity; 
+            product.quantity += productItem.quantity;
             await product.save();
         }
 
-        // Update the overall order status based on the status of all products
         const allProducts = order.orderedItems;
         if (allProducts.every(item => item.status === "Delivered")) {
             order.status = "Delivered";
@@ -541,7 +484,6 @@ const cancelProductOrder = async (req, res) => {
             order.status = "Pending";
         }
 
-        // Save the updated order
         await order.save();
 
         const response = {
@@ -566,98 +508,101 @@ const cancelProductOrder = async (req, res) => {
 
 const returnProductOrder = async (req, res) => {
     try {
-        const { productId, orderId } = req.body;
+        const { productId, orderId, returnReason } = req.body;
         const userId = req.session.user;
 
-
-        if (!productId || !orderId) {
-            return res.status(400).json({ success: false, message: "Order ID and Product ID are required." });
+        if (!productId || !orderId || !returnReason) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Order ID, Product ID, and return reason are required." 
+            });
         }
 
-        // Find the order
         const order = await Order.findById(orderId);
 
         if (!order) {
-            return res.status(404).json({ success: false, message: "Order not found." });
+            return res.status(404).json({ 
+                success: false, 
+                message: "Order not found." 
+            });
         }
 
-        // Find the product in the ordered items
-        const productItem = order.orderedItems.find(item => item.product.toString() === productId);
-
-        if (!productItem) {
-            return res.status(404).json({ success: false, message: "Product not found in the order." });
-        }
-
-        // Check if the product is already returned
-        if (productItem.status === 'Returned') {
-            return res.status(400).json({ success: false, message: "Product is already returned." });
-        }
-
-        const refundAmount = productItem.price * productItem.quantity;
-
-            // Update the product stock
-            const product = await Product.findById(productId);
-            if (!product) {
-                return res.status(404).json({ success: false, message: "Product not found." });
-            }
-
-
-            
-        // Process refund to wallet
-        const refundResult = await handleRefund(
-            userId,
-            refundAmount,
-            [product.name],
-            orderId
+        const productItem = order.orderedItems.find(item => 
+            item.product.toString() === productId
         );
 
-        // Update the product status to 'Returned'
-        productItem.status = 'Returned';
-
-    
-
-        const selectedSize = `size${productItem.size}`; // Convert size to the correct format (e.g., sizeM)
-        if (product.size && product.size[selectedSize] !== undefined) {
-            product.size[selectedSize] += productItem.quantity; // Restore stock
-            product.quantity += productItem.quantity; // Restore total quantity
-            await product.save();
+        if (!productItem) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Product not found in the order." 
+            });
         }
 
+        // Check if product is eligible for return
+        if (productItem.status !== 'Delivered') {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Only delivered products can be returned." 
+            });
+        }
+
+        if (productItem.status === 'Return Request') {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Return request already submitted for this product." 
+            });
+        }
+
+        if (productItem.status === 'Returned') {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Product is already returned." 
+            });
+        }
+
+        // Update product item status to Return Request
+        productItem.status = 'Return Request';
+        productItem.returnReason = returnReason;
+
+        // Update order status based on all products
         const allProducts = order.orderedItems;
         if (allProducts.every(item => item.status === "Delivered")) {
             order.status = "Delivered";
+        } else if (allProducts.some(item => item.status === "Return Request")) {
+            order.status = "Return Request";
+        } else if (allProducts.some(item => item.status === "Returned")) {
+            order.status = "Returned";
         } else if (allProducts.some(item => item.status === "Shipped")) {
             order.status = "Shipped";
         } else if (allProducts.some(item => item.status === "Processing")) {
             order.status = "Processing";
         } else if (allProducts.some(item => item.status === "Cancelled")) {
             order.status = "Cancelled";
-        } else if (allProducts.some(item => item.status === "Returned")) {
-            order.status = "Returned";
         } else {
             order.status = "Pending";
         }
 
-        // Save the updated order
         await order.save();
 
-        return res.status(200).json({ success: true, message: "Product return request submitted successfully.", order });
-
+        return res.status(200).json({ 
+            success: true, 
+            message: "Return request submitted successfully. Please wait for admin approval.", 
+            order 
+        });
     } catch (error) {
-        console.error("Error while returning the product:", error);
-        return res.status(500).json({ success: false, message: "An error occurred while returning the product." });
+        console.error("Error while submitting return request:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: "An error occurred while submitting the return request." 
+        });
     }
 };
-
-
-
 
 
 
 module.exports = {
     placeOrder,
     verifyPayment,
-    // getWalletBalance,
     handleWalletPayment,
     getOrderDetails,
     getOrderMoreDetails,
