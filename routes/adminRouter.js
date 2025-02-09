@@ -6,11 +6,9 @@ const customerController = require('../controllers/admin/customerController');
  const productController = require('../controllers/admin/productController');
  const orderController = require('../controllers/admin/orderController');
  const couponController = require('../controllers/admin/couponController');
- const salesReportController = require('../controllers/admin/salesReportController');
 const {adminAuth,adminCheck} = require("../middlewares/auth");
 const multer = require('multer');
 const storage = require('../helpers/multer');
-const { downloadExcelReport } = require('../controllers/admin/salesReportController');
 const uploads = multer({storage:storage});
 
 

@@ -293,10 +293,15 @@
                         <i class="fas fa-file-pdf me-2"></i>PDF Report
                     </button>
                 </div>
+            
             </div>
+            <% if(message.error) { %>
+                <div class="alert alert-danger"><%= message.error %></div>
+            <% } %>
 
             <!-- Stats Cards -->
             <div class="row g-4 mb-4">
+                
                 <div class="col-md-3">
                     <div class="card stat-card text-white p-3">
                         <div class="d-flex justify-content-between">
@@ -329,6 +334,27 @@
                         </div>
                     </div>
                 </div>
+
+                <% for (const [status, data] of Object.entries(orderStatusSummary)) { %>
+                    <div class="col-md-3">
+                        <div class="card stat-card text-white p-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="text-muted"><%= status %> Orders</h6>
+                                    <h3><%= data.count %></h3>
+                                </div>
+                                <div class="fs-1 <%= status === 'Delivered' ? 'text-success' : status === 'Pending' ? 'text-warning' : 'text-info' %>">
+                                    <i class="fas <%= status === 'Delivered' ? 'fa-check-circle' : status === 'Pending' ? 'fa-clock' : 'fa-truck' %>"></i>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small>₹<%= data.amount.toLocaleString() %> (<%= data.percentage %>%)</small>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+
+
                 <div class="col-md-3">
                     <div class="card stat-card text-white p-3">
                         <div class="d-flex justify-content-between">
@@ -380,14 +406,19 @@
             </div>
 
               <!-- Purchase History Table -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">User Purchase History</h5>
-        </div>
+   
         <div class="card">
-            <!-- <div class="card-header">
-                <h5 class="mb-0">Top Customers</h5>
-            </div> -->
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">User Purchase History</h5>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-light active" onclick="filterOrders('all')">All</button>
+                    <% for (const [status] of Object.entries(orderStatusSummary)) { %>
+                        <button type="button" class="btn btn-outline-light" onclick="filterOrders('<%= status %>')">
+                            <%= status %>
+                        </button>
+                    <% } %>
+                </div>
+            </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-dark table-hover">
@@ -396,6 +427,7 @@
                                 <th>Customer</th>
                                 <th>Email</th>
                                 <th>Total Orders</th>
+                                <th>Order Status Distribution</th>
                                 <th>Total Spent</th>
                                 <th>Last Purchase</th>
                             </tr>
@@ -406,6 +438,17 @@
                                     <td><%= user.name %></td>
                                     <td><%= user.email %></td>
                                     <td><%= user.totalOrders %></td>
+                                    <td>
+                                        <% const statusCounts = {}; %>
+                                        <% user.orderStatuses.forEach(order => { %>
+                                            <% statusCounts[order.status] = (statusCounts[order.status] || 0) + 1; %>
+                                        <% }); %>
+                                        <% for (const [status, count] of Object.entries(statusCounts)) { %>
+                                            <span class="badge bg-<%= status === 'Delivered' ? 'success' : status === 'Pending' ? 'warning' : 'info' %> me-1">
+                                                <%= status %>: <%= count %>
+                                            </span>
+                                        <% } %>
+                                    </td>
                                     <td>₹<%= user.totalSpent.toLocaleString() %></td>
                                     <td><%= new Date(user.lastPurchase).toLocaleDateString() %></td>
                                 </tr>
@@ -415,6 +458,7 @@
                 </div>
             </div>
         </div>
+        
     </div>
         </div>
     </div>
@@ -466,6 +510,24 @@
             }
         });
 
+        function filterOrders(status) {
+    // Update active button state
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Filter table rows
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        if (status === 'all') {
+            row.style.display = '';
+        } else {
+            const statusBadges = row.querySelector('td:nth-child(4)').textContent;
+            row.style.display = statusBadges.includes(status) ? '' : 'none';
+        }
+    });
+}
         // Order Status Chart
         const orderCtx = document.getElementById('orderStatusChart').getContext('2d');
         new Chart(orderCtx, {

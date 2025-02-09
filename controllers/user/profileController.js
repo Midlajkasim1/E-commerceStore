@@ -117,22 +117,24 @@ const changePassword = async (req, res) => {
 const getAddress = async (req, res) => {
     try {
         const userId = req.session.user;
-        console.log('Getting addresses for user ID:', userId);
+        const userData= await User.findById(userId);
+
+        // console.log('Getting addresses for user ID:', userId);
 
         const userAddress = await Address.findOne({ userId: userId });
-        console.log('Found address:', userAddress);
+        // console.log('Found address:', userAddress);
 
         if (!userAddress) {
             console.log('No address found for user.');
             return res.render('address', {
-                user: userId,
+                user: userData,
                 userAddress: null,
                 message: req.flash('err')
             });
         }
 
         res.render('address', {
-            user: userId,
+            user: userData,
             userAddress: userAddress,
             message: req.flash('err')
         });

@@ -818,137 +818,225 @@
       <script>
 
 
-        // Form submission handlers
-        document.getElementById('addAddressForm').addEventListener('submit', function (e) {
-          e.preventDefault();
-          // Handle add address form submission
-          const formData = new FormData(this);
-          // Add your API call or data handling logic here
+    function validateAddress(formData) {
+  const validations = {
+    name: {
+      pattern: /^[A-Za-z\s]{3,50}$/,
+      message: 'Name should be 3-50 characters long and contain only letters'
+    },
+    phone: {
+      pattern: /^\d{10}$/,
+      message: 'Phone number must be exactly 10 digits'
+    },
+    altPhone: {
+      pattern: /^\d{10}$/,
+      message: 'Alternate phone number must be exactly 10 digits'
+    },
+    landMark: {
+      pattern: /^[A-Za-z0-9\s,.-]{3,100}$/,
+      message: 'Landmark should be 3-100 characters long'
+    },
+    city: {
+      pattern: /^[A-Za-z\s]{3,50}$/,
+      message: 'City should contain only letters and be 3-50 characters long'
+    },
+    state: {
+      pattern: /^[A-Za-z\s]{3,50}$/,
+      message: 'State should contain only letters and be 3-50 characters long'
+    },
+    pincode: {
+      pattern: /^\d{6}$/,
+      message: 'Pincode must be exactly 6 digits'
+    }
+  };
 
-          // Close the modal after submission
-          const modal = bootstrap.Modal.getInstance(document.getElementById('addAddressModal'));
-          modal.hide();
-        });
+  for (const [field, validation] of Object.entries(validations)) {
+    const value = formData.get(field);
+    if (!validation.pattern.test(value)) {
+      return {
+        isValid: false,
+        message: validation.message,
+        field: field
+      };
+    }
+  }
 
-        document.getElementById('editAddressForm').addEventListener('submit', function (e) {
-          e.preventDefault();
-          // Handle edit address form submission
-          const formData = new FormData(this);
-          // Add your API call or data handling logic here
+  return { isValid: true };
+}
 
-          // Close the modal after submission
-          const modal = bootstrap.Modal.getInstance(document.getElementById('editAddressModal'));
-          modal.hide();
-        });
-        document.getElementById('addressForm').addEventListener('submit', async (e) => {
-          e.preventDefault();
+document.getElementById('addressForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+  
+  const validationResult = validateAddress(formData);
+  
+  if (!validationResult.isValid) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'Validation Error',
+      text: validationResult.message,
+      confirmButtonColor: '#088178'
+    });
+    
+    const invalidField = form.elements[validationResult.field];
+    if (invalidField) {
+      invalidField.focus();
+    }
+    return;
+  }
 
-          try {
-            const formData = new FormData(e.target);
-            const addressData = Object.fromEntries(formData.entries());
+  const loadingAlert = Swal.fire({
+    title: 'Saving Address',
+    html: 'Please wait while we save your address...',
+    allowOutsideClick: false,
+    showConfirmButton: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
 
-            const response = await fetch('/checkout-addAddress', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(addressData)
-            });
+  try {
+    const response = await fetch('/checkout-addAddress', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(Object.fromEntries(formData))
+    });
 
-            const result = await response.json();
+    const result = await response.json();
+    loadingAlert.close();
 
-            if (response.ok && result.success) {
-              // Show success message
-              alert('Address added successfully!');
-              // Close modal
-              bootstrap.Modal.getInstance(document.getElementById('addAddressModal')).hide();
-              // Redirect to profile page
-              window.location.href = '/userProfile';
-            } else {
-              // Show specific error message from server
-              alert(result.error || 'Unable to save address. Please try again.');
-            }
-          } catch (error) {
-            console.error('Error details:', error);
-            alert('Unable to save address. Please check your connection and try again.');
-          }
-        });
+    if (response.ok && result.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Address added successfully',
+        confirmButtonColor: '#088178',
+        timer: 2000,
+        timerProgressBar: true
+      });
+      
+      bootstrap.Modal.getInstance(document.getElementById('addAddressModal')).hide();
+      window.location.reload();
+    } else {
+      throw new Error(result.error || 'Unable to save address');
+    }
+  } catch (error) {
+    console.error('Error saving address:', error);
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: error.message || 'Unable to save address. Please try again.',
+      confirmButtonColor: '#088178'
+    });
+  }
+});
 
+document.getElementById('editAddressForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+  
+  const validationResult = validateAddress(formData);
+  
+  if (!validationResult.isValid) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'Validation Error',
+      text: validationResult.message,
+      confirmButtonColor: '#088178'
+    });
+    
+    const invalidField = form.elements[validationResult.field];
+    if (invalidField) {
+      invalidField.focus();
+    }
+    return;
+  }
 
-        function handleEditClick(id, type, name, phone, altPhone, landmark, city, state, pincode) {
-          console.log('Edit clicked with ID:', id); // Add debug logging
+  const loadingAlert = Swal.fire({
+    title: 'Updating Address',
+    html: 'Please wait while we update your address...',
+    allowOutsideClick: false,
+    showConfirmButton: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
 
-          // Populate the edit form
-          document.getElementById('editAddressId').value = id;
-          document.getElementById('editAddressType').value = type.toLowerCase();
-          document.getElementById('editName').value = name;
-          document.getElementById('editPhone').value = phone;
-          document.getElementById('editAltPhone').value = altPhone;
-          document.getElementById('editLandmark').value = landmark;
-          document.getElementById('editCity').value = city;
-          document.getElementById('editState').value = state;
-          document.getElementById('editPincode').value = pincode;
+  try {
+    const response = await fetch('/checkout/edit-address', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(Object.fromEntries(formData))
+    });
 
-          // Show the modal
-          const editModal = new bootstrap.Modal(document.getElementById('editAddressModal'));
-          editModal.show();
-        }
+    const result = await response.json();
+    loadingAlert.close();
 
-        // Handle edit form submission
-        document.getElementById('editAddressForm').addEventListener('submit', async (e) => {
-          e.preventDefault();
+    if (result.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Address updated successfully',
+        confirmButtonColor: '#088178',
+        timer: 2000,
+        timerProgressBar: true
+      });
+      
+      bootstrap.Modal.getInstance(document.getElementById('editAddressModal')).hide();
+      window.location.reload();
+    } else {
+      throw new Error(result.message || 'Unable to update address');
+    }
+  } catch (error) {
+    console.error('Error updating address:', error);
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: error.message || 'Unable to update address. Please try again.',
+      confirmButtonColor: '#088178'
+    });
+  }
+});
 
-          try {
-            const formData = new FormData(e.target);
-            const addressData = Object.fromEntries(formData.entries());
+function handleEditClick(id, type, name, phone, altPhone, landmark, city, state, pincode) {
+  document.getElementById('editAddressId').value = id;
+  document.getElementById('editAddressType').value = type.toLowerCase();
+  document.getElementById('editName').value = name;
+  document.getElementById('editPhone').value = phone;
+  document.getElementById('editAltPhone').value = altPhone;
+  document.getElementById('editLandmark').value = landmark;
+  document.getElementById('editCity').value = city;
+  document.getElementById('editState').value = state;
+  document.getElementById('editPincode').value = pincode;
 
-            console.log('Submitting address data:', addressData); // Add debug logging
+  const editModal = new bootstrap.Modal(document.getElementById('editAddressModal'));
+  editModal.show();
+}
 
-            const response = await fetch('/checkout/edit-address', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(addressData)
-            });
+function selectAddress(addressId) {
+  const addressElements = document.querySelectorAll('.saved-address');
+  addressElements.forEach(el => el.classList.remove('selected'));
 
-            const result = await response.json();
-            console.log('Server response:', result); // Add debug logging
-
-            if (result.success) {
-
-              window.location.reload();
-            } else {
-              alert(result.message || 'Unable to update address. Please try again.');
-            }
-          } catch (error) {
-            console.error('Error details:', error);
-            alert('Unable to update address. Please check your connection and try again.');
-          }
-        });
-
-
-        // Function to select address
-        function selectAddress(addressId) {
-          const addressElements = document.querySelectorAll('.saved-address');
-          addressElements.forEach(el => el.classList.remove('selected'));
-
-          const selectedAddress = document.querySelector(`[data-address-id="${addressId}"]`);
-          if (selectedAddress) {
-            selectedAddress.classList.add('selected');
-            // Update the radio button
-            const radioButton = selectedAddress.querySelector('input[type="radio"]');
-            if (radioButton) {
-              radioButton.checked = true;
-            }
-          }
-        }
+  const selectedAddress = document.querySelector(`[data-address-id="${addressId}"]`);
+  if (selectedAddress) {
+    selectedAddress.classList.add('selected');
+    const radioButton = selectedAddress.querySelector('input[type="radio"]');
+    if (radioButton) {
+      radioButton.checked = true;
+    }
+  }
+}
         async function placeOrder() {
     const selectedAddress = document.querySelector('.saved-address.selected');
     const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
     const discountInput = document.getElementById('appliedDiscount');
 
-    // Check if address and payment method are selected
     if (!selectedAddress || !selectedPayment) {
         await Swal.fire({
             icon: 'warning',
@@ -959,7 +1047,6 @@
         return;
     }
 
-    // Handle different payment methods
     switch (selectedPayment.value) {
         case 'RAZORPAY':
             await Swal.fire({
@@ -1002,7 +1089,6 @@
             return;
 
         case 'COD':
-            // Process COD order
             const discount = discountInput ? parseFloat(discountInput.value) || 0 : 0;
             let loadingAlert;
 
@@ -1061,7 +1147,6 @@
             break;
     }
 }
-        // Add event listeners for address selection
         document.querySelectorAll('.saved-address').forEach(address => {
           address.addEventListener('click', function () {
             document.querySelectorAll('.saved-address').forEach(a => a.classList.remove('selected'));
@@ -1070,7 +1155,6 @@
           });
         });
 
-        // Add event listeners for payment method selection
         document.querySelectorAll('.payment-method').forEach(method => {
           method.addEventListener('click', function () {
             document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
@@ -1081,7 +1165,6 @@
 
      
 
- // Coupon Form Submission
  async function CouponForm(event) {
   event.preventDefault();
 
@@ -1114,12 +1197,10 @@
     const data = await response.json();
 
     if (data.status) {
-      // Update the total price display
       document.getElementById('totalPrice').textContent = `₹${data.finalAmount.toFixed(2)}`;
       document.getElementById('appliedDiscount').value = data.discountAmount || 0;
 
       
-      // Show success message
       Swal.fire({
         icon: 'success',
         title: 'Success',
@@ -1127,12 +1208,10 @@
         confirmButtonColor: '#088178'
       });
 
-      // Update button to show "Remove Coupon"
       couponButton.innerHTML = '<i class="bi bi-x-circle"></i> Remove Coupon';
       couponButton.classList.add('btn-danger');
       document.getElementById('couponCode').disabled = true;
       
-      // Add click handler for coupon removal
       couponButton.onclick = removeCoupon;
     } else {
       Swal.fire({
@@ -1153,7 +1232,7 @@
   }
 }
 
-// Remove Coupon Function
+//remove coupon
 async function removeCoupon(event) {
   event.preventDefault();
   const couponCode = document.getElementById('couponCode').value.trim();
@@ -1199,25 +1278,7 @@ async function removeCoupon(event) {
     });
   }
 }
-//razorpay
-// // Frontend JavaScript
-// document.getElementById('razorpay').addEventListener('click', function() {
-//     Swal.fire({
-//         icon: 'info',
-//         title: 'Razorpay Payment',
-//         text: 'You have selected Razorpay as your payment method. Please proceed to pay securely.',
-//         confirmButtonColor: '#088178'
-//     });
-// });
 
-// document.getElementById('wallet').addEventListener('click', function() {
-//     Swal.fire({
-//         icon: 'info',
-//         title: 'Wallet Payment',
-//         text: 'You have selected Wallet as your payment method. Please proceed to pay using your wallet balance.',
-//         confirmButtonColor: '#088178'
-//     });
-// });
 async function initiateRazorpay() {
     try {
         const selectedAddress = document.querySelector('input[name="address"]:checked');
@@ -1311,9 +1372,9 @@ async function initiateRazorpay() {
                 }
             },
             prefill: {
-                name: '', // Add user's name if available
-                email: '', // Add user's email if available
-                contact: '' // Add user's phone if available
+                name: '', 
+                email: '', 
+                contact: '' 
             },
             theme: {
                 color: '#088178'
@@ -1343,7 +1404,6 @@ async function initiateRazorpay() {
     }
 }
    //wallet
-   // Function to fetch and display wallet balance
 async function fetchWalletBalance() {
   try {
     const response = await fetch('/get-wallet-balance');
@@ -1356,7 +1416,6 @@ async function fetchWalletBalance() {
   }
 }
 
-// Call this when page loads
 document.addEventListener('DOMContentLoaded', fetchWalletBalance);
 
 async function initiateWalletPayment() {

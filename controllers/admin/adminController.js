@@ -4,7 +4,7 @@ const Coupon = require('../../models/couponSchema');
 const Order = require('../../models/orderSchema');
 const bcrypt = require('bcrypt')
 const ExcelJS = require('exceljs');
-const PDFDocument = require('pdfkit-table');
+const PdfPrinter = require('pdfmake');
 const fs = require('fs');
 
 const loadlogin = (req, res) => {
@@ -56,17 +56,14 @@ const login = async (req, res) => {
 
 const loadDashboard = async (req, res) => {
     try {
-        // Get time periods
         const now = new Date();
         const startOfDay = new Date(now.setHours(0, 0, 0, 0));
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastMonth = new Date(new Date(startOfMonth).setMonth(startOfMonth.getMonth() - 1));
 
-        // Calculate current period sales
         const currentPeriodSales = await Order.aggregate([
             { 
                 $match: { 
-                    status: 'Delivered',
                     createOn: { 
                         $gte: startOfMonth
                     }
@@ -80,11 +77,9 @@ const loadDashboard = async (req, res) => {
             }
         ]);
 
-        // Calculate previous period sales
         const previousPeriodSales = await Order.aggregate([
             { 
                 $match: { 
-                    status: 'Delivered',
                     createOn: { 
                         $gte: lastMonth,
                         $lt: startOfMonth
@@ -99,13 +94,8 @@ const loadDashboard = async (req, res) => {
             }
         ]);
 
-        // Calculate monthly order counts
+
         const monthlyOrders = await Order.aggregate([
-            {
-                $match: {
-                    status: 'Delivered'
-                }
-            },
             {
                 $group: {
                     _id: { 
@@ -123,13 +113,7 @@ const loadDashboard = async (req, res) => {
             }
         ]);
 
-        // Calculate total sales and orders
         const totalStats = await Order.aggregate([
-            { 
-                $match: { 
-                    status: 'Delivered'
-                } 
-            },
             { 
                 $group: { 
                     _id: null, 
@@ -140,32 +124,31 @@ const loadDashboard = async (req, res) => {
             }
         ]);
 
-        // Calculate order status distribution
         const orderStatusDistribution = await Order.aggregate([
             {
                 $group: {
                     _id: '$status',
-                    count: { $sum: 1 }
+                    count: { $sum: 1 },
+                    totalAmount: { $sum: '$finalAmount' }
                 }
             }
         ]);
 
-        // Get total users count
         const totalUsers = await User.countDocuments({ isBlocked: false });
 
-        // Get user purchase history
         const userPurchaseHistory = await Order.aggregate([
-            { 
-                $match: { 
-                    status: 'Delivered'
-                }
-            },
             {
                 $group: {
                     _id: '$userId',
                     totalOrders: { $sum: 1 },
                     totalSpent: { $sum: '$finalAmount' },
-                    lastPurchase: { $max: '$createOn' }
+                    lastPurchase: { $max: '$createOn' },
+                    orderStatuses: { 
+                        $push: {
+                            status: '$status',
+                            amount: '$finalAmount'
+                        }
+                    }
                 }
             },
             {
@@ -185,7 +168,8 @@ const loadDashboard = async (req, res) => {
                     email: '$userDetails.email',
                     totalOrders: 1,
                     totalSpent: 1,
-                    lastPurchase: 1
+                    lastPurchase: 1,
+                    orderStatuses: 1
                 }
             },
             {
@@ -196,33 +180,26 @@ const loadDashboard = async (req, res) => {
             }
         ]);
 
-        // Calculate sales growth
         const currentSales = currentPeriodSales[0]?.total || 0;
         const previousSales = previousPeriodSales[0]?.total || 0;
         const salesGrowth = previousSales === 0 
             ? 100 
             : ((currentSales - previousSales) / previousSales) * 100;
 
-        // Prepare status counts for the chart
-        const statusCounts = {};
+          const statusSummary = {};
         orderStatusDistribution.forEach(status => {
-            statusCounts[status._id] = status.count;
+            statusSummary[status._id] = {
+                count: status.count,
+                amount: status.totalAmount,
+                percentage: ((status.count / totalStats[0].totalOrders) * 100).toFixed(1)
+            };
         });
-        console.log("Current Period Sales:", currentPeriodSales);
-        console.log("Previous Period Sales:", previousPeriodSales);
-        console.log("Monthly Orders:", monthlyOrders);
-        console.log("Total Stats:", totalStats);
-        console.log("Order Status Distribution:", orderStatusDistribution);
-        // const dashboardData = {
-        //     totalSales: totalStats[0]?.totalSales || 0,
-        //     totalOrders: totalStats[0]?.totalOrders || 0,
-        //     totalDiscounts: totalStats[0]?.totalDiscount || 0,
-        //     totalUsers,
-        //     salesGrowth: parseFloat(salesGrowth.toFixed(1)),
-        //     userPurchaseHistory,
-        //     orderStatusCounts: statusCounts,
-        //     monthlyOrderCounts: monthlyOrders
-        // };
+        // console.log("Current Period Sales:", currentPeriodSales);
+        // console.log("Previous Period Sales:", previousPeriodSales);
+        // console.log("Monthly Orders:", monthlyOrders);
+        // console.log("Total Stats:", totalStats);
+        // console.log("Order Status Distribution:", orderStatusDistribution);
+       
 
         res.render('dashboard', {
             totalSales: totalStats[0]?.totalSales || 0,
@@ -231,8 +208,9 @@ const loadDashboard = async (req, res) => {
             totalUsers,
             salesGrowth: parseFloat(salesGrowth.toFixed(1)),
             userPurchaseHistory,
-            orderStatusCounts: statusCounts,
-            monthlyOrderCounts: monthlyOrders
+            orderStatusSummary: statusSummary,
+            monthlyOrderCounts: monthlyOrders,
+            message: req.flash()
         });
 
     } catch (error) {
@@ -244,40 +222,49 @@ const loadDashboard = async (req, res) => {
 const downloadExcelReport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        const dateRange = {
-            start: startDate ? new Date(startDate) : new Date(new Date().setMonth(new Date().getMonth() - 1)),
-            end: endDate ? new Date(endDate) : new Date()
-        };
-        console.log("Date Range:", dateRange);
+        if (!startDate || !endDate || !Date.parse(startDate) || !Date.parse(endDate)) {
+            req.flash('error', 'Please enter valid start and end dates');
+            return res.redirect('/admin/dashboard');
+        }
+        
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        if (end < start) {
+            req.flash('error', 'End date must be after start date');
+            return res.redirect('/admin/dashboard');
+        }
 
         const query = {
             createOn: { 
-                $gte: dateRange.start, 
-                $lte: dateRange.end 
-            },
-            status: 'Delivered'
+                $gte: start, 
+                $lte: end 
+            }
         };
-        console.log("Date Range:", dateRange);
-        console.log("Query:", query);
+
         const orders = await Order.find(query)
             .populate('userId', 'name email')
-            .populate('orderedItems.product', 'productName')
+            .populate('orderedItems.product', 'productName price')
             .sort({ createOn: -1 })
             .lean();
 
-            console.log("Orders Found:", orders);
-            if (!orders || orders.length === 0) {
-                return res.status(404).send('No orders found for the specified date range');
-            }
+        if (!orders || orders.length === 0) {
+            req.flash('error', 'No orders found for the specified date range');
+            return res.redirect('/admin/dashboard');
+        }
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Sales Report');
 
         worksheet.columns = [
             { header: 'Order ID', key: 'orderId', width: 15 },
-            { header: 'Date', key: 'date', width: 12 },
+            { header: 'Date', key: 'date', width: 20 },
             { header: 'Customer', key: 'customer', width: 20 },
             { header: 'Email', key: 'email', width: 25 },
+            { header: 'Status', key: 'status', width: 15 },
             { header: 'Products', key: 'products', width: 30 },
             { header: 'Items', key: 'items', width: 10 },
             { header: 'Amount (₹)', key: 'amount', width: 15 },
@@ -292,34 +279,76 @@ const downloadExcelReport = async (req, res) => {
             fgColor: { argb: 'FF8DB4E2' }
         };
 
+        // Add status-based conditional formatting
+        const statusStyles = {
+            'Delivered': { fgColor: { argb: 'FFE2EFDA' } }, // Light green
+            'Pending': { fgColor: { argb: 'FFFFF2CC' } },   // Light yellow
+            'Processing': { fgColor: { argb: 'FFFCE4D6' } } // Light orange
+        };
+
         orders.forEach(order => {
-            worksheet.addRow({
+            const finalAmount = order.totalPrice - (order.discount || 0);
+            const row = worksheet.addRow({
                 orderId: order.orderId,
-                date: order.createOn.toLocaleDateString(),
+                date: new Date(order.createOn).toLocaleString(),
                 customer: order.userId?.name || 'N/A',
                 email: order.userId?.email || 'N/A',
+                status: order.status,
                 products: order.orderedItems
-                    .map(item => item.product?.productName || 'N/A')
+                    .map(item => `${item.product?.productName} (${item.quantity})`)
                     .join(', '),
-                items: order.orderedItems.length,
-                amount: order.totalPrice,
-                discount: order.discount,
-                finalAmount: order.finalAmount
+                items: order.orderedItems.reduce((sum, item) => sum + item.quantity, 0),
+                amount: order.totalPrice || 0,
+                discount: order.discount || 0,
+                finalAmount: finalAmount
             });
+
+            // Apply status-based styling
+            const statusStyle = statusStyles[order.status];
+            if (statusStyle) {
+                const statusCell = row.getCell('status');
+                statusCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    ...statusStyle
+                };
+            }
+        });
+
+        ['amount', 'discount', 'finalAmount'].forEach(column => {
+            worksheet.getColumn(column).numFmt = '₹#,##0.00';
         });
 
         const summary = {
             totalOrders: orders.length,
-            totalSales: orders.reduce((sum, order) => sum + order.finalAmount, 0),
-            totalDiscount: orders.reduce((sum, order) => sum + order.discount, 0)
+            totalItems: orders.reduce((sum, order) => 
+                sum + order.orderedItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
+            totalAmount: orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0),
+            totalDiscount: orders.reduce((sum, order) => sum + (order.discount || 0), 0),
+            totalFinal: orders.reduce((sum, order) => sum + (order.totalPrice - (order.discount || 0)), 0),
+            statusCounts: orders.reduce((acc, order) => {
+                acc[order.status] = (acc[order.status] || 0) + 1;
+                return acc;
+            }, {})
         };
 
-        // Add summary section
         worksheet.addRow([]);
         worksheet.addRow(['Summary']);
+        const summaryRow = worksheet.lastRow;
+        summaryRow.font = { bold: true, size: 12 };
+        
         worksheet.addRow(['Total Orders:', summary.totalOrders]);
-        worksheet.addRow(['Total Sales:', `₹${summary.totalSales.toLocaleString()}`]);
-        worksheet.addRow(['Total Discount:', `₹${summary.totalDiscount.toLocaleString()}`]);
+        worksheet.addRow(['Total Items:', summary.totalItems]);
+        worksheet.addRow(['Total Amount:', summary.totalAmount]).getCell(2).numFmt = '₹#,##0.00';
+        worksheet.addRow(['Total Discount:', summary.totalDiscount]).getCell(2).numFmt = '₹#,##0.00';
+        worksheet.addRow(['Final Total:', summary.totalFinal]).getCell(2).numFmt = '₹#,##0.00';
+        
+        // Add status distribution
+        worksheet.addRow([]);
+        worksheet.addRow(['Order Status Distribution']);
+        for (const [status, count] of Object.entries(summary.statusCounts)) {
+            worksheet.addRow([status, count, `${((count/orders.length)*100).toFixed(1)}%`]);
+        }
 
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename=sales-report-${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -336,223 +365,290 @@ const downloadExcelReport = async (req, res) => {
 const downloadPdfReport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
+        if (!startDate || !endDate || !Date.parse(startDate) || !Date.parse(endDate)) {
+            req.flash('error', 'Please enter valid start and end dates');
+            return res.redirect('/admin/dashboard');
+        }
+
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        if (end < start) {
+            req.flash('error', 'End date must be after start date');
+            return res.redirect('/admin/dashboard');
+        }
+
         const query = {
-            status: 'Delivered',
             createOn: {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate)
+                $gte: start,
+                $lte: end
             }
         };
 
         const orders = await Order.find(query)
             .populate('userId', 'name email')
-            .populate('orderedItems.product', 'productName')
+            .populate('orderedItems.product', 'productName price')
             .sort({ createOn: -1 })
             .lean();
 
         if (!orders || orders.length === 0) {
-            return res.status(404).send('No orders found for the specified date range');
+            req.flash('error', 'No orders found for the specified date range');
+            return res.redirect('/admin/dashboard');
         }
 
-        // Create PDF document with wider margins for better layout
-        const doc = new PDFDocument({
-            margin: 50,
-            size: 'A4'
-        });
-        
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=sales-report-${new Date().toISOString().split('T')[0]}.pdf`);
-        
-        doc.pipe(res);
+        const fonts = {
+            Helvetica: {
+                normal: 'Helvetica',
+                bold: 'Helvetica-Bold',
+                italics: 'Helvetica-Oblique',
+                bolditalics: 'Helvetica-BoldOblique'
+            }
+        };
 
-        // Improved header styling
-        doc.font('Helvetica-Bold')
-           .fontSize(24)
-           .text('Sales Report', { align: 'center' });
+        const printer = new PdfPrinter(fonts);
         
-        doc.moveDown()
-           .fontSize(14)
-           .text(`Period: ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`, { align: 'center' });
+        const formatNumber = (amount) => {
+            if (typeof amount !== 'number') return '0.00';
+            return new Intl.NumberFormat('en-IN', {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+                useGrouping: true,
+                style: 'decimal'
+            }).format(amount);
+        };
 
-        // Calculate summary
+       
         const summary = {
             totalOrders: orders.length,
-            totalSales: orders.reduce((sum, order) => sum + order.finalAmount, 0),
-            totalDiscount: orders.reduce((sum, order) => sum + order.discount, 0)
+            totalItems: orders.reduce((sum, order) => 
+                sum + order.orderedItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
+            totalAmount: orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0),
+            totalDiscount: orders.reduce((sum, order) => sum + (order.discount || 0), 0),
+            totalFinal: orders.reduce((sum, order) => sum + (order.totalPrice - (order.discount || 0)), 0)
         };
-
-        // Improved summary section with better spacing
-        doc.moveDown(2);
-        const summaryBox = {
-            x: 70,
-            y: doc.y,
-            width: 460,
-            height: 120
-        };
-
-        // Draw summary box with rounded corners
-        doc.roundedRect(summaryBox.x, summaryBox.y, summaryBox.width, summaryBox.height, 5)
-           .stroke();
-
-        // Add summary content with better spacing and proper currency symbol
-        doc.fontSize(16)
-           .text('Summary', summaryBox.x + 30, summaryBox.y + 20);
-        
-        doc.fontSize(12)
-           .text(`Total Orders: ${summary.totalOrders}`, summaryBox.x + 30, summaryBox.y + 50)
-           .text(`Total Sales: Rs. ${summary.totalSales.toLocaleString()}`, summaryBox.x + 30, summaryBox.y + 75)
-           .text(`Total Discount: Rs. ${summary.totalDiscount.toLocaleString()}`, summaryBox.x + 30, summaryBox.y + 100);
-
-        // Improved table configuration
-        const tableTop = summaryBox.y + summaryBox.height + 40;
-        const tableWidth = 460;
-        const startX = 70;
-        
-        const colWidths = [
-            Math.floor(tableWidth * 0.25), // Order ID (25%)
-            Math.floor(tableWidth * 0.15), // Date (15%)
-            Math.floor(tableWidth * 0.20), // Customer (20%)
-            Math.floor(tableWidth * 0.10), // Items (10%)
-            Math.floor(tableWidth * 0.15), // Amount (15%)
-            Math.floor(tableWidth * 0.15)  // Discount (15%)
+        const summaryData = [
+            { text: 'Total Orders', value: summary.totalOrders },
+            { text: 'Total Items', value: summary.totalItems },
+            { text: 'Total Amount', value: formatNumber(summary.totalAmount) },
+            { text: 'Total Discount', value: formatNumber(summary.totalDiscount) },
+            { text: 'Final Amount', value: formatNumber(summary.totalFinal) }
         ];
-        
-        // Updated headers without the superscript
-        const headers = ['Order ID', 'Date', 'Customer', 'Items', 'Amount (Rs.)', 'Discount (Rs.)'];
-        const rowHeight = 30;
 
-        // Draw table header with improved styling
-        let yPos = tableTop;
-        
-        // Header background
-        doc.fillColor('#f3f4f6')
-           .rect(startX, yPos, tableWidth, rowHeight)
-           .fill()
-           .fillColor('#000000');
+        const statusCounts = orders.reduce((acc, order) => {
+            acc[order.status] = (acc[order.status] || 0) + 1;
+            return acc;
+        }, {});
 
-        // Header text
-        let xPos = startX;
-        doc.font('Helvetica-Bold')
-           .fontSize(10);
+        // Format the status distribution text
+        const statusDistribution = Object.entries(statusCounts)
+            .map(([status, count]) => `${status}: ${count} orders (${((count / orders.length) * 100).toFixed(1)}%)`)
+            .join('\n');
 
-        headers.forEach((header, i) => {
-            doc.text(
-                header,
-                xPos + 5,
-                yPos + (rowHeight - 10) / 2,
-                {
-                    width: colWidths[i] - 10,
-                    align: i >= 3 ? 'right' : 'left'
+        const getStatusColor = (status) => {
+            const colors = {
+                'Delivered': '#4ade80',
+                'Pending': '#facc15',
+                'Processing': '#60a5fa',
+                'Cancelled': '#ef4444'
+            };
+            return colors[status] || '#6b7280';
+        };
+
+        const tableBody = orders.map(order => {
+            const finalAmount = order.totalPrice - (order.discount || 0);
+            return [
+                { 
+                    text: order.orderId, 
+                    style: 'tableCell',
+                    width: 60  // Fixed width for Order ID
+                },
+                { 
+                    text: new Date(order.createOn).toLocaleDateString(), // Changed to date only for space
+                    style: 'tableCell',
+                    width: 70
+                },
+                { 
+                    text: order.userId?.name || 'N/A', 
+                    style: 'tableCell',
+                    width: '*'  // Customer name takes remaining space
+                },
+                { 
+                    text: order.status,
+                    style: 'tableCell',
+                    color: getStatusColor(order.status),
+                    width: 60
+                },
+                { 
+                    text: order.orderedItems.reduce((sum, item) => sum + item.quantity, 0).toString(), 
+                    style: 'tableCell', 
+                    alignment: 'right',
+                    width: 40
+                },
+                { 
+                    text: formatNumber(order.totalPrice || 0), 
+                    style: 'tableCellAmount', 
+                    alignment: 'right',
+                    width: 90  // Increased width for amounts
+                },
+                { 
+                    text: formatNumber(order.discount || 0), 
+                    style: 'tableCellAmount', 
+                    alignment: 'right',
+                    width: 90  // Increased width for amounts
+                },
+                { 
+                    text: formatNumber(finalAmount), 
+                    style: 'tableCellAmount', 
+                    alignment: 'right',
+                    width: 90  // Increased width for amounts
                 }
-            );
-            xPos += colWidths[i];
-        });
-
-        // Draw table rows with improved spacing
-        yPos += rowHeight;
-        doc.font('Helvetica')
-           .fontSize(9);
-
-        orders.forEach((order) => {
-            // Add new page if needed
-            if (yPos > 750) {
-                doc.addPage();
-                yPos = 50;
-                
-                // Repeat header on new page
-                doc.fillColor('#f3f4f6')
-                   .rect(startX, yPos, tableWidth, rowHeight)
-                   .fill()
-                   .fillColor('#000000')
-                   .font('Helvetica-Bold')
-                   .fontSize(10);
-
-                xPos = startX;
-                headers.forEach((header, i) => {
-                    doc.text(
-                        header,
-                        xPos + 5,
-                        yPos + (rowHeight - 10) / 2,
-                        {
-                            width: colWidths[i] - 10,
-                            align: i >= 3 ? 'right' : 'left'
-                        }
-                    );
-                    xPos += colWidths[i];
-                });
-
-                doc.font('Helvetica')
-                   .fontSize(9);
-                yPos += rowHeight;
-            }
-
-            // Draw row with alternating background
-            if ((yPos - tableTop) / rowHeight % 2 === 1) {
-                doc.fillColor('#f9fafb')
-                   .rect(startX, yPos, tableWidth, rowHeight)
-                   .fill()
-                   .fillColor('#000000');
-            }
-
-            // Draw row data
-            xPos = startX;
-            const rowData = [
-                order.orderId,
-                new Date(order.createOn).toLocaleDateString(),
-                order.userId?.name || 'N/A',
-                order.orderedItems.length.toString(),
-                order.finalAmount.toLocaleString(),
-                order.discount.toLocaleString()
             ];
-
-            rowData.forEach((cell, i) => {
-                // Add 'Rs. ' prefix for amount and discount columns
-                const displayValue = i >= 4 ? `Rs. ${cell}` : cell;
-                doc.text(
-                    displayValue,
-                    xPos + 5,
-                    yPos + (rowHeight - 9) / 2,
-                    {
-                        width: colWidths[i] - 10,
-                        align: i >= 3 ? 'right' : 'left'
-                    }
-                );
-                xPos += colWidths[i];
-            });
-
-            // Draw row border
-            doc.rect(startX, yPos, tableWidth, rowHeight)
-               .stroke();
-
-            yPos += rowHeight;
         });
 
-        doc.end();
+        const docDefinition = {
+            pageSize: 'A4',
+            pageOrientation: 'landscape',  // Changed to landscape for more width
+            pageMargins: [20, 40, 20, 40], // Reduced margins
+            
+            content: [
+                {
+                    text: 'Sales Report',
+                    style: 'header',
+                    margin: [0, 0, 0, 10]
+                },
+                {
+                    text: `Period: ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`,
+                    style: 'subheader',
+                    margin: [0, 0, 0, 20]
+                },
+                {
+                    style: 'summaryBox',
+                    margin: [0, 0, 0, 20],
+                    table: {
+                        widths: ['*', 100],  // Adjusted summary table widths
+                        body: [
+                            [{ text: 'Summary', style: 'summaryTitle', colSpan: 2 }, {}],
+                            ...summaryData.map(item => [
+                                { text: item.text, style: 'summaryLabel' },
+                                { 
+                                    text: typeof item.value === 'number' ? 
+                                        item.value.toString() : 
+                                        item.value, 
+                                    style: 'summaryValue', 
+                                    alignment: 'right' 
+                                }
+                            ]),
+                            [{ text: '\nOrder Status Distribution:', style: 'distributionTitle', colSpan: 2 }, {}],
+                            [{ text: statusDistribution, style: 'distributionText', colSpan: 2 }, {}]
+                        ]
+                    },
+                    layout: 'noBorders'
+                },
+                {
+                    margin: [0, 20],
+                    table: {
+                        headerRows: 1,
+                        widths: [60, 70, '*', 60, 40, 90, 90, 90],  // Adjusted column widths
+                        body: [
+                            [
+                                { text: 'Order ID', style: 'tableHeader' },
+                                { text: 'Date', style: 'tableHeader' },
+                                { text: 'Customer', style: 'tableHeader' },
+                                { text: 'Status', style: 'tableHeader' },
+                                { text: 'Items', style: 'tableHeader', alignment: 'right' },
+                                { text: 'Amount', style: 'tableHeader', alignment: 'right' },
+                                { text: 'Discount', style: 'tableHeader', alignment: 'right' },
+                                { text: 'Final', style: 'tableHeader', alignment: 'right' }
+                            ],
+                            ...tableBody
+                        ]
+                    },
+                    layout: {
+                        hLineWidth: (i, node) => 1,
+                        vLineWidth: () => 1,
+                        hLineColor: () => '#E5E7EB',
+                        vLineColor: () => '#E5E7EB',
+                        paddingLeft: (i, node) => 5,  // Reduced padding
+                        paddingRight: (i, node) => 5, // Reduced padding
+                        paddingTop: (i, node) => 5,   // Reduced padding
+                        paddingBottom: (i, node) => 5,// Reduced padding
+                        fillColor: (rowIndex) => {
+                            if (rowIndex === 0) return '#4B5563';
+                            return rowIndex % 2 === 0 ? '#F9FAFB' : null;
+                        }
+                    }
+                }
+            ],
+
+            styles: {
+                header: {
+                    fontSize: 18,
+                    bold: true,
+                    alignment: 'center'
+                },
+                subheader: {
+                    fontSize: 12,
+                    alignment: 'center',
+                    color: '#666666'
+                },
+                summaryTitle: {
+                    fontSize: 14,
+                    bold: true,
+                    margin: [0, 0, 0, 10]
+                },
+                summaryLabel: {
+                    fontSize: 11,
+                    color: '#666666'
+                },
+                summaryValue: {
+                    fontSize: 11,
+                    alignment: 'right'
+                },
+                distributionTitle: {
+                    fontSize: 11,
+                    bold: true,
+                    margin: [0, 10, 0, 5]
+                },
+                distributionText: {
+                    fontSize: 10,
+                    color: '#666666'
+                },
+                tableHeader: {
+                    fontSize: 10,
+                    bold: true,
+                    color: 'white',
+                    margin: [2, 2, 2, 2]  // Reduced margins
+                },
+                tableCell: {
+                    fontSize: 9,
+                    margin: [2, 2, 2, 2]  // Reduced margins
+                },
+                tableCellAmount: {
+                    fontSize: 9,
+                    margin: [2, 2, 2, 2],  // Reduced margins
+                    alignment: 'right'
+                }
+            },
+            
+            defaultStyle: {
+                font: 'Helvetica'
+            }
+        };
+
+        const pdfDoc = printer.createPdfKitDocument(docDefinition);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=sales-report-${new Date().toISOString().split('T')[0]}.pdf`);
+        pdfDoc.pipe(res);
+        pdfDoc.end();
 
     } catch (error) {
         console.error('PDF report error:', error);
         res.status(500).send('Error generating PDF report');
     }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
  const pageerror = async (req,res)=>{
     res.render("admin-error")

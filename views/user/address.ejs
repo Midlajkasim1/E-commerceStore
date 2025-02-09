@@ -475,7 +475,7 @@ document.getElementById('addressForm').addEventListener('submit', async (e) => {
     }
   } catch (error) {
     console.error('Error:', error);
-    alert('Failed to submit the form. Please try again.');
+    // alert('Failed to submit the form. Please try again.');
   }
 });
 
@@ -562,12 +562,12 @@ document.getElementById('editAddressForm').addEventListener('submit', async (e) 
           document.getElementById(`edit${error.field}Error`).textContent = error.message;
         });
       } else if (result.message) {
-        alert(result.message);
+        // alert(result.message);
       }
     }
   } catch (error) {
     console.error('Error:', error);
-    alert('Failed to submit the form. Please try again.');
+    // alert('Failed to submit the form. Please try again.');
   }
 });
 

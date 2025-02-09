@@ -569,27 +569,37 @@ const returnProductOrder = async (req, res) => {
                 message: "Product is already returned." 
             });
         }
+        if (['Return Request', 'Returned'].includes(productItem.status)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Product is already in ${productItem.status} status.` 
+            });
+        }
+
 
         // Update product item status to Return Request
         productItem.status = 'Return Request';
         productItem.returnReason = returnReason;
+        productItem.returnRequestDate = new Date();
+
+        const statusCounts = order.orderedItems.reduce((acc, item) => {
+            acc[item.status] = (acc[item.status] || 0) + 1;
+            return acc;
+        }, {});
 
         // Update order status based on all products
-        const allProducts = order.orderedItems;
-        if (allProducts.every(item => item.status === "Delivered")) {
-            order.status = "Delivered";
-        } else if (allProducts.some(item => item.status === "Return Request")) {
-            order.status = "Return Request";
-        } else if (allProducts.some(item => item.status === "Returned")) {
-            order.status = "Returned";
-        } else if (allProducts.some(item => item.status === "Shipped")) {
-            order.status = "Shipped";
-        } else if (allProducts.some(item => item.status === "Processing")) {
-            order.status = "Processing";
-        } else if (allProducts.some(item => item.status === "Cancelled")) {
-            order.status = "Cancelled";
-        } else {
-            order.status = "Pending";
+        if (statusCounts['Processing'] > 0) {
+            order.status = 'Processing';
+        } else if (statusCounts['Shipped'] > 0) {
+            order.status = 'Shipped';
+        } else if (statusCounts['Return Request'] > 0 && statusCounts['Delivered'] > 0) {
+            order.status = 'Partially Returned';
+        } else if (statusCounts['Return Request'] === order.orderedItems.length) {
+            order.status = 'Return Request';
+        } else if (statusCounts['Returned'] === order.orderedItems.length) {
+            order.status = 'Returned';
+        } else if (statusCounts['Delivered'] === order.orderedItems.length) {
+            order.status = 'Delivered';
         }
 
         await order.save();

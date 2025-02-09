@@ -13,7 +13,7 @@ const getWishlist = async (req,res)=>{
         const wishlist = await Wishlist.findOne({ userId }).populate('products.productId');
         
         if (!wishlist) {
-            return res.render('wishlist', { user: null, wishlist: [] });
+            return res.render('wishlist', { user, wishlist: [] });
         }
         const products = wishlist.products.map((item) => item.productId);        res.render('wishlist',{
             user,

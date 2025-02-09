@@ -114,33 +114,36 @@
     margin-left: 15px;
     cursor: pointer;
 }
-
-/* Pagination Styles */
 .pagination {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     align-items: center;
-    margin-top: 20px;
-    gap: 5px;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.pagination a {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.pagination a:hover {
+    background-color: #f5f5f5;
+    text-decoration: none;
 }
 
 .showing-text {
-    color: #8b8b8b;
-    font-size: 0.9rem;
-    margin-right: auto;
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
 }
 
 .page-item {
-    padding: 8px 12px;
-    color: #8b8b8b;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-.page-item.active {
-    background-color: #4ade80;
-    color: black;
-    border-radius: 5px;
+    display: none; 
 }
 #msg{
 color: green;
@@ -220,18 +223,33 @@ color: green;
                 </tbody>
             </table>
             <div class="pagination">
-                <span class="showing-text">
-                    SHOWING <%= ((currentPage - 1) * 10) + 1 %> - 
-                    <%= Math.min(currentPage * 10, orders.length) %>
-                </span>
-                
-                <% for(let i = 1; i <= totalPages; i++) { %>
-                    <div class="page-item <%= i === currentPage ? 'active' : '' %>">
-                        <a href="/admin/orders?page=<%= i %>&search=<%= search %>"><%= i %></a>
-                    </div>
+                <% if (totalPages > 1) { %>
+                    <!-- Previous page -->
+                    <% if (currentPage > 1) { %>
+                        <a href="/admin/order?page=<%= currentPage - 1 %>" class="text-decoration-none">
+                            &laquo; Previous
+                        </a>
+                    <% } %>
+            
+                    <!-- Page numbers -->
+                    <% for (let i = 1; i <= totalPages; i++) { %>
+                        <% if (i === parseInt(currentPage)) { %>
+                            <span class="showing-text current-page"><%= i %></span>
+                        <% } else { %>
+                            <a href="/admin/order?page=<%= i %>" class="text-decoration-none">
+                                <%= i %>
+                            </a>
+                        <% } %>
+                    <% } %>
+            
+                    <!-- Next page -->
+                    <% if (currentPage < totalPages) { %>
+                        <a href="/admin/order?page=<%= currentPage + 1 %>" class="text-decoration-none">
+                            Next &raquo;
+                        </a>
+                    <% } %>
                 <% } %>
             </div>
-        </div>
     </div>
     </div>
 </body>

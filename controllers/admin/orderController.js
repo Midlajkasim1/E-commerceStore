@@ -7,59 +7,45 @@ const Address = require('../../models/addressSchema');
 const {handleRefund} = require('../user/orderController')
 const mongoose = require('mongoose');
 
-
+// orderController.js
 const getOrder = async (req, res) => {
     try {
-        let search = req.query.search || "";
-        let page = parseInt(req.query.page) || 1;
-        let status = req.query.status || "";
-
-        const limit = 10;
+        const limit = 10; // 10 orders per page
+        const page = parseInt(req.query.page) || 1;
         const skip = (page - 1) * limit;
 
-        const searchConditions = search ? {
-            $or: [
-                { orderId: { $regex: search, $options: 'i' } }
-            ]
-        } : {};
+        // Get total orders count
+        const totalOrders = await Order.countDocuments();
+        const totalPages = Math.ceil(totalOrders / limit);
 
-        const statusConditions = status ? { status: status } : {};
+        // If requested page is invalid, redirect to first page
+        if (page < 1 || (page > totalPages && totalPages > 0)) {
+            return res.redirect('/admin/order'); // Make sure to use the correct path
+        }
 
-        const conditions = {
-            ...searchConditions,
-            ...statusConditions
-        };
-
-        const orders = await Order.find(conditions)
+        const orders = await Order.find()
             .populate({
                 path: 'userId',
                 select: 'name email'
-            })
-            .populate({
-                path: 'orderedItems.product',
-                select: 'name price'
             })
             .sort({ createOn: -1 })
             .skip(skip)
             .limit(limit);
 
-        const totalOrders = await Order.countDocuments(conditions);
-
-        res.render('admin-order', { 
-            orders: orders,
+        return res.render('admin-order', {  // Make sure path matches your view structure
+            orders,
             currentPage: page,
-            totalPages: Math.ceil(totalOrders / limit),
-            search: search,
-            status: status,
-            user: req.user || req.session.user,
-            successMessage: req.flash('err'),
+            totalPages: Math.max(totalPages, 1), // Ensure at least 1 page
+            successMessage: req.flash('success')
         });
 
     } catch (error) {
-        console.error('Error fetching orders:', error);
-        res.status(500).render('error', { 
-            message: 'Failed to retrieve orders',
-            error: error
+        console.error('Error in getOrder:', error);
+        return res.render('admin/admin-order', {
+            orders: [],
+            currentPage: 1,
+            totalPages: 1,
+            successMessage: req.flash('success')
         });
     }
 };
@@ -68,17 +54,11 @@ const getOrderDetails = async (req, res) => {
         const orderId = req.params.id;
         console.log("order id is :",orderId);
    
-
-
-
         const orders = await Order.findById(orderId).populate('orderedItems.product');
-        // console.log('order details',orders);
-// console.log(orders)
         console.log('address id is ',orders.address);
         const address = await Address.findOne({
             "address._id": orders.address,  
           });
-        //   console.log('new addr',address)
 
           let selectedAddress;
 
@@ -103,9 +83,6 @@ const updateStatus = async (req, res) => {
         const orderId = req.params.id; 
         const { orderStatus, productId } = req.body; 
 
-        // console.log("Order ID:", orderId); 
-        // console.log("Product ID:", productId);
-        // console.log("Order Status:", orderStatus); 
 
         const validStatus = ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Return Request", "Returned"];
         if (!validStatus.includes(orderStatus)) {

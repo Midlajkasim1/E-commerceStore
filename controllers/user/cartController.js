@@ -5,7 +5,8 @@ const Cart = require('../../models/cartSchema');
 
 const getAddToCart = async (req, res) => {
     try {
-        // Find user's cart and populate full product details
+        const userId = await User.findById(req.session.user);
+
         const userCart = await Cart.findOne({ userId: req.user._id })
             .populate({
                 path: 'items.productId',
@@ -15,6 +16,7 @@ const getAddToCart = async (req, res) => {
         if (!userCart) {
             return res.render('cart', {
                 cart: [],
+                user:userId,
                 total: 0,
                 messages: {
                     success: req.flash('success'),
@@ -44,7 +46,7 @@ const getAddToCart = async (req, res) => {
         return res.render('cart', {
             cart: cartItems,
             total,
-            user: req.user || req.session.user,  // Add this line explicitly
+            user: await User.findById(userId),
             messages: {
                 success: req.flash('success'),
                 error: req.flash('error')
@@ -60,7 +62,7 @@ const getAddToCart = async (req, res) => {
 const addToCartByGet = async (req, res) => {
     try {
         const productId = req.params.id;
-        const selectedSize = req.body.size || ''; // Provide default empty string
+        const selectedSize = req.body.size || ''; 
         const quantity = parseInt(req.body.quantity) || 1;
 
            // Log the values to debug

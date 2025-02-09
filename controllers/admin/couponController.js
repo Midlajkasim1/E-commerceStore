@@ -4,8 +4,38 @@ const mongoose = require('mongoose')
 
 const getCoupon = async (req,res)=>{
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10; // Number of items per page
+        const skip = (page - 1) * limit;
+
+        // Get total count of coupons for pagination
+        const totalCoupons = await Coupon.countDocuments({});
+        const totalPages = Math.ceil(totalCoupons / limit);
         const findCoupons = await Coupon.find({})
-        res.render('coupon',{coupons:findCoupons})
+        .sort({ createOn: -1 }) // Sort by creation date, newest first
+        .skip(skip)
+        .limit(limit);
+
+    // Handle search functionality if search query exists
+    const searchQuery = req.query.search;
+    if (searchQuery) {
+        findCoupons = await Coupon.find({
+            name: { $regex: searchQuery, $options: 'i' }
+        })
+            .skip(skip)
+            .limit(limit);
+    }
+        res.render('coupon',{
+            coupons: findCoupons,
+            currentPage: page,
+            totalPages: totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            nextPage: page + 1,
+            prevPage: page - 1,
+            lastPage: totalPages,
+            search: searchQuery || '' 
+        })
 
     } catch (error) {
         console.error(error);
@@ -20,34 +50,91 @@ const getAddCoupon = async (req,res)=>{
         res.redirect('/pageerror')
     }
 }
- const addCoupon = async (req,res)=>{
+const addCoupon = async (req, res) => {
     try {
         const data = {
-            couponName:req.body.couponName,
-            startDate:new Date(req.body.startDate + "T00:00:00"),
-            expiryDate:new Date(req.body.expiryDate + "T00:00:00"),
-            offerPrice:parseInt(req.body.offerPrice),
-            minimumPrice:parseInt(req.body.minimumPrice),
+            couponName: req.body.couponName,
+            startDate: new Date(req.body.startDate + "T00:00:00"),
+            expiryDate: new Date(req.body.expiryDate + "T00:00:00"),
+            offerPrice: parseInt(req.body.offerPrice),
+            minimumPrice: parseInt(req.body.minimumPrice),
+        };
 
+        // Validate required fields
+        if (!data.couponName || !data.startDate || !data.expiryDate || !data.offerPrice || !data.minimumPrice) {
+            return res.status(400).json({
+                status: false,
+                message: 'All fields are required'
+            });
         }
-        
-        const newCoupon = new Coupon({
-            name:data.couponName,
-            createOn:data.startDate,
-            expireOn:data.expiryDate,
-            offerPrice:data.offerPrice,
-            minimumPrice:data.minimumPrice
 
-        })
-        console.log('save coupon');
-        
+        // Validate coupon name format
+        if (!/^[A-Z0-9]+$/.test(data.couponName)) {
+            return res.status(400).json({
+                status: false,
+                message: 'Coupon name must contain only uppercase letters and numbers'
+            });
+        }
+
+        // Validate dates
+        if (isNaN(data.startDate.getTime()) || isNaN(data.expiryDate.getTime())) {
+            return res.status(400).json({
+                status: false,
+                message: 'Invalid date format'
+            });
+        }
+
+        if (data.expiryDate < data.startDate) {
+            return res.status(400).json({
+                status: false,
+                message: 'Expiry date cannot be earlier than start date'
+            });
+        }
+
+        // Validate prices
+        if (isNaN(data.offerPrice) || isNaN(data.minimumPrice) || data.offerPrice <= 0 || data.minimumPrice <= 0) {
+            return res.status(400).json({
+                status: false,
+                message: 'Invalid price values'
+            });
+        }
+
+        if (data.offerPrice >= data.minimumPrice) {
+            return res.status(400).json({
+                status: false,
+                message: 'Offer price must be less than minimum price'
+            });
+        }
+
+        // Check if coupon already exists
+        const existingCoupon = await Coupon.findOne({ name: data.couponName });
+        if (existingCoupon) {
+            return res.status(400).json({
+                status: false,
+                message: 'Coupon with this name already exists'
+            });
+        }
+
+        // Create new coupon
+        const newCoupon = new Coupon({
+            name: data.couponName,
+            createOn: data.startDate,
+            expireOn: data.expiryDate,
+            offerPrice: data.offerPrice,
+            minimumPrice: data.minimumPrice
+        });
+
         await newCoupon.save();
-        return res.redirect('/admin/coupon')
+        return res.redirect('/admin/coupon');
+
     } catch (error) {
         console.error(error);
-        res.redirect('/pageNotFound')
+        res.status(500).json({
+            status: false,
+            message: 'Internal server error'
+        });
     }
- }
+};
  //list coupon
 
  const listCoupon = async (req,res)=>{
