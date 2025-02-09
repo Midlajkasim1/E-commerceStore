@@ -335,37 +335,14 @@ const downloadExcelReport = async (req, res) => {
 
 const downloadPdfReport = async (req, res) => {
     try {
-        const { startDate, endDate, filter } = req.query;
-        let query = { status: 'Delivered' };
-
-        // Handle date filtering
-        if (startDate && endDate) {
-            query.createOn = {
+        const { startDate, endDate } = req.query;
+        const query = {
+            status: 'Delivered',
+            createOn: {
                 $gte: new Date(startDate),
                 $lte: new Date(endDate)
-            };
-        } else if (filter) {
-            const now = new Date();
-            
-            switch (filter) {
-                case 'daily':
-                    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-                    query.createOn = { $gte: startOfDay, $lte: new Date() };
-                    break;
-                case 'weekly':
-                    query.createOn = { $gte: new Date(now.setDate(now.getDate() - 7)) };
-                    break;
-                case 'monthly':
-                    query.createOn = { $gte: new Date(now.setMonth(now.getMonth() - 1)) };
-                    break;
-                case '1year':
-                    query.createOn = { $gte: new Date(now.setFullYear(now.getFullYear() - 1)) };
-                    break;
             }
-        } else {
-            // Default to last month if no filter specified
-            query.createOn = { $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)) };
-        }
+        };
 
         const orders = await Order.find(query)
             .populate('userId', 'name email')
@@ -377,72 +354,177 @@ const downloadPdfReport = async (req, res) => {
             return res.status(404).send('No orders found for the specified date range');
         }
 
-        // Create PDF document
-        const doc = new PDFDocument();
+        // Create PDF document with wider margins for better layout
+        const doc = new PDFDocument({
+            margin: 50,
+            size: 'A4'
+        });
         
-        // Set response headers
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=sales-report-${new Date().toISOString().split('T')[0]}.pdf`);
         
         doc.pipe(res);
 
-        // Add header
-        doc.fontSize(20).text('Sales Report', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(12).text(`Period: ${new Date(query.createOn.$gte).toLocaleDateString()} to ${new Date().toLocaleDateString()}`, { align: 'center' });
-        doc.moveDown();
+        // Improved header styling
+        doc.font('Helvetica-Bold')
+           .fontSize(24)
+           .text('Sales Report', { align: 'center' });
+        
+        doc.moveDown()
+           .fontSize(14)
+           .text(`Period: ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`, { align: 'center' });
 
-        // Calculate totals
+        // Calculate summary
         const summary = {
             totalOrders: orders.length,
             totalSales: orders.reduce((sum, order) => sum + order.finalAmount, 0),
             totalDiscount: orders.reduce((sum, order) => sum + order.discount, 0)
         };
 
-        // Add summary section
-        doc.fontSize(14).text('Summary', { underline: true });
-        doc.fontSize(12).text(`Total Orders: ${summary.totalOrders}`);
-        doc.fontSize(12).text(`Total Sales: ₹${summary.totalSales.toLocaleString()}`);
-        doc.fontSize(12).text(`Total Discount: ₹${summary.totalDiscount.toLocaleString()}`);
-        doc.moveDown();
+        // Improved summary section with better spacing
+        doc.moveDown(2);
+        const summaryBox = {
+            x: 70,
+            y: doc.y,
+            width: 460,
+            height: 120
+        };
 
-        // Add order details table
-        doc.fontSize(14).text('Order Details', { underline: true });
-        doc.moveDown();
+        // Draw summary box with rounded corners
+        doc.roundedRect(summaryBox.x, summaryBox.y, summaryBox.width, summaryBox.height, 5)
+           .stroke();
 
-        // Table headers
-        const startX = 50;
-        let currentY = doc.y;
+        // Add summary content with better spacing and proper currency symbol
+        doc.fontSize(16)
+           .text('Summary', summaryBox.x + 30, summaryBox.y + 20);
         
-        const headers = ['Order ID', 'Date', 'Customer', 'Items', 'Amount', 'Discount'];
-        doc.fontSize(10);
+        doc.fontSize(12)
+           .text(`Total Orders: ${summary.totalOrders}`, summaryBox.x + 30, summaryBox.y + 50)
+           .text(`Total Sales: Rs. ${summary.totalSales.toLocaleString()}`, summaryBox.x + 30, summaryBox.y + 75)
+           .text(`Total Discount: Rs. ${summary.totalDiscount.toLocaleString()}`, summaryBox.x + 30, summaryBox.y + 100);
+
+        // Improved table configuration
+        const tableTop = summaryBox.y + summaryBox.height + 40;
+        const tableWidth = 460;
+        const startX = 70;
+        
+        const colWidths = [
+            Math.floor(tableWidth * 0.25), // Order ID (25%)
+            Math.floor(tableWidth * 0.15), // Date (15%)
+            Math.floor(tableWidth * 0.20), // Customer (20%)
+            Math.floor(tableWidth * 0.10), // Items (10%)
+            Math.floor(tableWidth * 0.15), // Amount (15%)
+            Math.floor(tableWidth * 0.15)  // Discount (15%)
+        ];
+        
+        // Updated headers without the superscript
+        const headers = ['Order ID', 'Date', 'Customer', 'Items', 'Amount (Rs.)', 'Discount (Rs.)'];
+        const rowHeight = 30;
+
+        // Draw table header with improved styling
+        let yPos = tableTop;
+        
+        // Header background
+        doc.fillColor('#f3f4f6')
+           .rect(startX, yPos, tableWidth, rowHeight)
+           .fill()
+           .fillColor('#000000');
+
+        // Header text
+        let xPos = startX;
+        doc.font('Helvetica-Bold')
+           .fontSize(10);
+
         headers.forEach((header, i) => {
-            doc.text(header, startX + (i * 85), currentY);
+            doc.text(
+                header,
+                xPos + 5,
+                yPos + (rowHeight - 10) / 2,
+                {
+                    width: colWidths[i] - 10,
+                    align: i >= 3 ? 'right' : 'left'
+                }
+            );
+            xPos += colWidths[i];
         });
 
-        currentY += 20;
+        // Draw table rows with improved spacing
+        yPos += rowHeight;
+        doc.font('Helvetica')
+           .fontSize(9);
 
-        // Add order rows
-        orders.forEach(order => {
-            if (currentY > 700) {
+        orders.forEach((order) => {
+            // Add new page if needed
+            if (yPos > 750) {
                 doc.addPage();
-                currentY = 50;
-                // Repeat headers on new page
+                yPos = 50;
+                
+                // Repeat header on new page
+                doc.fillColor('#f3f4f6')
+                   .rect(startX, yPos, tableWidth, rowHeight)
+                   .fill()
+                   .fillColor('#000000')
+                   .font('Helvetica-Bold')
+                   .fontSize(10);
+
+                xPos = startX;
                 headers.forEach((header, i) => {
-                    doc.text(header, startX + (i * 85), currentY);
+                    doc.text(
+                        header,
+                        xPos + 5,
+                        yPos + (rowHeight - 10) / 2,
+                        {
+                            width: colWidths[i] - 10,
+                            align: i >= 3 ? 'right' : 'left'
+                        }
+                    );
+                    xPos += colWidths[i];
                 });
-                currentY += 20;
+
+                doc.font('Helvetica')
+                   .fontSize(9);
+                yPos += rowHeight;
             }
 
-            doc.fontSize(8);
-            doc.text(order.orderId, startX, currentY);
-            doc.text(new Date(order.createOn).toLocaleDateString(), startX + 85, currentY);
-            doc.text(order.userId?.name || 'N/A', startX + 170, currentY);
-            doc.text(order.orderedItems.length.toString(), startX + 255, currentY);
-            doc.text(`₹${order.finalAmount.toLocaleString()}`, startX + 340, currentY);
-            doc.text(`₹${order.discount.toLocaleString()}`, startX + 425, currentY);
+            // Draw row with alternating background
+            if ((yPos - tableTop) / rowHeight % 2 === 1) {
+                doc.fillColor('#f9fafb')
+                   .rect(startX, yPos, tableWidth, rowHeight)
+                   .fill()
+                   .fillColor('#000000');
+            }
 
-            currentY += 15;
+            // Draw row data
+            xPos = startX;
+            const rowData = [
+                order.orderId,
+                new Date(order.createOn).toLocaleDateString(),
+                order.userId?.name || 'N/A',
+                order.orderedItems.length.toString(),
+                order.finalAmount.toLocaleString(),
+                order.discount.toLocaleString()
+            ];
+
+            rowData.forEach((cell, i) => {
+                // Add 'Rs. ' prefix for amount and discount columns
+                const displayValue = i >= 4 ? `Rs. ${cell}` : cell;
+                doc.text(
+                    displayValue,
+                    xPos + 5,
+                    yPos + (rowHeight - 9) / 2,
+                    {
+                        width: colWidths[i] - 10,
+                        align: i >= 3 ? 'right' : 'left'
+                    }
+                );
+                xPos += colWidths[i];
+            });
+
+            // Draw row border
+            doc.rect(startX, yPos, tableWidth, rowHeight)
+               .stroke();
+
+            yPos += rowHeight;
         });
 
         doc.end();
@@ -452,12 +534,6 @@ const downloadPdfReport = async (req, res) => {
         res.status(500).send('Error generating PDF report');
     }
 };
-
-
-
-
-
-
 
 
 

@@ -69,7 +69,7 @@
       height: 72px;
       overflow: hidden;
       display: -webkit-box;
-      -webkit-line-clamp: 3;
+      /* -webkit-line-clamp: 3; */
       -webkit-box-orient: vertical;
       line-height: 1.5;
     }
@@ -267,8 +267,9 @@
                     <p class="text-muted"><strike>₹<%=product.salePrice%></strike></p>
                     <p>₹<%=product.regularPrice%></p>
                     <span class="category-badge"><%=product.category.name%></span>
-                    <button class="add-to-cart-btn w-100">Add to Cart</button>
-                  </div>
+                    <form action="/addToCart/<%= product._id %>" method="POST" class="add-to-cart-form">
+                      <button type="submit" class="add-to-cart-btn w-100">Add to Cart</button>
+                    </form>                     </div>
                 </div>
               <%}%>
         <%} else {%>

@@ -85,11 +85,15 @@ const placeOrder = async (req, res) => {
         const orderId = uuidv4();
 
         if (paymentMethod === 'RAZORPAY') {
-            console.log('Razorpay Order Details:', {
-                finalAmount,
+            req.session.orderDetails = {
                 orderId,
-                discount
-            });
+                discount,
+                subtotal,
+                shipping,
+                tax,
+                finalAmount
+            };
+
             const razorpayOrder = await createRazorpayOrder(finalAmount, orderId);
             console.log('Razorpay Response:', razorpayOrder);
 
@@ -198,10 +202,17 @@ const verifyPayment = async (req, res) => {
             razorpaySignature,
             orderId,
             addressId,
-            discount
+            // discount
         } = req.body;
 
         const userId = req.session.user;
+        const orderDetails = req.session.orderDetails;
+        if (!orderDetails) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order details not found'
+            });
+        }
 
         const shasum = crypto.createHmac('sha256', razorpayInstance.key_secret);
         shasum.update(`${razorpayOrderId}|${razorpayPaymentId}`);
@@ -222,11 +233,11 @@ const verifyPayment = async (req, res) => {
             });
         }
 
-        const subtotal = cart.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-        const shipping = 100;
-        const tax = 20;
-        const discountAmount = parseFloat(discount) || 0;
-        const finalAmount = subtotal + shipping + tax - discountAmount;
+        // const subtotal = cart.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+        // const shipping = 100;
+        // const tax = 20;
+        // const discountAmount = parseFloat(discount) || 0;
+        // const finalAmount = subtotal + shipping + tax - discountAmount;
 
         const orderedItems = cart.items.map(item => ({
             product: item.productId._id,
@@ -240,12 +251,11 @@ const verifyPayment = async (req, res) => {
             orderId,
             userId,
             orderedItems,
-            totalPrice: subtotal,
-           
-            discount: discountAmount,
-            finalAmount,            
-            shipping,
-            tax,
+            totalPrice: orderDetails.subtotal,
+            discount: orderDetails.discount,
+            shipping: orderDetails.shipping,
+            tax: orderDetails.tax,
+            finalAmount: orderDetails.finalAmount,
             address: addressId,
             status: 'Processing',
             paymentMethod: 'RAZORPAY',
@@ -278,7 +288,7 @@ const verifyPayment = async (req, res) => {
             { $set: { items: [] }},
             { new: true }
         );
-
+        delete req.session.orderDetails;
         return res.status(200).json({
             success: true,
             message: 'Payment verified and order placed successfully',

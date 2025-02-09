@@ -174,6 +174,50 @@
         .mb-0{
             color: white;
         }
+        .date-range-container {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .date-inputs {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .quick-select {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .date-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #374151;
+            background: #1F2937;
+            color: white;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .date-btn:hover, .date-btn.active {
+            background: #8B5CF6;
+            border-color: #8B5CF6;
+        }
+
+        .date-input {
+            padding: 0.5rem;
+            border: 1px solid #374151;
+            background: #1F2937;
+            color: white;
+            border-radius: 0.375rem;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: #8B5CF6;
+        }
     </style>
 </head>
 <body>
@@ -230,14 +274,18 @@
     <div class="main-content">
         <div class="content-wrapper">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Dashboard Overview</h2>
-                <div class="d-flex gap-3">
-                    <select class="form-select" id="dateRange">
-                        <option value="daily">Last 24 Hours</option>
-                        <option value="weekly">Last Week</option>
-                        <option value="monthly">Last Month</option>
-                        <option value="yearly">Last Year</option>
-                    </select>
+                <h2>Dashboard</h2>
+                <div class="date-range-container">
+                    <div class="quick-select">
+                        <button class="date-btn" onclick="setDateRange('1d')">1 Day</button>
+                        <button class="date-btn" onclick="setDateRange('1w')">1 Week</button>
+                        <button class="date-btn" onclick="setDateRange('1m')">1 Month</button>
+                    </div>
+                    <div class="date-inputs">
+                        <input type="date" id="startDate" class="date-input" onchange="handleDateChange()">
+                        <span class="text-white">to</span>
+                        <input type="date" id="endDate" class="date-input" onchange="handleDateChange()">
+                    </div>
                     <button class="btn btn-success" onclick="downloadReport('excel')">
                         <i class="fas fa-file-excel me-2"></i>Excel Report
                     </button>
@@ -440,19 +488,76 @@
                 }
             }
         });
-        function downloadReport(type) {
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 1);
-    const endDate = new Date();
-    
-    const params = new URLSearchParams({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-    });
+       function setDateRange(range) {
+            const today = new Date();
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+            
+            // Reset all buttons
+            document.querySelectorAll('.date-btn').forEach(btn => btn.classList.remove('active'));
+            
+            switch(range) {
+                case '1d':
+                    startDate.valueAsDate = today;
+                    endDate.valueAsDate = today;
+                    document.querySelector('button[onclick="setDateRange(\'1d\')"]').classList.add('active');
+                    break;
+                case '1w':
+                    const weekAgo = new Date(today);
+                    weekAgo.setDate(today.getDate() - 7);
+                    startDate.valueAsDate = weekAgo;
+                    endDate.valueAsDate = today;
+                    document.querySelector('button[onclick="setDateRange(\'1w\')"]').classList.add('active');
+                    break;
+                case '1m':
+                    const monthAgo = new Date(today);
+                    monthAgo.setMonth(today.getMonth() - 1);
+                    startDate.valueAsDate = monthAgo;
+                    endDate.valueAsDate = today;
+                    document.querySelector('button[onclick="setDateRange(\'1m\')"]').classList.add('active');
+                    break;
+            }
+            
+            handleDateChange();
+        }
 
-    const url = `/admin/sales-report/${type}?${params.toString()}`;
-    window.open(url, '_blank');
-}
+        function handleDateChange() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            // Remove active class from quick select buttons when custom date is selected
+            if (startDate && endDate) {
+                document.querySelectorAll('.date-btn').forEach(btn => btn.classList.remove('active'));
+            }
+            
+            // Here you can trigger any updates needed based on the new date range
+            updateDashboardData(startDate, endDate);
+        }
+
+        function updateDashboardData(startDate, endDate) {
+            // You can implement an AJAX call here to update your dashboard data
+            console.log('Updating dashboard for date range:', startDate, 'to', endDate);
+        }
+
+        function downloadReport(type) {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                alert('Please select a date range');
+                return;
+            }
+            
+            const params = new URLSearchParams({
+                startDate: startDate,
+                endDate: endDate
+            });
+
+            window.open(`/admin/sales-report/${type}?${params.toString()}`, '_blank');
+        }
+
+        // Set default date range to last month
+        window.onload = () => setDateRange('1m');
 
     </script>
     

@@ -143,8 +143,10 @@ const updateCartQuantity = async (req, res) => {
             });
 
         if (!userCart) {
-            req.flash('error', 'Cart not found');
-            return res.redirect('/cart');
+            return res.json({ 
+                success: false, 
+                message: 'Cart not found' 
+            });
         }
 
         const itemIndex = userCart.items.findIndex(
@@ -152,14 +154,18 @@ const updateCartQuantity = async (req, res) => {
         );
 
         if (itemIndex === -1) {
-            req.flash('error', 'Item not found in cart');
-            return res.redirect('/cart');
+            return res.json({ 
+                success: false, 
+                message: 'Item not found in cart' 
+            });
         }
 
         const product = await Product.findById(productId);
         if (!product) {
-            req.flash('error', 'Product not found');
-            return res.redirect('/cart');
+            return res.json({ 
+                success: false, 
+                message: 'Product not found' 
+            });
         }
 
         const sizeKey = `size${size}`;
@@ -168,8 +174,12 @@ const updateCartQuantity = async (req, res) => {
 
         if (action === 'increase') {
             if (currentQuantity + 1 > currentStock) {
-                req.flash('warning', `Maximum stock reached. Only ${currentStock} items available for this product in size ${size}.`);
-                return res.redirect('/cart');
+                return res.json({
+                    success: false,
+                    message: `Only ${currentStock} items available in stock for size ${size}`,
+                    stockLimit: true,
+                    currentStock
+                });
             }
             userCart.items[itemIndex].quantity += 1;
         } else if (action === 'decrease') {
@@ -183,10 +193,32 @@ const updateCartQuantity = async (req, res) => {
 
         await userCart.save();
 
-        res.redirect('/cart');
+        // Calculate cart totals
+        const subtotal = userCart.items.reduce((total, item) => 
+            total + (item.quantity * item.productId.salePrice), 0);
+        const shipping = userCart.items.length > 0 ? 100 : 0;
+        const tax = userCart.items.length > 0 ? 20 : 0;
+        const total = subtotal + shipping + tax;
+
+        return res.json({
+            success: true,
+            message: 'Cart updated successfully',
+            newQuantity: userCart.items[itemIndex].quantity,
+            newItemTotal: userCart.items[itemIndex].totalPrice,
+            cartTotals: {
+                subtotal,
+                shipping,
+                tax,
+                total
+            }
+        });
+
     } catch (error) {
-        req.flash('error', 'Error updating cart quantity');
-        res.redirect('/cart');
+        console.error('Error updating cart quantity:', error);
+        return res.json({ 
+            success: false, 
+            message: 'Error updating cart quantity' 
+        });
     }
 };
 
@@ -194,7 +226,6 @@ const removeFromCart = async (req, res) => {
     try {
         const { productId, size } = req.body;
         
-        // Use findOneAndUpdate with $pull to remove specific size variant
         const updatedCart = await Cart.findOneAndUpdate(
             { userId: req.user._id },
             {
@@ -209,20 +240,37 @@ const removeFromCart = async (req, res) => {
         );
         
         if (!updatedCart) {
-            req.flash('error', 'Cart not found');
-            return res.redirect('/cart');
+            return res.json({
+                success: false,
+                message: 'Cart not found'
+            });
         }
+
+        // Calculate new cart totals
+        const subtotal = updatedCart.items.reduce((total, item) => 
+            total + (Number(item.salePrice) * Number(item.quantity)), 0);
+        const shipping = updatedCart.items.length > 0 ? 100 : 0;
+        const tax = updatedCart.items.length > 0 ? 20 : 0;
         
-        req.flash('success', 'Item removed from cart successfully');
-        return res.redirect('/cart');
+        return res.json({
+            success: true,
+            message: 'Item removed from cart successfully',
+            cartTotals: {
+                subtotal,
+                shipping,
+                tax,
+                total: subtotal + shipping + tax
+            }
+        });
         
     } catch (error) {
         console.error('Error in removeFromCart:', error);
-        req.flash('error', 'Error removing item from cart');
-        return res.redirect('/cart');
+        return res.json({
+            success: false,
+            message: 'Error removing item from cart'
+        });
     }
 };
-
 module.exports = {
     getAddToCart,
     addToCartByGet,

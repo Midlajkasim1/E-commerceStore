@@ -303,17 +303,17 @@ body {
     margin-bottom: 15px;
 }
 
-.product-card h5 {
+/* .product-card h5 {
     font-size: 16px;
     color: #2c3e50;
     margin: 10px 0;
     height: 72px; /* Increased height for 3 lines */
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 3; /* Changed to show 3 lines */
-    -webkit-box-orient: vertical;
-    line-height: 1.5; /* Better readability */
-}
+    /* overflow: hidden; */
+    /* display: -webkit-box; */
+    /* -webkit-line-clamp: 3;  */
+    /* -webkit-box-orient: vertical; */
+    /* line-height: 1.5; */
+/* } */ 
 
 .product-card .text-muted {
     font-size: 14px;
@@ -572,6 +572,12 @@ body {
     min-width: 16px;
     text-align: center;
 }
+.wishlist-link {
+    text-decoration: none !important; 
+    display: inline-block; 
+    border: none !important; 
+    outline: none !important; 
+}
 </style>
 
 </head>
@@ -638,7 +644,7 @@ body {
                 <a href="/login" class="btn btn-primary">Login</a>
                 <% } %>
                 <!-- <img src="/images/akar-icons_search.png" alt="Search" class="mr-4" /> -->
-                <a href="/wishlist">
+                <a class="wishlist-link" href="/wishlist">
                     <img src="/images/akar-icons_heart.png" alt="Wishlist" class="mr-4" />
                 </a>
                 <a href="/cart" class="cart-icon-wrapper">
