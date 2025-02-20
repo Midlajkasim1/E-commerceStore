@@ -132,43 +132,74 @@ const getUnListCategory = async (req,res)=>{
  }
 
  //add category offer
-
  const addCategoryOffer = async (req, res) => {
     try {
         const percentage = parseInt(req.body.percentage);
         const categoryId = req.body.categoryId;
 
+        // Validate percentage
+        if (percentage < 0 || percentage > 100) {
+            return res.json({ 
+                status: false, 
+                message: "Offer percentage must be between 0 and 100" 
+            });
+        }
+
         const category = await Category.findById(categoryId);
-
         if (!category) {
-            return res.status(404).json({ status: false, message: "Category not found" });
+            return res.status(404).json({ 
+                status: false, 
+                message: "Category not found" 
+            });
         }
 
-        const products = await Product.find({ category: category._id });
-        const hasProductOffer = products.some((product) => product.productOffer > percentage);
-        if(hasProductOffer) {
-            return res.json({status: false, message: "Cannot add category offer when products have offers"})
+        // Get all products in category
+        const products = await Product.find({ category: categoryId });
+
+        // Check if any product has a higher product offer
+        const hasHigherOffer = products.some(product => 
+            product.productOffer > percentage
+        );
+
+        if (hasHigherOffer) {
+            return res.json({
+                status: false, 
+                message: "Some products have higher individual offers"
+            });
         }
 
-        await Category.updateOne({_id:categoryId}, {$set:{categoryOffer:percentage}});
+        // Update category offer
+        await Category.updateOne(
+            { _id: categoryId },
+            { $set: { categoryOffer: percentage } }
+        );
 
+        // Update all products in category
         for (let product of products) {
-            product.productOffer = 0;
-            // Store the original sale price before applying category offer
-            product.originalSalePrice = product.salePrice;
-            
-            // Apply the category offer discount to the regular price
+            // Store original sale price if not already stored
+            if (!product.originalSalePrice) {
+                product.originalSalePrice = product.salePrice;
+            }
+
+            // Calculate new sale price from regular price
             const discountAmount = Math.floor(product.regularPrice * (percentage/100));
-            product.salePrice = product.regularPrice - discountAmount;
-            
+            product.salePrice = Math.max(product.regularPrice - discountAmount, 0);
+            product.productOffer = 0; // Remove any product offer
+
             await product.save();
         }
 
-        res.status(200).json({ status: true, message: "Category offer added successfully" });
+        res.json({ status: true });
+
     } catch (error) {
-        res.status(500).json({ status: false, message: "Internal server error" });
+        console.error('Error in addCategoryOffer:', error);
+        res.status(500).json({ 
+            status: false, 
+            message: "An error occurred" 
+        });
     }
 };
+
 
 const removeCategoryOffer = async (req, res) => {
     try {
@@ -184,7 +215,6 @@ const removeCategoryOffer = async (req, res) => {
 
         if(products.length > 0) {
             for (let product of products) {
-                // Restore the original sale price that was saved before applying category offer
                 if (product.originalSalePrice) {
                     product.salePrice = product.originalSalePrice;
                     product.originalSalePrice = null;

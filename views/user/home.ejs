@@ -1,5 +1,9 @@
 
-<%-include("../../views/partials/user/header")%>
+   <!-- Owl Carousel CSS -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css">
+
+   <%-include("../../views/partials/user/header")%>
 
  <!-- Hero Section -->
 <section id="home-section" class="hero">
@@ -102,8 +106,9 @@
                   <% for(let i = 0; i < products.length; i++) { %>
                     <div class="col-md-3">  <!-- Changed from col-md-4 to col-md-3 -->
                       <div class="product-card">
-                        <span class="wishlist-btn">❤️</span>
-                        <a href="/productDetails?id=<%=products[i]._id%>">
+                        <span class="wishlist-btn"
+                        onclick="addToWishlist('<%=products[i]._id%>')">❤️</span>                      
+                          <a href="/productDetails?id=<%=products[i]._id%>">
                         <img src="/uploads/re-image/<%= products[i].productImage[0] %>" alt="<%= products[i].productName %>" class="img-fluid rounded"></a>
                         <h5 class="mt-3"><%= products[i].productName %></h5>
                         <p class="text-muted"><strike>₹<%= products[i].regularPrice.toLocaleString('en-IN') %></strike></p>
@@ -185,43 +190,75 @@
 </section>
 
 
-    <!-- time -->
-    <section class="ftco-section ftco-deal" style="background-color: #dbcc8f;">
-        <div class="container">
-            <div class="row">
-                <!-- Image Section -->
-                <div class="col-md-6 d-flex justify-content-center align-items-center">
-                    <div class="img-container" style="padding: 20px;">
-                        <img src="images/AIR+JORDAN+4+RETRO.png" class="img-fluid" alt="Deal of the month image" style="max-width: 90%; max-height: 350px; object-fit: contain;">
-                    </div>
-                </div>
-            
-                <!-- Deal Text Section -->
-                <div class="col-md-6 d-flex flex-column justify-content-center align-items-start">
-                    <div class="heading-section heading-section-white" style="color: #fff;">
-                        <span class="subheading" style="font-size: 1.25rem; font-weight: 500; color: white;;">Deal of the Month</span>
-                        <h2 class="mb-3" style="font-size: 2.5rem; font-weight: 700; color: #2c3e50;">Deal of the Month</h2>
-                    </div>
-            
-                    <!-- Countdown Timer -->
-                    <div id="timer" class="d-flex mb-4">
-                        <div class="time" id="days" style="font-size: 1.5rem; font-weight: 600; color: #2c3e50;"></div>
-                        <div class="time pl-4" id="hours" style="font-size: 1.5rem; font-weight: 600; color: #2c3e50;"></div>
-                        <div class="time pl-4" id="minutes" style="font-size: 1.5rem; font-weight: 600; color: #2c3e50;"></div>
-                        <div class="time pl-4" id="seconds" style="font-size: 1.5rem; font-weight: 600; color: #2c3e50;"></div>
-                    </div>
-            
-                    <!-- Deal Info Section -->
-                    <div class="text-deal">
-                        <h3 style="font-size: 2rem; font-weight: 600; color: #2c3e50;">Nike Free RN 2019 iD</h3>
-                        <p class="price" style="font-size: 1.25rem; color: #e74c3c;">
-                            <span class="mr-2 price-dc" style="text-decoration: line-through; color: #7f8c8d;">$120.00</span>
-                            <span class="price-sale" style="font-weight: 700;">$80.00</span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+  
+
  
    <%-include("../../views/partials/user/footer")%>
+   <!-- jQuery -->
+
+   <!-- Owl Carousel JS -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+   <script>
+    const isUserLoggedIn = <%= locals.user ? 'true' : 'false' %>;
+
+function addToWishlist(productId) {
+    if (!isUserLoggedIn) {
+        Swal.fire({
+            title: 'Login Required',
+            text: 'Please login to add to wishlist',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Login',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // window.location.href = '/login'; // Uncommented the login redirect
+            }
+        });
+        return;
+    }
+
+    fetch('/addToWishlist', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId: productId })
+    })
+    .then(response => response.json())
+    .then(response => {
+        if (response.status) {
+            Swal.fire({
+                title: 'Success!',
+                text: 'Product added to wishlist',
+                icon: 'success',
+                timer: 2000
+            });
+            // Update wishlist button appearance
+            const wishlistBtn = document.querySelector(`[data-product-id="${productId}"]`);
+            if (wishlistBtn) {
+                wishlistBtn.classList.add('in-wishlist');
+            }
+        } else {
+            Swal.fire({
+                title: 'Info',
+                text: response.message,
+                icon: 'info',
+                timer: 2000
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            title: 'Error',
+            text: 'Failed to add product to wishlist',
+            icon: 'error',
+            timer: 2000
+        });
+    });
+}
+</script>

@@ -414,9 +414,11 @@
             <!-- Search Bar -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <form action="/shop" method="GET" class="search-form">
-                    <input type="text" name="query" placeholder="Search items..." value="<%= search || '' %>"
-                        class="search-input" />
+                    <input type="text" name="query" placeholder="Search items..." value="<%= search || '' %>" class="search-input" />
                     <input type="hidden" name="category" value="<%= selectedCategory || '' %>" />
+                    <input type="hidden" name="sort" value="<%= currentSort || 'default' %>" />
+                    <input type="hidden" name="gt" value="<%= gt || 0 %>" />
+                    <input type="hidden" name="lt" value="<%= lt || '' %>" />
                     <button type="submit" class="search-button">Search</button>
                 </form>
             </div>
@@ -429,13 +431,12 @@
                         <ul class="list-styled">
                             <% categories.forEach(cat=> { %>
                                 <li>
-                                    <a href="/shop?category=<%= cat._id %>"
-                                        class="text-decoration-none text-dark <%= selectedCategory === cat._id.toString() ? 'active' : '' %>">
+                                    <a href="/shop?category=<%= cat._id %>&query=<%= search || '' %>&sort=<%= currentSort || 'default' %>&gt=<%= gt || 0 %>&lt=<%= lt || '' %>" 
+                                       class="text-decoration-none text-dark <%= selectedCategory === cat._id.toString() ? 'active' : '' %>">
                                         <%= cat.name %>
-                                        
-                                    <% if (cat.categoryOffer > 0) { %>
-                                        <span class="offer-badge"><%= cat.categoryOffer %>% OFF</span>
-                                    <% } %>
+                                        <% if (cat.categoryOffer > 0) { %>
+                                            <span class="offer-badge"><%= cat.categoryOffer %>% OFF</span>
+                                        <% } %>
                                     </a>
                                 </li>
                                 <% }) %>
@@ -444,16 +445,16 @@
 
                     <div class="p-3 border rounded mt-4">
                         <h5 class="mb-3">Filter by Price</h5>
-                        <a href="/shop?gt=0&lt=500&category=<%= selectedCategory || '' %>">
+                        <a href="/shop?gt=0&lt=500&category=<%= selectedCategory || '' %>&query=<%= search || '' %>&sort=<%= currentSort || 'default' %>">
                             <button type="button" class="price-button w-100 mb-2">Under ₹500</button>
                         </a>
-                        <a href="/shop?gt=500&lt=1000&category=<%= selectedCategory || '' %>">
+                        <a href="/shop?gt=500&lt=1000&category=<%= selectedCategory || '' %>&query=<%= search || '' %>&sort=<%= currentSort || 'default' %>">
                             <button type="button" class="price-button w-100 mb-2">₹500 - ₹1000</button>
                         </a>
-                        <a href="/shop?gt=1000&lt=1500&category=<%= selectedCategory || '' %>">
+                        <a href="/shop?gt=1000&lt=1500&category=<%= selectedCategory || '' %>&query=<%= search || '' %>&sort=<%= currentSort || 'default' %>">
                             <button type="button" class="price-button w-100 mb-2">₹1000 - ₹1500</button>
                         </a>
-                        <a href="/shop?gt=1500&lt=1000000&category=<%= selectedCategory || '' %>">
+                        <a href="/shop?gt=1500&lt=1000000&category=<%= selectedCategory || '' %>&query=<%= search || '' %>&sort=<%= currentSort || 'default' %>">
                             <button type="button" class="price-button w-100">Above ₹1500</button>
                         </a>
                     </div>
@@ -512,22 +513,20 @@
 
             <!-- Pagination -->
             <div class="pagination">
-                <% if (currentPage> 1) { %>
-                    <a class="btn"
-                        href="?page=<%= currentPage - 1 %>&category=<%= selectedCategory %>&sort=<%= currentSort %>&gt=<%= gt || 0 %>&lt=<%= lt || 1000000 %>">Prev</a>
-                    <% } %>
-
-                        <% for (let i=1; i <=totalPages; i++) { %>
-                            <a class="btn <%= currentPage === i ? 'active' : '' %>"
-                                href="?page=<%= i %>&category=<%= selectedCategory %>&sort=<%= currentSort %>&gt=<%= gt || 0 %>&lt=<%= lt || 1000000 %>">
-                                <%= i %>
-                            </a>
-                            <% } %>
-
-                                <% if (currentPage < totalPages) { %>
-                                    <a class="btn"
-                                        href="?page=<%= currentPage + 1 %>&category=<%= selectedCategory %>&sort=<%= currentSort %>&gt=<%= gt || 0 %>&lt=<%= lt || 1000000 %>">Next</a>
-                                    <% } %>
+                <% if (currentPage > 1) { %>
+                    <a class="btn" href="?page=<%= currentPage - 1 %>&<%= queryString %>">Prev</a>
+                <% } %>
+            
+                <% for (let i = 1; i <= totalPages; i++) { %>
+                    <a class="btn <%= currentPage === i ? 'active' : '' %>" 
+                       href="?page=<%= i %>&<%= queryString %>">
+                        <%= i %>
+                    </a>
+                <% } %>
+            
+                <% if (currentPage < totalPages) { %>
+                    <a class="btn" href="?page=<%= currentPage + 1 %>&<%= queryString %>">Next</a>
+                <% } %>
             </div>
         </div>
         <%-include("../../views/partials/user/footer")%>
@@ -535,9 +534,33 @@
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
                         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-
+                        <script>
+                            const isUserLoggedIn = <%- locals.user ? 'true' : 'false' %>;
+                        </script>
             <script>
+                function handleSort(sortOption) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set("sort", sortOption);
+    
+    // Preserve existing parameters
+    const currentCategory = urlParams.get("category") || "";
+    const currentSearch = urlParams.get("query") || "";
+    const currentGt = urlParams.get("gt") || "0";
+    const currentLt = urlParams.get("lt") || "";
+    
+    // Update URL with all parameters
+    const newUrl = `/shop?sort=${sortOption}` + 
+                  (currentCategory ? `&category=${currentCategory}` : "") +
+                  (currentSearch ? `&query=${currentSearch}` : "") +
+                  (currentGt ? `&gt=${currentGt}` : "") +
+                  (currentLt ? `&lt=${currentLt}` : "");
+                  
+    window.location.href = newUrl;
+}
+
+
+
+
                 function handleSort(sortOption) {
                     const urlParams = new URLSearchParams(window.location.search);
                     urlParams.set("sort", sortOption);
@@ -554,45 +577,56 @@
                 }
 
                 document.addEventListener("DOMContentLoaded", setSelectedSort);
-            
-  
-
                 function addToWishlist(productId) {
-                    $.ajax({
-                        url: '/addToWishlist',
-                        method: 'POST',
-                        data: { productId: productId },
-                        success: (response) => {
-                            if (response.status) {
-                                Swal.fire({
-                                    title: 'Added to wishlist',
-                                    text: 'The product has been added to your wishlist',
-                                    icon: 'success',
-                                    timer: 2000
-                                })
-                            } else {
-                                Swal.fire({
-                                    title: 'Already in wishlist',
-                                    text: response.message,
-                                    icon: 'info',
-                                    timer: 2000
+    if (!isUserLoggedIn) {
+        Swal.fire({
+            title: 'Login Required',
+            text: 'Please login to add to wishlist',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Login',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // window.location.href = '/shop';
+            }
+        });
+        return;
+    }
 
-                                })
-                            }
-                        },
-                        error: (error) => {
-                            Swal.fire({
-                                title: 'Error',
-                                text: 'There was an error adding the product to your wishlist',
-                                icon: 'error',
-                                timer: 2000
-                            })
-                        }
-
-                    })
-
-                }
-
+    $.ajax({
+        url: '/addToWishlist',
+        method: 'POST',
+        data: JSON.stringify({ productId: productId }),
+        contentType: 'application/json',
+        success: (response) => {
+            if (response.status) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Product added to wishlist',
+                    icon: 'success',
+                    timer: 2000
+                });
+            } else {
+                Swal.fire({
+                    title: 'Info',
+                    text: response.message,
+                    icon: 'info',
+                    timer: 2000
+                });
+            }
+        },
+        error: (error) => {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to add product to wishlist',
+                icon: 'error',
+                timer: 2000
+            });
+        }
+    });
+}
             </script>
 </body>
 

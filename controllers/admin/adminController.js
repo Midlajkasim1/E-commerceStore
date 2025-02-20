@@ -54,174 +54,443 @@ const login = async (req, res) => {
     }
 };
 
+// adminController.js
 const loadDashboard = async (req, res) => {
     try {
-        const now = new Date();
-        const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastMonth = new Date(new Date(startOfMonth).setMonth(startOfMonth.getMonth() - 1));
+        const { startDate, endDate } = req.query;
+        let start = new Date();
+        let end = new Date();
 
-        const currentPeriodSales = await Order.aggregate([
-            { 
-                $match: { 
-                    createOn: { 
-                        $gte: startOfMonth
-                    }
-                } 
+        if (startDate && endDate) {
+            start = new Date(startDate);
+            end = new Date(endDate);
+
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                return res.status(400).json({ error: 'Invalid date format' });
+            }
+
+            if (start > end) {
+                return res.status(400).json({ error: 'Start date cannot be later than end date' });
+            }
+
+            if (end > new Date()) {
+                return res.status(400).json({ error: 'End date cannot be in the future' });
+            }
+
+            const oneYear = 365 * 24 * 60 * 60 * 1000;
+            if (end - start > oneYear) {
+                return res.status(400).json({ error: 'Date range cannot exceed one year' });
+            }
+        } else {
+            start.setMonth(start.getMonth() - 1);
+        }
+
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        
+       const dateMatch = {
+            createOn: {
+                $gte: start,
+                $lte: end
             },
-            { 
-                $group: { 
-                    _id: null, 
-                    total: { $sum: '$finalAmount' }
+            $or: [
+                { status: { $nin: ['failed', 'Cancelled'] } },
+                { 
+                    status: 'Delivered',
+                    paymentMethod: 'COD'
                 }
-            }
-        ]);
+            ]
+        };
 
-        const previousPeriodSales = await Order.aggregate([
-            { 
-                $match: { 
-                    createOn: { 
-                        $gte: lastMonth,
-                        $lt: startOfMonth
-                    }
-                } 
-            },
-            { 
-                $group: { 
-                    _id: null, 
-                    total: { $sum: '$finalAmount' }
-                }
-            }
-        ]);
-
-
-        const monthlyOrders = await Order.aggregate([
-            {
-                $group: {
-                    _id: { 
-                        month: { $month: '$createOn' },
-                        year: { $year: '$createOn' }
-                    },
-                    count: { $sum: 1 }
-                }
-            },
-            {
-                $sort: {
-                    '_id.year': 1,
-                    '_id.month': 1
-                }
-            }
-        ]);
-
-        const totalStats = await Order.aggregate([
-            { 
-                $group: { 
-                    _id: null, 
-                    totalSales: { $sum: '$finalAmount' },
-                    totalOrders: { $sum: 1 },
-                    totalDiscount: { $sum: '$discount' }
-                }
-            }
-        ]);
-
-        const orderStatusDistribution = await Order.aggregate([
-            {
-                $group: {
-                    _id: '$status',
-                    count: { $sum: 1 },
-                    totalAmount: { $sum: '$finalAmount' }
-                }
-            }
-        ]);
-
-        const totalUsers = await User.countDocuments({ isBlocked: false });
-
-        const userPurchaseHistory = await Order.aggregate([
-            {
-                $group: {
-                    _id: '$userId',
-                    totalOrders: { $sum: 1 },
-                    totalSpent: { $sum: '$finalAmount' },
-                    lastPurchase: { $max: '$createOn' },
-                    orderStatuses: { 
-                        $push: {
-                            status: '$status',
-                            amount: '$finalAmount'
-                        }
+        const [currentPeriodData, orderStatusData, bestSellingProducts, bestSellingCategories] = await Promise.all([
+            Order.aggregate([
+                { $match: dateMatch },
+                {
+                    $group: {
+                        _id: null,
+                        totalSales: { $sum: '$finalAmount' },
+                        totalOrders: { $sum: 1 },
+                        totalDiscounts: { $sum: '$discount' }
                     }
                 }
-            },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: '_id',
-                    foreignField: '_id',
-                    as: 'userDetails'
+            ]),
+
+            Order.aggregate([
+                { $match: dateMatch },
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 },
+                        amount: { $sum: '$finalAmount' }
+                    }
                 }
-            },
-            {
-                $unwind: '$userDetails'
-            },
-            {
-                $project: {
-                    name: '$userDetails.name',
-                    email: '$userDetails.email',
-                    totalOrders: 1,
-                    totalSpent: 1,
-                    lastPurchase: 1,
-                    orderStatuses: 1
-                }
-            },
-            {
-                $sort: { totalSpent: -1 }
-            },
-            {
-                $limit: 10
-            }
+            ]),
+
+            Order.aggregate([
+                { 
+                    $match: dateMatch
+                },
+                { $unwind: '$orderedItems' },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: 'orderedItems.product',
+                        foreignField: '_id',
+                        as: 'productDetails'
+                    }
+                },
+                { 
+                    $match: {
+                        'productDetails': { $ne: [] }
+                    }
+                },
+                { $unwind: '$productDetails' },
+                {
+                    $lookup: {
+                        from: 'categories',
+                        localField: 'productDetails.category',
+                        foreignField: '_id',
+                        as: 'categoryDetails'
+                    }
+                },
+                {
+                    $unwind: '$categoryDetails'
+                },
+                {
+                    $group: {
+                        _id: '$orderedItems.product',
+                        name: { $first: '$productDetails.productName' },
+                        category: { $first: '$categoryDetails.name' },
+                        totalQuantity: { $sum: '$orderedItems.quantity' },
+                        totalRevenue: { 
+                            $sum: { 
+                                $multiply: ['$orderedItems.price', '$orderedItems.quantity'] 
+                            }
+                        },
+                        orderCount: { $sum: 1 }
+                    }
+                },
+                { 
+                    $match: { 
+                        name: { $exists: true },
+                        category: { $exists: true }
+                    }
+                },
+                { $sort: { totalQuantity: -1 } },
+                { $limit: 10 }
+            ]),
+
+            Order.aggregate([
+                { 
+                    $match: dateMatch
+                },
+                { $unwind: '$orderedItems' },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: 'orderedItems.product',
+                        foreignField: '_id',
+                        as: 'productDetails'
+                    }
+                },
+                { 
+                    $match: {
+                        'productDetails': { $ne: [] }
+                    }
+                },
+                { $unwind: '$productDetails' },
+                {
+                    $lookup: {
+                        from: 'categories',
+                        localField: 'productDetails.category',
+                        foreignField: '_id',
+                        as: 'categoryDetails'
+                    }
+                },
+                {
+                    $unwind: '$categoryDetails'
+                },
+                {
+                    $group: {
+                        _id: '$categoryDetails.name',
+                        totalQuantity: { $sum: '$orderedItems.quantity' },
+                        totalRevenue: { 
+                            $sum: { 
+                                $multiply: ['$orderedItems.price', '$orderedItems.quantity'] 
+                            }
+                        },
+                        orderCount: { $sum: 1 }
+                    }
+                },
+                { 
+                    $match: { 
+                        _id: { $exists: true, $ne: null }
+                    }
+                },
+                { $sort: { totalQuantity: -1 } },
+                { $limit: 10 }
+            ])
         ]);
 
-        const currentSales = currentPeriodSales[0]?.total || 0;
-        const previousSales = previousPeriodSales[0]?.total || 0;
-        const salesGrowth = previousSales === 0 
-            ? 100 
-            : ((currentSales - previousSales) / previousSales) * 100;
+        const defaultStats = {
+            totalSales: 0,
+            totalOrders: 0,
+            totalDiscounts: 0
+        };
 
-          const statusSummary = {};
-        orderStatusDistribution.forEach(status => {
-            statusSummary[status._id] = {
+        const statistics = currentPeriodData[0] || defaultStats;
+
+        const orderStatusSummary = {};
+        orderStatusData.forEach(status => {
+            orderStatusSummary[status._id] = {
                 count: status.count,
-                amount: status.totalAmount,
-                percentage: ((status.count / totalStats[0].totalOrders) * 100).toFixed(1)
+                amount: status.amount,
+                percentage: ((status.count / (statistics.totalOrders || 1)) * 100).toFixed(1)
             };
         });
-        // console.log("Current Period Sales:", currentPeriodSales);
-        // console.log("Previous Period Sales:", previousPeriodSales);
-        // console.log("Monthly Orders:", monthlyOrders);
-        // console.log("Total Stats:", totalStats);
-        // console.log("Order Status Distribution:", orderStatusDistribution);
-       
+
+        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+            return res.json({
+                statistics,
+                orderStatusSummary,
+                bestSellingProducts,
+                bestSellingCategories,
+                dateRange: {
+                    start: start.toISOString(),
+                    end: end.toISOString()
+                }
+            });
+        }
 
         res.render('dashboard', {
-            totalSales: totalStats[0]?.totalSales || 0,
-            totalOrders: totalStats[0]?.totalOrders || 0,
-            totalDiscounts: totalStats[0]?.totalDiscount || 0,
-            totalUsers,
-            salesGrowth: parseFloat(salesGrowth.toFixed(1)),
-            userPurchaseHistory,
-            orderStatusSummary: statusSummary,
-            monthlyOrderCounts: monthlyOrders,
+            totalSales: statistics.totalSales || 0,
+            totalOrders: statistics.totalOrders || 0,
+            totalDiscounts: statistics.totalDiscounts || 0,
+            totalUsers: await User.countDocuments({ isBlocked: false }),
+            salesGrowth: 0,
+            bestSellingProducts,
+            bestSellingCategories,
+            orderStatusSummary,
+            selectedDateRange: {
+                start: start.toISOString().split('T')[0],
+                end: end.toISOString().split('T')[0]
+            },
             message: req.flash()
         });
 
     } catch (error) {
         console.error('Dashboard error:', error);
-        res.status(500).render('error', { message: 'Error loading dashboard' });
+        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+            return res.status(500).json({ 
+                error: 'Error loading dashboard data',
+                details: error.message 
+            });
+        }
+        req.flash('error', error.message || 'Error loading dashboard data');
+        res.redirect('/admin/dashboard');
     }
 };
+const getChartData = async (req, res) => {
+    try {
+        const { filter = 'monthly', startDate, endDate } = req.query;
+        
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: 'Start date and end date are required' });
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const today = new Date();
+        
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return res.status(400).json({ error: 'Invalid date format' });
+        }
+
+        if (start > end) {
+            return res.status(400).json({ error: 'Start date cannot be later than end date' });
+        }
+
+        if (end > today) {
+            return res.status(400).json({ error: 'End date cannot be in the future' });
+        }
+
+        const oneYear = 365 * 24 * 60 * 60 * 1000;
+        if (end - start > oneYear) {
+            return res.status(400).json({ error: 'Date range cannot exceed one year' });
+        }
+
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+
+        let groupStage;
+        let projectStage;
+
+        const matchStage = {
+            $match: {
+                createOn: { $gte: start, $lte: end },
+                status: { $nin: ['Failed', 'Cancelled'] } 
+            }
+        };
+
+        switch (filter) {
+            case 'yearly':
+                groupStage = {
+                    $group: {
+                        _id: { $year: '$createOn' },
+                        sales: { $sum: '$finalAmount' },
+                        orders: { $sum: 1 },
+                        statusCounts: {
+                            $push: {
+                                $cond: {
+                                    if: { $in: ['$status', ['Delivered', 'Processing', 'Pending']] },
+                                    then: '$status',
+                                    else: null
+                                }
+                            }
+                        }
+                    }
+                };
+                break;
+
+            case 'monthly':
+                groupStage = {
+                    $group: {
+                        _id: {
+                            year: { $year: '$createOn' },
+                            month: { $month: '$createOn' }
+                        },
+                        sales: { $sum: '$finalAmount' },
+                        orders: { $sum: 1 },
+                        statusCounts: {
+                            $push: {
+                                $cond: {
+                                    if: { $in: ['$status', ['Delivered', 'Processing', 'Pending']] },
+                                    then: '$status',
+                                    else: null
+                                }
+                            }
+                        }
+                    }
+                };
+                projectStage = {
+                    $project: {
+                        _id: 1,
+                        sales: 1,
+                        orders: 1,
+                        statusCounts: {
+                            $reduce: {
+                                input: '$statusCounts',
+                                initialValue: { Delivered: 0, Processing: 0, Pending: 0 },
+                                in: {
+                                    $mergeObjects: [
+                                        '$$value',
+                                        {
+                                            $switch: {
+                                                branches: [
+                                                    { case: { $eq: ['$$this', 'Delivered'] }, then: { Delivered: 1 } },
+                                                    { case: { $eq: ['$$this', 'Processing'] }, then: { Processing: 1 } },
+                                                    { case: { $eq: ['$$this', 'Pending'] }, then: { Pending: 1 } }
+                                                ],
+                                                default: {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                };
+                break;
+
+            case 'weekly':
+                groupStage = {
+                    $group: {
+                        _id: {
+                            year: { $year: '$createOn' },
+                            week: { $week: '$createOn' }
+                        },
+                        sales: { $sum: '$finalAmount' },
+                        orders: { $sum: 1 },
+                        statusCounts: {
+                            $push: {
+                                $cond: {
+                                    if: { $in: ['$status', ['Delivered', 'Processing', 'Pending']] },
+                                    then: '$status',
+                                    else: null
+                                }
+                            }
+                        }
+                    }
+                };
+                break;
+
+            case 'daily':
+                groupStage = {
+                    $group: {
+                        _id: {
+                            $dateToString: { format: '%Y-%m-%d', date: '$createOn' }
+                        },
+                        sales: { $sum: '$finalAmount' },
+                        orders: { $sum: 1 },
+                        statusCounts: {
+                            $push: {
+                                $cond: {
+                                    if: { $in: ['$status', ['Delivered', 'Processing', 'Pending']] },
+                                    then: '$status',
+                                    else: null
+                                }
+                            }
+                        }
+                    }
+                };
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Invalid filter type' });
+        }
+
+        const pipeline = [
+            matchStage,
+            groupStage
+        ];
+
+        if (projectStage) {
+            pipeline.push(projectStage);
+        }
+
+        pipeline.push({ $sort: { '_id': 1 } });
+
+        const chartData = await Order.aggregate(pipeline);
+
+        if (filter !== 'monthly') {
+            chartData.forEach(data => {
+                const validStatuses = data.statusCounts.filter(status => status !== null);
+                const counts = validStatuses.reduce((acc, status) => {
+                    acc[status] = (acc[status] || 0) + 1;
+                    return acc;
+                }, { Delivered: 0, Processing: 0, Pending: 0 }); 
+                data.statusCounts = counts;
+            });
+        }
+
+        res.json(chartData);
+
+    } catch (error) {
+        console.error('Chart data error:', error);
+        res.status(500).json({ 
+            error: 'Error fetching chart data',
+            details: error.message 
+        });
+    }
+};
+
+
+
 
 const downloadExcelReport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
+        
         if (!startDate || !endDate || !Date.parse(startDate) || !Date.parse(endDate)) {
             req.flash('error', 'Please enter valid start and end dates');
             return res.redirect('/admin/dashboard');
@@ -242,17 +511,16 @@ const downloadExcelReport = async (req, res) => {
             createOn: { 
                 $gte: start, 
                 $lte: end 
-            }
+            },
+            status: 'Delivered' 
         };
 
         const orders = await Order.find(query)
-            .populate('userId', 'name email')
-            .populate('orderedItems.product', 'productName price')
             .sort({ createOn: -1 })
             .lean();
 
         if (!orders || orders.length === 0) {
-            req.flash('error', 'No orders found for the specified date range');
+            req.flash('error', 'No completed sales found for the specified date range');
             return res.redirect('/admin/dashboard');
         }
 
@@ -260,16 +528,13 @@ const downloadExcelReport = async (req, res) => {
         const worksheet = workbook.addWorksheet('Sales Report');
 
         worksheet.columns = [
-            { header: 'Order ID', key: 'orderId', width: 15 },
-            { header: 'Date', key: 'date', width: 20 },
-            { header: 'Customer', key: 'customer', width: 20 },
-            { header: 'Email', key: 'email', width: 25 },
-            { header: 'Status', key: 'status', width: 15 },
-            { header: 'Products', key: 'products', width: 30 },
-            { header: 'Items', key: 'items', width: 10 },
-            { header: 'Amount (₹)', key: 'amount', width: 15 },
-            { header: 'Discount (₹)', key: 'discount', width: 15 },
-            { header: 'Final Amount (₹)', key: 'finalAmount', width: 15 }
+            { header: 'Order ID', key: 'orderId', width: 15, style: { alignment: { horizontal: 'center' } } },
+            { header: 'Date', key: 'date', width: 15, style: { alignment: { horizontal: 'center' } } },
+            { header: 'Items', key: 'items', width: 10, style: { alignment: { horizontal: 'center' } } },
+            { header: 'Base Amount', key: 'baseAmount', width: 15, style: { alignment: { horizontal: 'center' } } },
+            { header: 'Discount', key: 'discount', width: 15, style: { alignment: { horizontal: 'center' } } },
+            { header: 'Final Amount', key: 'finalAmount', width: 15, style: { alignment: { horizontal: 'center' } } },
+            { header: 'Payment Method', key: 'paymentMethod', width: 15, style: { alignment: { horizontal: 'center' } } }
         ];
 
         worksheet.getRow(1).font = { bold: true };
@@ -279,97 +544,67 @@ const downloadExcelReport = async (req, res) => {
             fgColor: { argb: 'FF8DB4E2' }
         };
 
-        // Add status-based conditional formatting
-        const statusStyles = {
-            'Delivered': { fgColor: { argb: 'FFE2EFDA' } }, // Light green
-            'Pending': { fgColor: { argb: 'FFFFF2CC' } },   // Light yellow
-            'Processing': { fgColor: { argb: 'FFFCE4D6' } } // Light orange
-        };
-
         orders.forEach(order => {
-            const finalAmount = order.totalPrice - (order.discount || 0);
-            const row = worksheet.addRow({
-                orderId: order.orderId,
-                date: new Date(order.createOn).toLocaleString(),
-                customer: order.userId?.name || 'N/A',
-                email: order.userId?.email || 'N/A',
-                status: order.status,
-                products: order.orderedItems
-                    .map(item => `${item.product?.productName} (${item.quantity})`)
-                    .join(', '),
-                items: order.orderedItems.reduce((sum, item) => sum + item.quantity, 0),
-                amount: order.totalPrice || 0,
-                discount: order.discount || 0,
-                finalAmount: finalAmount
-            });
+            const totalItems = order.orderedItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            const baseAmount = order.totalPrice || 0;
+            const discount = order.discount || 0;
+            const finalAmount = baseAmount - discount;
 
-            // Apply status-based styling
-            const statusStyle = statusStyles[order.status];
-            if (statusStyle) {
-                const statusCell = row.getCell('status');
-                statusCell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    ...statusStyle
-                };
-            }
+            worksheet.addRow({
+                orderId: order.orderId,
+                date: new Date(order.createOn).toLocaleDateString(),
+                items: totalItems,
+                baseAmount: baseAmount,
+                discount: discount,
+                finalAmount: finalAmount,
+                paymentMethod: order.paymentMethod || 'N/A'
+            });
         });
 
-        ['amount', 'discount', 'finalAmount'].forEach(column => {
+        ['baseAmount', 'discount', 'finalAmount'].forEach(column => {
             worksheet.getColumn(column).numFmt = '₹#,##0.00';
         });
 
         const summary = {
             totalOrders: orders.length,
             totalItems: orders.reduce((sum, order) => 
-                sum + order.orderedItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
-            totalAmount: orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0),
+                sum + order.orderedItems.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0), 0),
+            totalBaseAmount: orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0),
             totalDiscount: orders.reduce((sum, order) => sum + (order.discount || 0), 0),
-            totalFinal: orders.reduce((sum, order) => sum + (order.totalPrice - (order.discount || 0)), 0),
-            statusCounts: orders.reduce((acc, order) => {
-                acc[order.status] = (acc[order.status] || 0) + 1;
-                return acc;
-            }, {})
+            totalFinalAmount: orders.reduce((sum, order) => 
+                sum + ((order.totalPrice || 0) - (order.discount || 0)), 0)
         };
 
         worksheet.addRow([]);
         worksheet.addRow(['Summary']);
-        const summaryRow = worksheet.lastRow;
-        summaryRow.font = { bold: true, size: 12 };
-        
-        worksheet.addRow(['Total Orders:', summary.totalOrders]);
-        worksheet.addRow(['Total Items:', summary.totalItems]);
-        worksheet.addRow(['Total Amount:', summary.totalAmount]).getCell(2).numFmt = '₹#,##0.00';
-        worksheet.addRow(['Total Discount:', summary.totalDiscount]).getCell(2).numFmt = '₹#,##0.00';
-        worksheet.addRow(['Final Total:', summary.totalFinal]).getCell(2).numFmt = '₹#,##0.00';
-        
-        // Add status distribution
-        worksheet.addRow([]);
-        worksheet.addRow(['Order Status Distribution']);
-        for (const [status, count] of Object.entries(summary.statusCounts)) {
-            worksheet.addRow([status, count, `${((count/orders.length)*100).toFixed(1)}%`]);
-        }
+        worksheet.addRow(['Total Orders', summary.totalOrders]);
+        worksheet.addRow(['Total Items', summary.totalItems]);
+        worksheet.addRow(['Total Base Amount', summary.totalBaseAmount]);
+        worksheet.addRow(['Total Discount', summary.totalDiscount]);
+        worksheet.addRow(['Total Final Amount', summary.totalFinalAmount]);
 
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=sales-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+        res.setHeader('Content-Disposition', `attachment; filename=sales-report-${start.toISOString().split('T')[0]}-to-${end.toISOString().split('T')[0]}.xlsx`);
 
         await workbook.xlsx.write(res);
         res.end();
 
     } catch (error) {
         console.error('Excel report error:', error);
-        res.status(500).send('Error generating Excel report');
+        req.flash('error', 'Error generating Excel report');
+        res.redirect('/admin/dashboard');
     }
 };
 
 const downloadPdfReport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
+        
         if (!startDate || !endDate || !Date.parse(startDate) || !Date.parse(endDate)) {
             req.flash('error', 'Please enter valid start and end dates');
             return res.redirect('/admin/dashboard');
         }
-
+        
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
         
@@ -382,274 +617,151 @@ const downloadPdfReport = async (req, res) => {
         }
 
         const query = {
-            createOn: {
-                $gte: start,
-                $lte: end
-            }
+            createOn: { 
+                $gte: start, 
+                $lte: end 
+            },
+            status: 'Delivered'
         };
 
         const orders = await Order.find(query)
-            .populate('userId', 'name email')
-            .populate('orderedItems.product', 'productName price')
             .sort({ createOn: -1 })
             .lean();
 
         if (!orders || orders.length === 0) {
-            req.flash('error', 'No orders found for the specified date range');
+            req.flash('error', 'No completed sales found for the specified date range');
             return res.redirect('/admin/dashboard');
         }
 
-        const fonts = {
-            Helvetica: {
+        const summary = {
+            totalOrders: orders.length,
+            totalItems: orders.reduce((sum, order) => 
+                sum + order.orderedItems.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0), 0),
+            totalBaseAmount: orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0),
+            totalDiscount: orders.reduce((sum, order) => sum + (order.discount || 0), 0),
+            totalFinalAmount: orders.reduce((sum, order) => 
+                sum + ((order.totalPrice || 0) - (order.discount || 0)), 0)
+        };
+
+        const formatCurrency = (amount) => {
+            const formattedAmount = (amount || 0).toFixed(2);
+            return `₹${formattedAmount}`;
+        };
+
+        const docDefinition = {
+            pageSize: 'A4',
+            pageMargins: [40, 60, 40, 60],
+            content: [
+                {
+                    text: 'Sales Report',
+                    style: 'header'
+                },
+                {
+                    text: `Period: ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`,
+                    alignment: 'center',
+                    margin: [0, 10, 0, 20]
+                },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+                        body: [
+                            [
+                                'Order ID',
+                                'Date',
+                                'Items',
+                                'Base Amount',
+                                'Discount',
+                                'Final Amount',
+                                'Payment Method'
+                            ],
+                            ...orders.map(order => {
+                                const totalItems = order.orderedItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                                const baseAmount = order.totalPrice || 0;
+                                const discount = order.discount || 0;
+                                const finalAmount = baseAmount - discount;
+
+                                return [
+                                    order.orderId,
+                                    new Date(order.createOn).toLocaleDateString(),
+                                    totalItems,
+                                    formatCurrency(baseAmount),
+                                    formatCurrency(discount),
+                                    formatCurrency(finalAmount),
+                                    order.paymentMethod || 'N/A'
+                                ];
+                            })
+                        ]
+                    },
+                    layout: {
+                        fillColor: function(rowIndex) {
+                            return (rowIndex === 0) ? '#8DB4E2' : null;
+                        },
+                        hLineWidth: () => 1,
+                        vLineWidth: () => 1
+                    }
+                },
+                {
+                    text: 'Summary',
+                    style: 'subheader',
+                    margin: [0, 20, 0, 10]
+                },
+                {
+                    table: {
+                        widths: ['*', 'auto'],
+                        body: [
+                            ['Total Orders', summary.totalOrders.toString()],
+                            ['Total Items', summary.totalItems.toString()],
+                            ['Total Base Amount', formatCurrency(summary.totalBaseAmount)],
+                            ['Total Discount', formatCurrency(summary.totalDiscount)],
+                            ['Total Final Amount', formatCurrency(summary.totalFinalAmount)]
+                        ]
+                    },
+                    layout: 'lightHorizontalLines'
+                }
+            ],
+            styles: {
+                header: {
+                    fontSize: 18,
+                    bold: true,
+                    alignment: 'center',
+                    margin: [0, 0, 0, 10]
+                },
+                subheader: {
+                    fontSize: 14,
+                    bold: true,
+                    margin: [0, 15, 0, 5]
+                }
+            },
+            defaultStyle: {
+                fontSize: 10
+            }
+        };
+
+        const printer = new PdfPrinter({
+            Roboto: {
                 normal: 'Helvetica',
                 bold: 'Helvetica-Bold',
                 italics: 'Helvetica-Oblique',
                 bolditalics: 'Helvetica-BoldOblique'
             }
-        };
-
-        const printer = new PdfPrinter(fonts);
-        
-        const formatNumber = (amount) => {
-            if (typeof amount !== 'number') return '0.00';
-            return new Intl.NumberFormat('en-IN', {
-                maximumFractionDigits: 2,
-                minimumFractionDigits: 2,
-                useGrouping: true,
-                style: 'decimal'
-            }).format(amount);
-        };
-
-       
-        const summary = {
-            totalOrders: orders.length,
-            totalItems: orders.reduce((sum, order) => 
-                sum + order.orderedItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
-            totalAmount: orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0),
-            totalDiscount: orders.reduce((sum, order) => sum + (order.discount || 0), 0),
-            totalFinal: orders.reduce((sum, order) => sum + (order.totalPrice - (order.discount || 0)), 0)
-        };
-        const summaryData = [
-            { text: 'Total Orders', value: summary.totalOrders },
-            { text: 'Total Items', value: summary.totalItems },
-            { text: 'Total Amount', value: formatNumber(summary.totalAmount) },
-            { text: 'Total Discount', value: formatNumber(summary.totalDiscount) },
-            { text: 'Final Amount', value: formatNumber(summary.totalFinal) }
-        ];
-
-        const statusCounts = orders.reduce((acc, order) => {
-            acc[order.status] = (acc[order.status] || 0) + 1;
-            return acc;
-        }, {});
-
-        // Format the status distribution text
-        const statusDistribution = Object.entries(statusCounts)
-            .map(([status, count]) => `${status}: ${count} orders (${((count / orders.length) * 100).toFixed(1)}%)`)
-            .join('\n');
-
-        const getStatusColor = (status) => {
-            const colors = {
-                'Delivered': '#4ade80',
-                'Pending': '#facc15',
-                'Processing': '#60a5fa',
-                'Cancelled': '#ef4444'
-            };
-            return colors[status] || '#6b7280';
-        };
-
-        const tableBody = orders.map(order => {
-            const finalAmount = order.totalPrice - (order.discount || 0);
-            return [
-                { 
-                    text: order.orderId, 
-                    style: 'tableCell',
-                    width: 60  // Fixed width for Order ID
-                },
-                { 
-                    text: new Date(order.createOn).toLocaleDateString(), // Changed to date only for space
-                    style: 'tableCell',
-                    width: 70
-                },
-                { 
-                    text: order.userId?.name || 'N/A', 
-                    style: 'tableCell',
-                    width: '*'  // Customer name takes remaining space
-                },
-                { 
-                    text: order.status,
-                    style: 'tableCell',
-                    color: getStatusColor(order.status),
-                    width: 60
-                },
-                { 
-                    text: order.orderedItems.reduce((sum, item) => sum + item.quantity, 0).toString(), 
-                    style: 'tableCell', 
-                    alignment: 'right',
-                    width: 40
-                },
-                { 
-                    text: formatNumber(order.totalPrice || 0), 
-                    style: 'tableCellAmount', 
-                    alignment: 'right',
-                    width: 90  // Increased width for amounts
-                },
-                { 
-                    text: formatNumber(order.discount || 0), 
-                    style: 'tableCellAmount', 
-                    alignment: 'right',
-                    width: 90  // Increased width for amounts
-                },
-                { 
-                    text: formatNumber(finalAmount), 
-                    style: 'tableCellAmount', 
-                    alignment: 'right',
-                    width: 90  // Increased width for amounts
-                }
-            ];
         });
-
-        const docDefinition = {
-            pageSize: 'A4',
-            pageOrientation: 'landscape',  // Changed to landscape for more width
-            pageMargins: [20, 40, 20, 40], // Reduced margins
-            
-            content: [
-                {
-                    text: 'Sales Report',
-                    style: 'header',
-                    margin: [0, 0, 0, 10]
-                },
-                {
-                    text: `Period: ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`,
-                    style: 'subheader',
-                    margin: [0, 0, 0, 20]
-                },
-                {
-                    style: 'summaryBox',
-                    margin: [0, 0, 0, 20],
-                    table: {
-                        widths: ['*', 100],  // Adjusted summary table widths
-                        body: [
-                            [{ text: 'Summary', style: 'summaryTitle', colSpan: 2 }, {}],
-                            ...summaryData.map(item => [
-                                { text: item.text, style: 'summaryLabel' },
-                                { 
-                                    text: typeof item.value === 'number' ? 
-                                        item.value.toString() : 
-                                        item.value, 
-                                    style: 'summaryValue', 
-                                    alignment: 'right' 
-                                }
-                            ]),
-                            [{ text: '\nOrder Status Distribution:', style: 'distributionTitle', colSpan: 2 }, {}],
-                            [{ text: statusDistribution, style: 'distributionText', colSpan: 2 }, {}]
-                        ]
-                    },
-                    layout: 'noBorders'
-                },
-                {
-                    margin: [0, 20],
-                    table: {
-                        headerRows: 1,
-                        widths: [60, 70, '*', 60, 40, 90, 90, 90],  // Adjusted column widths
-                        body: [
-                            [
-                                { text: 'Order ID', style: 'tableHeader' },
-                                { text: 'Date', style: 'tableHeader' },
-                                { text: 'Customer', style: 'tableHeader' },
-                                { text: 'Status', style: 'tableHeader' },
-                                { text: 'Items', style: 'tableHeader', alignment: 'right' },
-                                { text: 'Amount', style: 'tableHeader', alignment: 'right' },
-                                { text: 'Discount', style: 'tableHeader', alignment: 'right' },
-                                { text: 'Final', style: 'tableHeader', alignment: 'right' }
-                            ],
-                            ...tableBody
-                        ]
-                    },
-                    layout: {
-                        hLineWidth: (i, node) => 1,
-                        vLineWidth: () => 1,
-                        hLineColor: () => '#E5E7EB',
-                        vLineColor: () => '#E5E7EB',
-                        paddingLeft: (i, node) => 5,  // Reduced padding
-                        paddingRight: (i, node) => 5, // Reduced padding
-                        paddingTop: (i, node) => 5,   // Reduced padding
-                        paddingBottom: (i, node) => 5,// Reduced padding
-                        fillColor: (rowIndex) => {
-                            if (rowIndex === 0) return '#4B5563';
-                            return rowIndex % 2 === 0 ? '#F9FAFB' : null;
-                        }
-                    }
-                }
-            ],
-
-            styles: {
-                header: {
-                    fontSize: 18,
-                    bold: true,
-                    alignment: 'center'
-                },
-                subheader: {
-                    fontSize: 12,
-                    alignment: 'center',
-                    color: '#666666'
-                },
-                summaryTitle: {
-                    fontSize: 14,
-                    bold: true,
-                    margin: [0, 0, 0, 10]
-                },
-                summaryLabel: {
-                    fontSize: 11,
-                    color: '#666666'
-                },
-                summaryValue: {
-                    fontSize: 11,
-                    alignment: 'right'
-                },
-                distributionTitle: {
-                    fontSize: 11,
-                    bold: true,
-                    margin: [0, 10, 0, 5]
-                },
-                distributionText: {
-                    fontSize: 10,
-                    color: '#666666'
-                },
-                tableHeader: {
-                    fontSize: 10,
-                    bold: true,
-                    color: 'white',
-                    margin: [2, 2, 2, 2]  // Reduced margins
-                },
-                tableCell: {
-                    fontSize: 9,
-                    margin: [2, 2, 2, 2]  // Reduced margins
-                },
-                tableCellAmount: {
-                    fontSize: 9,
-                    margin: [2, 2, 2, 2],  // Reduced margins
-                    alignment: 'right'
-                }
-            },
-            
-            defaultStyle: {
-                font: 'Helvetica'
-            }
-        };
 
         const pdfDoc = printer.createPdfKitDocument(docDefinition);
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=sales-report-${new Date().toISOString().split('T')[0]}.pdf`);
+        
+        const filename = `sales-report-${start.toISOString().split('T')[0]}-to-${end.toISOString().split('T')[0]}.pdf`;
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        
         pdfDoc.pipe(res);
         pdfDoc.end();
 
     } catch (error) {
         console.error('PDF report error:', error);
-        res.status(500).send('Error generating PDF report');
+        req.flash('error', 'Error generating PDF report');
+        res.redirect('/admin/dashboard');
     }
 };
-
  const pageerror = async (req,res)=>{
     res.render("admin-error")
  }
@@ -676,6 +788,7 @@ module.exports = {
     loadlogin,
     login,
     loadDashboard,
+    getChartData,
     downloadExcelReport,
     downloadPdfReport,
     pageerror,

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Urban Row - Admin Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -248,14 +250,7 @@
                 <i class="fas fa-ticket"></i>
                 Coupon
             </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-image"></i>
-                Banner
-            </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-cog"></i>
-                Settings
-            </a>
+          
             <form method="post" action="/admin/logout">
                 <button type="submit" class="nav-item logout">
                     <i class="fas fa-sign-out-alt"></i>
@@ -286,12 +281,15 @@
                         <span class="text-white">to</span>
                         <input type="date" id="endDate" class="date-input" onchange="handleDateChange()">
                     </div>
-                    <button class="btn btn-success" onclick="downloadReport('excel')">
-                        <i class="fas fa-file-excel me-2"></i>Excel Report
-                    </button>
-                    <button class="btn btn-danger" onclick="downloadReport('pdf')">
-                        <i class="fas fa-file-pdf me-2"></i>PDF Report
-                    </button>
+                      <button id="applyFilter" class="btn btn-primary" onclick="handleApplyFilter()">
+        Apply Filter
+    </button>
+    <button class="btn btn-success" onclick="downloadReport('excel')">
+        <i class="fas fa-file-excel me-2"></i>Excel Report
+    </button>
+    <button class="btn btn-danger" onclick="downloadReport('pdf')">
+        <i class="fas fa-file-pdf me-2"></i>PDF Report
+    </button>
                 </div>
             
             </div>
@@ -307,13 +305,13 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h6 class="text-muted">Total Sales</h6>
-                                <h3>₹<%= totalSales.toLocaleString() %></h3>
+                                <h3 data-stat="total-sales">₹<%= totalSales.toLocaleString() %></h3>
                             </div>
                             <div class="fs-1 text-success">
                                 <i class="fas fa-chart-line"></i>
                             </div>
                         </div>
-                        <div class="mt-2  <%= salesGrowth >= 0 ? 'text-success' : 'text-danger' %>"">
+                        <div data-stat="sales-growth" class="mt-2 <%= salesGrowth >= 0 ? 'text-success' : 'text-danger' %>">
                             <small><i class="fas fa-arrow-<%= salesGrowth >= 0 ? 'up' : 'down' %>"></i>  </small>
                         </div>
                     </div>
@@ -323,7 +321,7 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h6 class="text-muted">Total Orders</h6>
-                                <h3><%= totalOrders.toLocaleString() %></h3>
+                                <h3 data-stat="total-orders"><%= totalOrders.toLocaleString() %></h3>
                             </div>
                             <div class="fs-1 text-primary">
                                 <i class="fas fa-shopping-bag"></i>
@@ -340,15 +338,15 @@
                         <div class="card stat-card text-white p-3">
                             <div class="d-flex justify-content-between">
                                 <div>
-                                    <h6 class="text-muted"><%= status %> Orders</h6>
-                                    <h3><%= data.count %></h3>
+                                    <h6 data-status="<%= status %>" class="text-muted "><%= status %> Orders</h6>
+                                    <h3 class="count"><%= data.count %></h3>
                                 </div>
                                 <div class="fs-1 <%= status === 'Delivered' ? 'text-success' : status === 'Pending' ? 'text-warning' : 'text-info' %>">
                                     <i class="fas <%= status === 'Delivered' ? 'fa-check-circle' : status === 'Pending' ? 'fa-clock' : 'fa-truck' %>"></i>
                                 </div>
                             </div>
                             <div class="mt-2">
-                                <small>₹<%= data.amount.toLocaleString() %> (<%= data.percentage %>%)</small>
+                                <div class="amount">₹<%= data.amount.toLocaleString() %></div>
                             </div>
                         </div>
                     </div>
@@ -405,221 +403,647 @@
                 </div>
             </div>
 
-              <!-- Purchase History Table -->
-   
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">User Purchase History</h5>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-outline-light active" onclick="filterOrders('all')">All</button>
-                    <% for (const [status] of Object.entries(orderStatusSummary)) { %>
-                        <button type="button" class="btn btn-outline-light" onclick="filterOrders('<%= status %>')">
-                            <%= status %>
-                        </button>
-                    <% } %>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover">
-                        <thead>
-                            <tr>
-                                <th>Customer</th>
-                                <th>Email</th>
-                                <th>Total Orders</th>
-                                <th>Order Status Distribution</th>
-                                <th>Total Spent</th>
-                                <th>Last Purchase</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% userPurchaseHistory.forEach(user => { %>
-                                <tr>
-                                    <td><%= user.name %></td>
-                                    <td><%= user.email %></td>
-                                    <td><%= user.totalOrders %></td>
-                                    <td>
-                                        <% const statusCounts = {}; %>
-                                        <% user.orderStatuses.forEach(order => { %>
-                                            <% statusCounts[order.status] = (statusCounts[order.status] || 0) + 1; %>
-                                        <% }); %>
-                                        <% for (const [status, count] of Object.entries(statusCounts)) { %>
-                                            <span class="badge bg-<%= status === 'Delivered' ? 'success' : status === 'Pending' ? 'warning' : 'info' %> me-1">
-                                                <%= status %>: <%= count %>
-                                            </span>
-                                        <% } %>
-                                    </td>
-                                    <td>₹<%= user.totalSpent.toLocaleString() %></td>
-                                    <td><%= new Date(user.lastPurchase).toLocaleDateString() %></td>
-                                </tr>
-                            <% }) %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <!-- Best Selling Products Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Best Selling Products (Top 10)</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="bestSellingProducts" class="table table-dark table-hover">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Total Quantity Sold</th>
+                        <th>Total Revenue</th>
+                        <th>Order Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% bestSellingProducts.forEach(product => { %>
+                        <tr>
+                            <td><%= product.name %></td>
+                            <td><%= product.category %></td>
+                            <td><%= product.totalQuantity.toLocaleString() %></td>
+                            <td>₹<%= product.totalRevenue.toLocaleString() %></td>
+                            <td><%= product.orderCount.toLocaleString() %></td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
         </div>
+    </div>
+</div>
+
+<!-- Best Selling Categories Table -->
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Best Selling Categories (Top 10)</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="bestSellingCategories" class="table table-dark table-hover">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Total Quantity Sold</th>
+                        <th>Total Revenue</th>
+                        <th>Order Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% bestSellingCategories.forEach(category => { %>
+                        <tr>
+                            <td><%= category._id %></td>
+                            <td><%= category.totalQuantity.toLocaleString() %></td>
+                            <td>₹<%= category.totalRevenue.toLocaleString() %></td>
+                            <td><%= category.orderCount.toLocaleString() %></td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
         
     </div>
         </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
     <script>
-        // Sales Chart
-        const salesCtx = document.getElementById('salesChart').getContext('2d');
-        new Chart(salesCtx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Sales',
-                    data: [12000, 19000, 15000, 25000, 22000, 30000],
-                    borderColor: '#0d6efd',
-                    tension: 0.4
-                }]
+     // Initialize chart variables
+let salesChart = null;
+let orderStatusChart = null;
+
+// Date range utility functions
+function setDateRange(range) {
+    const endDate = new Date();
+    const startDate = new Date();
+    
+    switch(range) {
+        case '1d':
+            startDate.setDate(startDate.getDate() - 1);
+            break;
+        case '1w':
+            startDate.setDate(startDate.getDate() - 7);
+            break;
+        case '1m':
+            startDate.setMonth(startDate.getMonth() - 1);
+            break;
+    }
+    
+    document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+    document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+    
+    handleApplyFilter();
+}
+
+// Initialize charts
+function initializeCharts() {
+    // Sales Chart with improved configuration
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    salesChart = new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Sales (₹)',
+                borderColor: '#8B5CF6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                data: [],
+                fill: true,
+                tension: 0.4,
+                yAxisID: 'sales'
+            }, {
+                label: 'Orders',
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                data: [],
+                fill: true,
+                tension: 0.4,
+                yAxisID: 'orders'
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                intersect: false,
+                mode: 'index'
             },
-            options: {
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: 'white'
+            scales: {
+                sales: {
+                    type: 'linear',
+                    position: 'left',
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#fff',
+                        callback: value => '₹' + value.toLocaleString()
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales Amount',
+                        color: '#fff'
+                    }
+                },
+                orders: {
+                    type: 'linear',
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#fff',
+                        stepSize: 1
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Orders',
+                        color: '#fff'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#fff'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#fff',
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(31, 41, 55, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    callbacks: {
+                        label: (context) => {
+                            const label = context.dataset.label || '';
+                            const value = context.parsed.y;
+                            return label.includes('Sales') 
+                                ? `${label}: ₹${value.toLocaleString()}`
+                                : `${label}: ${value.toLocaleString()}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Order Status Chart with improved donut configuration
+    const statusCtx = document.getElementById('orderStatusChart').getContext('2d');
+    orderStatusChart = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#10B981', // Delivered
+                    '#F59E0B', // Pending
+                    '#3B82F6'  // Processing
+                ],
+                borderWidth: 2,
+                borderColor: '#1F2937'
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#fff',
+                        padding: 20,
+                        usePointStyle: true,
+                        font: {
+                            size: 12
                         }
                     }
                 },
-                scales: {
-                    y: {
-                        ticks: {
-                            color: 'white'
-                        },
-                        grid: {
-                            color: 'rgba(255,255,255,0.1)'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: 'white'
-                        },
-                        grid: {
-                            color: 'rgba(255,255,255,0.1)'
+                tooltip: {
+                    backgroundColor: 'rgba(31, 41, 55, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    callbacks: {
+                        label: (context) => {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const dataset = context.dataset.data;
+                            const total = dataset.reduce((acc, curr) => acc + curr, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
                         }
                     }
                 }
             }
-        });
-
-        function filterOrders(status) {
-    // Update active button state
-    document.querySelectorAll('.btn-group .btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    // Filter table rows
-    const rows = document.querySelectorAll('tbody tr');
-    rows.forEach(row => {
-        if (status === 'all') {
-            row.style.display = '';
-        } else {
-            const statusBadges = row.querySelector('td:nth-child(4)').textContent;
-            row.style.display = statusBadges.includes(status) ? '' : 'none';
         }
     });
 }
-        // Order Status Chart
-        const orderCtx = document.getElementById('orderStatusChart').getContext('2d');
-        new Chart(orderCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Delivered', 'Pending', 'Processing'],
-                datasets: [{
-                    data: [63, 25, 12],
-                    backgroundColor: ['#198754', '#ffc107', '#0dcaf0']
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            color: 'white'
-                        }
-                    }
+function processOrderStatusData(data, filter) {
+    // Initialize status counters
+    const statusTotals = {
+        'Delivered': 0,
+        'Pending': 0,
+        'Processing': 0
+    };
+
+    // Process data based on filter type
+    data.forEach(entry => {
+        if (entry.statusCounts) {
+            // For each status in the entry
+            Object.entries(entry.statusCounts).forEach(([status, count]) => {
+                // Only count valid statuses
+                if (statusTotals.hasOwnProperty(status)) {
+                    statusTotals[status] += count;
+                }
+            });
+        }
+    });
+
+    // Filter out empty statuses and prepare chart data
+    const chartData = Object.entries(statusTotals)
+        .filter(([_, count]) => count > 0)
+        .reduce((acc, [status, count]) => {
+            acc.labels.push(status);
+            acc.data.push(count);
+            return acc;
+        }, { labels: [], data: [] });
+
+    return chartData;
+}
+
+
+// Update dashboard statistics
+function updateDashboardStats(data) {
+    // Format currency
+    const formatCurrency = (value) => `₹${parseInt(value).toLocaleString()}`;
+
+    // Update basic stats
+    document.querySelector('[data-stat="total-sales"]').textContent = formatCurrency(data.statistics.totalSales);
+    document.querySelector('[data-stat="total-orders"]').textContent = data.statistics.totalOrders.toLocaleString();
+
+    // Update order status cards with proper error handling
+    if (data.orderStatusSummary) {
+        const statusCards = document.querySelectorAll('[data-status]');
+        statusCards.forEach(card => {
+            const status = card.getAttribute('data-status');
+            const statusData = data.orderStatusSummary[status];
+            
+            if (statusData) {
+                const cardWrapper = card.closest('.card');
+                const countElement = cardWrapper.querySelector('.count');
+                const amountElement = cardWrapper.querySelector('.amount');
+                
+                if (countElement) {
+                    countElement.textContent = statusData.count.toLocaleString();
+                }
+                if (amountElement) {
+                    amountElement.textContent = formatCurrency(statusData.amount);
                 }
             }
         });
-       function setDateRange(range) {
-            const today = new Date();
-            const startDate = document.getElementById('startDate');
-            const endDate = document.getElementById('endDate');
-            
-            // Reset all buttons
-            document.querySelectorAll('.date-btn').forEach(btn => btn.classList.remove('active'));
-            
-            switch(range) {
-                case '1d':
-                    startDate.valueAsDate = today;
-                    endDate.valueAsDate = today;
-                    document.querySelector('button[onclick="setDateRange(\'1d\')"]').classList.add('active');
-                    break;
-                case '1w':
-                    const weekAgo = new Date(today);
-                    weekAgo.setDate(today.getDate() - 7);
-                    startDate.valueAsDate = weekAgo;
-                    endDate.valueAsDate = today;
-                    document.querySelector('button[onclick="setDateRange(\'1w\')"]').classList.add('active');
-                    break;
-                case '1m':
-                    const monthAgo = new Date(today);
-                    monthAgo.setMonth(today.getMonth() - 1);
-                    startDate.valueAsDate = monthAgo;
-                    endDate.valueAsDate = today;
-                    document.querySelector('button[onclick="setDateRange(\'1m\')"]').classList.add('active');
-                    break;
+    }
+
+    // Update best selling products table with error handling
+    const productsTableBody = document.querySelector('#bestSellingProducts tbody');
+    if (productsTableBody && data.bestSellingProducts && Array.isArray(data.bestSellingProducts)) {
+        productsTableBody.innerHTML = data.bestSellingProducts
+            .filter(product => product && product.name) // Ensure valid product data
+            .map(product => `
+                <tr>
+                    <td>${product.name || 'N/A'}</td>
+                    <td>${product.category || 'N/A'}</td>
+                    <td>${(product.totalQuantity || 0).toLocaleString()}</td>
+                    <td>₹${(product.totalRevenue || 0).toLocaleString()}</td>
+                    <td>${(product.orderCount || 0).toLocaleString()}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5">No products data available</td></tr>';
+    }
+
+    // Update best selling categories table with error handling
+    const categoriesTableBody = document.querySelector('#bestSellingCategories tbody');
+    if (categoriesTableBody && data.bestSellingCategories && Array.isArray(data.bestSellingCategories)) {
+        categoriesTableBody.innerHTML = data.bestSellingCategories
+            .filter(category => category && category._id) // Ensure valid category data
+            .map(category => `
+                <tr>
+                    <td>${category._id || 'N/A'}</td>
+                    <td>${(category.totalQuantity || 0).toLocaleString()}</td>
+                    <td>₹${(category.totalRevenue || 0).toLocaleString()}</td>
+                    <td>${(category.orderCount || 0).toLocaleString()}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4">No categories data available</td></tr>';
+    }
+
+    // Update charts if data is available
+    if (data.chartData) {
+        updateCharts(data.chartData);
+    }
+}
+
+// Validate date range
+function validateDateRange(startDate, endDate) {
+    if (!startDate || !endDate) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Date Range',
+            text: 'Please select both start and end dates',
+            background: '#1F2937',
+            color: '#fff',
+            confirmButtonColor: '#8B5CF6'
+        });
+        return false;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const today = new Date();
+
+    // Normalize dates to midnight (00:00:00) in the local timezone
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    if (start > end) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Date Range',
+            text: 'Start date cannot be later than end date',
+            background: '#1F2937',
+            color: '#fff',
+            confirmButtonColor: '#8B5CF6'
+        });
+        return false;
+    }
+
+    if (end > today) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Date Range',
+            text: 'End date cannot be in the future',
+            background: '#1F2937',
+            color: '#fff',
+            confirmButtonColor: '#8B5CF6'
+        });
+        return false;
+    }
+
+    const oneYear = 365 * 24 * 60 * 60 * 1000;
+    if (end - start > oneYear) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Date Range',
+            text: 'Date range cannot exceed one year',
+            background: '#1F2937',
+            color: '#fff',
+            confirmButtonColor: '#8B5CF6'
+        });
+        return false;
+    }
+
+    return true;
+}
+
+// Handle filter application
+async function handleApplyFilter() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (!validateDateRange(startDate, endDate)) return;
+
+    try {
+        const response = await fetch(`/admin/dashboard?startDate=${startDate}&endDate=${endDate}`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             }
-            
-            handleDateChange();
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch dashboard data');
         }
 
-        function handleDateChange() {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            
-            // Remove active class from quick select buttons when custom date is selected
-            if (startDate && endDate) {
-                document.querySelectorAll('.date-btn').forEach(btn => btn.classList.remove('active'));
-            }
-            
-            // Here you can trigger any updates needed based on the new date range
-            updateDashboardData(startDate, endDate);
+        const data = await response.json();
+        
+        // Validate required data structures
+        if (!data.statistics || !data.orderStatusSummary) {
+            throw new Error('Invalid data structure received from server');
         }
 
-        function updateDashboardData(startDate, endDate) {
-            // You can implement an AJAX call here to update your dashboard data
-            console.log('Updating dashboard for date range:', startDate, 'to', endDate);
-        }
+        updateDashboardStats(data);
+        
+        // Show success message
+        Swal.fire({
+            icon: 'success',
+            title: 'Dashboard Updated',
+            text: 'Data has been refreshed successfully',
+            background: '#1F2937',
+            color: '#fff',
+            confirmButtonColor: '#8B5CF6',
+            timer: 2000,
+            showConfirmButton: false
+        });
 
-        function downloadReport(type) {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            
-            if (!startDate || !endDate) {
-                alert('Please select a date range');
-                return;
-            }
-            
-            const params = new URLSearchParams({
-                startDate: startDate,
-                endDate: endDate
+    } catch (error) {
+        console.error('Error updating dashboard:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to update dashboard data. Please try again.',
+            background: '#1F2937',
+            color: '#fff',
+            confirmButtonColor: '#8B5CF6'
+        });
+    }
+}
+
+// Update charts with new data
+async function updateCharts(filter = 'monthly') {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    try {
+        const response = await fetch(`/admin/dashboard/chart-data?filter=${filter}&startDate=${startDate}&endDate=${endDate}`);
+        if (!response.ok) throw new Error('Failed to fetch chart data');
+        
+        const data = await response.json();
+        
+        // Update Sales Chart
+        if (salesChart && data.length > 0) {
+            const labels = data.map(item => {
+                switch(filter) {
+                    case 'yearly':
+                        return item._id.toString();
+                    case 'monthly':
+                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        return `${monthNames[item._id.month - 1]} ${item._id.year}`;
+                    case 'weekly':
+                        return `Week ${item._id.week}`;
+                    case 'daily':
+                        return new Date(item._id).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                    default:
+                        return item._id;
+                }
             });
 
-            window.open(`/admin/sales-report/${type}?${params.toString()}`, '_blank');
+            salesChart.data.labels = labels;
+            salesChart.data.datasets[0].data = data.map(item => item.sales);
+            salesChart.data.datasets[1].data = data.map(item => item.orders);
+            salesChart.update();
         }
 
-        // Set default date range to last month
-        window.onload = () => setDateRange('1m');
 
-    </script>
+           if (orderStatusChart && data.length > 0) {
+            const processedData = processOrderStatusData(data, filter);
+            
+            orderStatusChart.data.labels = processedData.labels;
+            orderStatusChart.data.datasets[0].data = processedData.data;
+            
+            // Update chart
+            orderStatusChart.update();
+            
+            // Update order status cards if they exist
+            updateOrderStatusCards(processedData);
+        }
+
+
+    } catch (error) {
+        console.error('Error updating charts:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to update chart data',
+            background: '#1F2937',
+            color: '#fff',
+            confirmButtonColor: '#8B5CF6'
+        });
+    }
+}
+function updateOrderStatusCards(processedData) {
+    const total = processedData.data.reduce((acc, curr) => acc + curr, 0);
     
+    processedData.labels.forEach((status, index) => {
+        const statusCard = document.querySelector(`[data-status="${status}"]`);
+        if (statusCard) {
+            const cardWrapper = statusCard.closest('.card');
+            const count = processedData.data[index];
+            const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+            
+            // Update count in card
+            const countElement = cardWrapper.querySelector('.count');
+            if (countElement) {
+                countElement.textContent = count.toLocaleString();
+            }
+            
+            // Update percentage if such element exists
+            const percentageElement = cardWrapper.querySelector('.percentage');
+            if (percentageElement) {
+                percentageElement.textContent = `${percentage}%`;
+            }
+        }
+    });
+}
+function handleFilterChange(filter) {
+    // Update active state of filter buttons
+    const buttons = document.querySelectorAll('[data-filter]');
+    buttons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    
+    // Update charts with new filter
+    updateCharts(filter);
+}
+
+// Download report function
+function downloadReport(type) {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!validateDateRange(startDate, endDate)) {
+        return;
+    }
+    
+    const params = new URLSearchParams({
+        startDate: startDate,
+        endDate: endDate
+    });
+
+    window.open(`/admin/sales-report/${type}?${params.toString()}`, '_blank');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+
+    // Format dates as YYYY-MM-DD (local timezone)
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Set the date input values
+    const endDateInput = document.getElementById('endDate');
+    const startDateInput = document.getElementById('startDate');
+
+    endDateInput.value = formatDate(today);
+    startDateInput.value = formatDate(oneMonthAgo);
+
+    // Set max date for date inputs to today
+    endDateInput.max = formatDate(today);
+    startDateInput.max = formatDate(today);
+
+    // Initialize charts and other functionality
+    initializeCharts();
+    updateCharts('daily');
+
+    // Add filter buttons to the sales chart card
+    const chartFilters = document.createElement('div');
+    chartFilters.className = 'btn-group mt-2';
+    chartFilters.innerHTML = `
+        <button class="btn btn-outline-light active" data-filter="daily">Daily</button>
+        <button class="btn btn-outline-light" data-filter="weekly">Weekly</button>
+        <button class="btn btn-outline-light" data-filter="monthly">Monthly</button>
+        <button class="btn btn-outline-light" data-filter="yearly">Yearly</button>
+    `;
+    
+    document.querySelector('#salesChart').parentElement.insertBefore(
+        chartFilters,
+        document.querySelector('#salesChart')
+    );
+
+    // Add click handlers for filter buttons
+    chartFilters.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            chartFilters.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            updateCharts(e.target.dataset.filter);
+        });
+    });
+
+    // Set default date range to last month
+    setDateRange('1m');
+});
+  </script>

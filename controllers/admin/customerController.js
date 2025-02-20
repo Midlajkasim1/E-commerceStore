@@ -2,11 +2,10 @@ const User = require('../../models/userSchema');
 
 const customerInfo = async (req, res) => {
   try {
-    // Initialize search and page variables
-    let search = req.query.search || "";  // Default to an empty string if no search query
-    let page = parseInt(req.query.page) || 1;  // Default to page 1 if no page query
+    let search = req.query.search || "";  
+    let page = parseInt(req.query.page) || 1;  
     
-    const limit = 10;  // Define your limit (e.g., 10 users per page)
+    const limit = 10;
 
     const userData = await User.find({
       isAdmin: false,
@@ -19,7 +18,6 @@ const customerInfo = async (req, res) => {
       .skip((page - 1) * limit)
       .exec();
 
-    // Get the total number of users that match the search criteria
     const count = await User.find({
       isAdmin: false,
       $or: [
@@ -28,10 +26,8 @@ const customerInfo = async (req, res) => {
       ],
     }).countDocuments();
 
-    // Calculate total pages for pagination
     const totalPages = Math.ceil(count / limit);
 
-    // Render the page and pass the necessary variables
 
 if(req.session.admin){
   

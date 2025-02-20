@@ -290,14 +290,12 @@
         function copyReferralCode() {
         const referralCode = document.getElementById('referralCode');
         referralCode.select();
-        referralCode.setSelectionRange(0, 99999); // For mobile devices
+        referralCode.setSelectionRange(0, 99999); 
         
         navigator.clipboard.writeText(referralCode.value).then(() => {
-            // Show success message
             const copySuccess = document.getElementById('copySuccess');
             copySuccess.style.display = 'block';
             
-            // Hide success message after animation
             setTimeout(() => {
                 copySuccess.style.display = 'none';
             }, 2000);

@@ -7,35 +7,46 @@ const Address = require('../../models/addressSchema');
 const {handleRefund} = require('../user/orderController')
 const mongoose = require('mongoose');
 
-// orderController.js
 const getOrder = async (req, res) => {
     try {
-        const limit = 10; // 10 orders per page
+        const limit = 10; 
         const page = parseInt(req.query.page) || 1;
         const skip = (page - 1) * limit;
 
-        // Get total orders count
-        const totalOrders = await Order.countDocuments();
+        const orderFilter = { status: { $ne: 'failed' } };
+
+        const totalOrders = await Order.countDocuments(orderFilter);
         const totalPages = Math.ceil(totalOrders / limit);
 
-        // If requested page is invalid, redirect to first page
         if (page < 1 || (page > totalPages && totalPages > 0)) {
-            return res.redirect('/admin/order'); // Make sure to use the correct path
+            return res.redirect('/admin/order'); 
         }
 
-        const orders = await Order.find()
+        const orders = await Order.find(orderFilter)
             .populate({
                 path: 'userId',
                 select: 'name email'
             })
+            .select('orderId userId createOn totalPrice finalAmount status paymentMethod orderedItems') 
             .sort({ createOn: -1 })
             .skip(skip)
             .limit(limit);
 
-        return res.render('admin-order', {  // Make sure path matches your view structure
-            orders,
+        const formattedOrders = orders.map(order => ({
+            ...order.toObject(),
+            createOn: new Date(order.createOn).toLocaleDateString(),
+            orderId: order.orderId,
+            customerName: order.userId?.name || 'N/A',
+            totalPrice: order.totalPrice.toFixed(2),
+            finalAmount: order.finalAmount.toFixed(2),
+            status: order.status,
+            paymentMethod: order.paymentMethod
+        }));
+
+        return res.render('admin-order', {  
+            orders: formattedOrders,
             currentPage: page,
-            totalPages: Math.max(totalPages, 1), // Ensure at least 1 page
+            totalPages: Math.max(totalPages, 1), 
             successMessage: req.flash('success')
         });
 
@@ -45,30 +56,34 @@ const getOrder = async (req, res) => {
             orders: [],
             currentPage: 1,
             totalPages: 1,
-            successMessage: req.flash('success')
+            successMessage: req.flash('success'),
+
         });
     }
 };
+
 const getOrderDetails = async (req, res) => {
     try {
         const orderId = req.params.id;
         console.log("order id is :",orderId);
    
-        const orders = await Order.findById(orderId).populate('orderedItems.product');
-        console.log('address id is ',orders.address);
-        const address = await Address.findOne({
-            "address._id": orders.address,  
-          });
+        const order = await Order.findById(orderId)
+        .populate('orderedItems.product')
+        .populate('address');
+        if (!order) {
+            req.flash('err', 'Order not found');
+            return res.redirect('/admin/orders');
+        }
 
-          let selectedAddress;
+        const deliveryAddress = order.shippingAddress;
 
-    if (address) {
-      selectedAddress = address.address.find((value) => value._id.toString() === orders.address.toString());
-    } else {
-      console.log("No address found");
-    }
-    console.log(orders)
-        return res.render('admin-orderDetails',{order:orders,address:selectedAddress,message:req.flash('err')})
+
+        return res.render('admin-orderDetails', {
+            order: order,
+            address: deliveryAddress,
+            originalAddress: order.address,
+            successMessage: req.flash('err')
+        });
 
         
         
@@ -94,6 +109,11 @@ const updateStatus = async (req, res) => {
         if (!order) {
             req.flash('err', 'Order not found');
             return res.redirect('/admin/orders');
+        }
+        
+        if (orderStatus === "Pending" && order.status !== "Pending") {
+            req.flash('err', 'Cannot change status back to Pending once the order is in Processing or beyond');
+            return res.redirect(`/admin/orderdetail/${orderId}`);
         }
 
         if (productId) {
@@ -139,7 +159,7 @@ const updateStatus = async (req, res) => {
         await order.save();
 
         req.flash('err', 'Status updated successfully');
-        return res.redirect('/admin/order'); 
+        return res.redirect(`/admin/orderdetail/${orderId}`);
 
     } catch (error) {
         console.error("Error updating status:", error);
@@ -157,7 +177,6 @@ const approveReturnRequest = async (req, res) => {
     const { orderId } = req.params;
     const { productId } = req.body;
 
-    // Validate input
     if (!orderId || !productId) {
         return res.status(400).json({
             success: false,
@@ -166,7 +185,6 @@ const approveReturnRequest = async (req, res) => {
     }
 
     try {
-        // Find the order
         const order = await Order.findById(orderId);
         if (!order) {
             return res.status(404).json({
@@ -175,7 +193,6 @@ const approveReturnRequest = async (req, res) => {
             });
         }
 
-        // Find the product in the order
         const productItem = order.orderedItems.find(item => item._id.toString() === productId);
         if (!productItem) {
             return res.status(404).json({
@@ -184,7 +201,6 @@ const approveReturnRequest = async (req, res) => {
             });
         }
 
-        // Check if the product has a pending return request
         if (productItem.status !== STATUS.RETURN_REQUEST) {
             return res.status(400).json({
                 success: false,
@@ -192,7 +208,6 @@ const approveReturnRequest = async (req, res) => {
             });
         }
 
-        // Find the product in the catalog
         const product = await Product.findById(productItem.product);
         if (!product) {
             return res.status(404).json({
@@ -201,10 +216,8 @@ const approveReturnRequest = async (req, res) => {
             });
         }
 
-        // Calculate refund amount
         const refundAmount = productItem.price * productItem.quantity;
 
-        // Process refund
         const refundResult = await handleRefund(
             order.userId,
             refundAmount,
@@ -216,7 +229,6 @@ const approveReturnRequest = async (req, res) => {
             throw new Error("Refund processing failed.");
         }
 
-        // Update product inventory
         const selectedSize = productItem.size;
         if (product.size && product.size[selectedSize] !== undefined) {
             product.size[selectedSize] += productItem.quantity;
@@ -224,10 +236,8 @@ const approveReturnRequest = async (req, res) => {
             await product.save();
         }
 
-        // Update product status to Returned
         productItem.status = STATUS.RETURNED;
 
-        // Update overall order status
         const allProducts = order.orderedItems;
         if (allProducts.every(item => item.status === STATUS.RETURNED)) {
             order.status = STATUS.RETURNED;
@@ -237,7 +247,6 @@ const approveReturnRequest = async (req, res) => {
 
         await order.save();
 
-        // Redirect with success message
       return res.redirect('/admin/order')
 
     } catch (error) {
@@ -245,9 +254,61 @@ const approveReturnRequest = async (req, res) => {
     }
 };
 
+const declineReturnRequest = async (req, res) => {
+    const { orderId } = req.params;
+    const { productId, declineReason } = req.body;
+
+    if (!orderId || !productId) {
+        req.flash('err', "Order ID and Product ID are required.");
+        return res.redirect(`/admin/orderdetail/${orderId}`);
+    }
+
+    try {
+        const order = await Order.findById(orderId);
+        if (!order) {
+            req.flash('err', "Order not found.");
+            return res.redirect('/admin/order');
+        }
+
+        const productItem = order.orderedItems.find(item => item._id.toString() === productId);
+        if (!productItem) {
+            req.flash('err', "Product not found in the order.");
+            return res.redirect(`/admin/orderdetail/${orderId}`);
+        }
+
+        if (productItem.status !== STATUS.RETURN_REQUEST) {
+            req.flash('err', "This product does not have a pending return request.");
+            return res.redirect(`/admin/orderdetail/${orderId}`);
+        }
+
+        productItem.status = "Delivered";
+        
+        const returnReason = productItem.returnReason; 
+        productItem.returnDeclinedReason = declineReason || " Your Return request is declined ";
+
+        const allProducts = order.orderedItems;
+        if (allProducts.every(item => item.status === "Delivered")) {
+            order.status = "Delivered";
+        } else if (allProducts.some(item => item.status === STATUS.RETURN_REQUEST)) {
+            order.status = STATUS.RETURN_REQUEST;
+        }
+
+        await order.save();
+
+        req.flash('err', 'Return request declined successfully');
+        return res.redirect(`/admin/orderdetail/${orderId}`);
+
+    } catch (error) {
+        console.error("Error while declining return request:", error);
+        req.flash('err', 'Failed to process return decline');
+        return res.redirect(`/admin/orderdetail/${orderId}`);
+    }
+};
+
 module.exports={
     getOrder,
     getOrderDetails,
     updateStatus,
-    approveReturnRequest
+    approveReturnRequest,
+    declineReturnRequest
 }

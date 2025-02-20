@@ -2,17 +2,13 @@ const User = require('../models/userSchema');
 
 const userAuth = async (req, res, next) => {
   try {
-      // First check if user session exists
+    console.log("Session user:", req.session.user); 
       if (!req.session.user) {
           return res.redirect('/login');
       }
-
-      // Always check user's current status in database
       const user = await User.findById(req.session.user);
       
-      // If user doesn't exist or is blocked
       if (!user || user.isBlocked) {
-          // Clear the session since user is blocked or deleted
           req.session.destroy((err) => {
               if (err) {
                   console.log("Error destroying session:", err);
@@ -20,14 +16,11 @@ const userAuth = async (req, res, next) => {
           });
           return res.redirect('/login');
       }
-
-      // User exists and is not blocked
       req.user = user;
       next();
 
   } catch (error) {
       console.log("Error in user auth middleware:", error);
-      // Clear session on error to be safe
       req.session.destroy((err) => {
           if (err) {
               console.log("Error destroying session:", err);
@@ -40,16 +33,13 @@ const userAuth = async (req, res, next) => {
 
 const blockCheck = async (req, res, next) => {
   try {
-      // Only proceed if there's a user session
       const userId = req.session.user;
       if (!userId) {
           return next();
       }
 
-      // Get latest user data to check block status
       const userData = await User.findById(userId);
       
-      // If user is blocked, just remove their session
       if (userData?.isBlocked) {
           req.session.destroy((err) => {
               if (err) {
@@ -58,7 +48,6 @@ const blockCheck = async (req, res, next) => {
           });
       }
 
-      // Continue either way
       next();
 
   } catch (error) {

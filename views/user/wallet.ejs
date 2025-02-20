@@ -6,7 +6,6 @@
     <title>My Wallet</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Previous CSS remains the same */
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 </head>
@@ -28,21 +27,19 @@
                     <div class="row">
                         <div class="col-md-6">
                             <h5 class="mb-2">Available Balance</h5>
-                            <h2 class="mb-0">₹<%= wallet.balance %></h2>
+                            <h2 class="mb-0">₹<%= wallet.balance.toFixed(2) %></h2>
                         </div>
-                        <!-- <div class="col-md-6 text-md-end">
-                            <button class="btn btn-light">Add Money</button>
-                        </div> -->
+                      
                     </div>
                 </div>
 
                 <div class="wallet-card">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h4 class="mb-0">Transaction History</h4>
-                        <select class="form-select" style="width: auto;">
-                            <option>All Transactions</option>
-                            <option>Credits</option>
-                            <option>Debits</option>
+                        <select class="form-select" style="width: auto;" onchange="window.location.href=`/wallet?type=${this.value}`">
+                            <option value="all" <%= filterType === 'all' ? 'selected' : '' %>>All Transactions</option>
+                            <option value="credit" <%= filterType === 'credit' ? 'selected' : '' %>>Credits</option>
+                            <option value="debit" <%= filterType === 'debit' ? 'selected' : '' %>>Debits</option>
                         </select>
                     </div>
 
@@ -56,8 +53,21 @@
                                         </div>
                                     </div>
                                     <div class="col-md-5">
-                                        <h6 class="mb-1"><%= transaction.productName.join(', ') %></h6>
-                                        <small class="text-muted"><%= transaction.createdAt.toLocaleDateString() %></small>
+                                        <h6 class="mb-1">
+                                            <%= transaction.productName.join(', ') %>
+                                            <% if (transaction.productName.includes('Referral Bonus') || transaction.productName.includes('Welcome Bonus')) { %>
+                                                <span class="referral-badge">
+                                                    <%= transaction.productName.includes('Referral Bonus') ? 'Referral' : 'Welcome' %>
+                                                </span>
+                                            <% } %>
+                                        </h6>
+                                        <small class="text-muted"><%= new Date(transaction.createdAt).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        }) %></small>
                                     </div>
                                     <div class="col-md-3">
                                         <span class="transaction-status <%= transaction.type %>">
@@ -65,7 +75,9 @@
                                         </span>
                                     </div>
                                     <div class="col-md-3 text-end">
-                                        <h6 class="mb-0">₹<%= transaction.amount.toFixed(2) %></h6>
+                                        <h6 class="mb-0 <%= transaction.type === 'credit' ? 'text-success' : 'text-danger' %>">
+                                            <%= transaction.type === 'credit' ? '+' : '-' %>₹<%= transaction.amount.toFixed(2) %>
+                                        </h6>
                                     </div>
                                 </div>
                             </div>
@@ -77,7 +89,6 @@
             </div>
         </div>
     </div>
-
     <%- include("../../views/partials/user/footer") %>
 </body>
 </html>

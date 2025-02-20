@@ -331,39 +331,79 @@ footer .input-group {
     <% } %>
   </div>
 
-      <!-- Cart Summary -->
-  <!-- Cart Summary -->
+     
+<!-- Cart Summary -->
 <div class="col-lg-4">
-    <div class="cart-summary">
+  <div class="cart-summary">
       <h4 class="mb-4">Order Summary</h4>
+      <% 
+          let subtotal = 0;
+          let shipping = 0;
+          
+          if (cart && cart.length > 0) {
+              try {
+                  subtotal = cart.reduce((total, item) => {
+                      const itemPrice = Number(item.salePrice) || 0;
+                      const itemQuantity = Number(item.quantity) || 0;
+                      return total + (itemPrice * itemQuantity);
+                  }, 0);
+                  
+                  // Only calculate shipping if cart has items
+                  shipping = subtotal >= 2000 ? 0 : 100;
+              } catch (err) {
+                  subtotal = 0;
+                  shipping = 0;
+              }
+          }
+      %>
+      
       <div class="summary-item">
-        <span>Subtotal</span>
-        <span>₹<%= (cart && cart.length > 0) ? cart.reduce((total, item) => total + (Number(item.salePrice) * Number(item.quantity) || 0), 0) : 0 %></span>
+          <span>Subtotal</span>
+          <span>₹<%= subtotal.toFixed(2) %></span>
       </div>
-      <div class="summary-item">
-        <span>Shipping</span>
-        <span>₹<%= (cart && cart.length > 0) ? 100 : 0 %></span>
-      </div>
-      <div class="summary-item">
-        <span>Tax</span>
-        <span>₹<%= (cart && cart.length > 0) ? 20 : 0 %></span>
-      </div>
-      <div class="summary-item total">
-        <span>Total</span>
-        <span>₹<%= (cart && cart.length > 0) ? 
-          cart.reduce((total, item) => total + (Number(item.salePrice) * Number(item.quantity) || 0), 0) + 100 + 20 
-          : 0 
-        %></span>
-      </div>
+
       <% if (cart && cart.length > 0) { %>
-        <button class="checkout-btn" onclick="window.location.href='/checkout'">Checkout</button>
+          <% if (subtotal < 2000) { %>
+              <div class="shipping-info text-muted">
+                  <small>Add ₹<%= (2000 - subtotal).toFixed(2) %> more to get FREE delivery!</small>
+              </div>
+              <div class="summary-item">
+                  <span>Delivery Charges</span>
+                  <span>₹100.00</span>
+              </div>
+          <% } else { %>
+              <div class="shipping-info text-success">
+                  <small>Yay! You've got FREE delivery!</small>
+              </div>
+              <div class="summary-item">
+                  <span>Delivery Charges</span>
+                  <span class="text-success">FREE</span>
+              </div>
+          <% } %>
+      <% } else { %>
+          <div class="shipping-info text-muted">
+              <small>Add items to your cart for delivery details</small>
+          </div>
+          <div class="summary-item">
+              <span>Delivery Charges</span>
+              <span>₹0.00</span>
+          </div>
       <% } %>
-      <div class="text-center mt-3">
-        <a href="/shop" class="continue-shopping">
-          <i class="bi bi-arrow-left"></i> Continue Shopping
-        </a>
+
+      <div class="summary-item total">
+          <span>Total</span>
+          <span>₹<%= (subtotal + shipping).toFixed(2) %></span>
       </div>
-    </div>
+
+      <% if (cart && cart.length > 0) { %>
+          <button class="checkout-btn" onclick="window.location.href='/checkout'">Checkout</button>
+      <% } %>
+      
+      <div class="text-center mt-3">
+          <a href="/shop" class="continue-shopping">
+              <i class="bi bi-arrow-left"></i> Continue Shopping
+          </a>
+      </div>
   </div>
   </div>
   </div>
@@ -391,26 +431,72 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update cart summary function
     function updateCartSummary(totals) {
-        if (typeof totals === 'number') {
-            // If cart is empty, reset all values to 0
-            const summaryItems = document.querySelectorAll('.summary-item');
-            summaryItems[0].querySelector('span:last-child').textContent = '₹0';
-            summaryItems[1].querySelector('span:last-child').textContent = '₹0';
-            summaryItems[2].querySelector('span:last-child').textContent = '₹0';
-            document.querySelector('.total span:last-child').textContent = '₹0';
-            
-            // Hide checkout button
-            const checkoutBtn = document.querySelector('.checkout-btn');
-            if (checkoutBtn) checkoutBtn.style.display = 'none';
-        } else {
-            // Update with new totals
-            const summaryItems = document.querySelectorAll('.summary-item');
-            summaryItems[0].querySelector('span:last-child').textContent = `₹${totals.subtotal}`;
-            summaryItems[1].querySelector('span:last-child').textContent = `₹${totals.shipping}`;
-            summaryItems[2].querySelector('span:last-child').textContent = `₹${totals.tax}`;
-            document.querySelector('.total span:last-child').textContent = `₹${totals.total}`;
+    if (!totals || typeof totals === 'number' || totals.subtotal === 0) {
+        // Handle empty cart
+        const summaryItems = document.querySelectorAll('.summary-item');
+        
+        // Update subtotal
+        summaryItems[0].querySelector('span:last-child').textContent = '₹0.00';
+        
+        // Update shipping info
+        const shippingInfo = document.querySelector('.shipping-info');
+        if (shippingInfo) {
+            shippingInfo.innerHTML = '<small>Add items to your cart for delivery details</small>';
+            shippingInfo.className = 'shipping-info text-muted';
         }
+        
+        // Update shipping cost to ₹0
+        if (summaryItems[1]) {
+            summaryItems[1].querySelector('span:last-child').textContent = '₹0.00';
+            summaryItems[1].querySelector('span:last-child').className = '';
+        }
+        
+        // Update total
+        const totalElement = document.querySelector('.total span:last-child');
+        if (totalElement) {
+            totalElement.textContent = '₹0.00';
+        }
+        
+        // Hide checkout button
+        const checkoutBtn = document.querySelector('.checkout-btn');
+        if (checkoutBtn) checkoutBtn.style.display = 'none';
+        
+        return;
     }
+    
+    // Update for non-empty cart
+    const summaryItems = document.querySelectorAll('.summary-item');
+    
+    // Update subtotal
+    summaryItems[0].querySelector('span:last-child').textContent = `₹${totals.subtotal.toFixed(2)}`;
+    
+    // Update shipping info and cost
+    const shippingInfo = document.querySelector('.shipping-info');
+    const shippingCost = summaryItems[1].querySelector('span:last-child');
+    
+    if (totals.freeDeliveryEligible) {
+        if (shippingInfo) {
+            shippingInfo.innerHTML = '<small>Yay! You\'ve got FREE delivery!</small>';
+            shippingInfo.className = 'shipping-info text-success';
+        }
+        shippingCost.textContent = 'FREE';
+        shippingCost.className = 'text-success';
+    } else {
+        const remainingForFree = 2000 - totals.subtotal;
+        if (shippingInfo) {
+            shippingInfo.innerHTML = `<small>Add ₹${remainingForFree.toFixed(2)} more to get FREE delivery!</small>`;
+            shippingInfo.className = 'shipping-info text-muted';
+        }
+        shippingCost.textContent = '₹100.00';
+        shippingCost.className = '';
+    }
+    
+    // Update total
+    const totalElement = document.querySelector('.total span:last-child');
+    if (totalElement) {
+        totalElement.textContent = `₹${totals.total.toFixed(2)}`;
+    }
+}
 
     // Check for empty cart and update UI
     function checkEmptyCart() {

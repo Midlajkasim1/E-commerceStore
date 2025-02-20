@@ -95,9 +95,9 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h2 class="card-title">Order Details</h2>
                             </div>
-                            <% if (message && message.length> 0) { %>
+                            <% if (successMessage && successMessage.length> 0) { %>
                                 <div class="alert alert-info">
-                                    <%= message %>
+                                    <%= successMessage %>
                                 </div>
                                 <% } %>
 
@@ -162,16 +162,26 @@
                                                                         </p>
                                                                     </div>
                                                                 </div>
+                                                               
+                                                                <!-- Update status form for each product -->
                                                                 <% if (item.status === 'Return Request') { %>
                                                                     <div class="return-info">
                                                                         <h6 class="text-white mb-3">Return Request Details</h6>
                                                                         <p><strong>Return Reason:</strong> <%= item.returnReason %></p>
-                                                                        <form action="/admin/order/approve-return/<%= order._id %>" method="POST" class="mt-3">
-                                                                            <input type="hidden" name="productId" value="<%= item._id %>">
-                                                                            <button type="submit" class="btn btn-status-update">
-                                                                                Approve Return Request
-                                                                            </button>
-                                                                        </form>
+                                                                        <div class="d-flex gap-2 mt-3">
+                                                                            <form action="/admin/order/approve-return/<%= order._id %>" method="POST">
+                                                                                <input type="hidden" name="productId" value="<%= item._id %>">
+                                                                                <button type="submit" class="btn btn-status-update">
+                                                                                    Approve Return Request
+                                                                                </button>
+                                                                            </form>
+                                                                            <form action="/admin/order/decline-return/<%= order._id %>" method="POST">
+                                                                                <input type="hidden" name="productId" value="<%= item._id %>">
+                                                                                <button type="submit" class="btn btn-danger">
+                                                                                    Decline Return Request
+                                                                                </button>
+                                                                            </form>
+                                                                        </div>
                                                                     </div>
                                                                 <% } %>
                                                                 <% if (item.status === 'Cancelled' && item.cancellationReason) { %>
@@ -182,31 +192,6 @@
                                                                 <% } %>
 
 
-                                                                <!-- Update status form for each product -->
-                                                                <% if (item.status !== 'Return Request') { %>
-                                                                    <form action="/admin/order/status-update/<%= order._id %>" method="POST">
-                                                                        <div class="form-group">
-                                                                            <label for="orderStatus" class="text-white">Update Product Status</label>
-                                                                            <select class="form-control" 
-                                                                                    id="orderStatus" 
-                                                                                    name="orderStatus"
-                                                                                    <%= item.status === 'Cancelled' || item.status === 'Returned' ? 'disabled' : '' %>>
-                                                                                <option value="Pending" <%= item.status === 'Pending' ? 'selected' : '' %>>Pending</option>
-                                                                                <option value="Processing" <%= item.status === 'Processing' ? 'selected' : '' %>>Processing</option>
-                                                                                <option value="Shipped" <%= item.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
-                                                                                <option value="Out for Delivery" <%= item.status === 'Out for Delivery' ? 'selected' : '' %>>Out for Delivery</option>
-                                                                                <option value="Delivered" <%= item.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
-                                                                                <option value="Returned" <%= item.status === 'Returned' ? 'selected' : '' %>>Returned</option>
-                                                                            </select>
-                                                                            <input type="hidden" name="productId" value="<%= item._id %>">
-                                                                        </div>
-                                                                        <button type="submit" 
-                                                                                class="btn btn-status-update mt-3"
-                                                                                <%= item.status === 'Cancelled' || item.status === 'Returned' ? 'disabled' : '' %>>
-                                                                            Update Status
-                                                                        </button>
-                                                                    </form>
-                                                                <% } %>
                                                             </div>
                                                         </div>
                                                     </div>

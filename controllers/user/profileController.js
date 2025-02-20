@@ -4,54 +4,54 @@ const bcrypt = require('bcrypt');
 
 
 
-const getUserProfile = async (req,res)=>{
+const getUserProfile = async (req, res) => {
     try {
         const userId = req.session.user;
-        const userData= await User.findById(userId);
-        const addressData = await Address.findOne({userId: userId})
-        res.render('profile',{
-            user:userData,
-            userAddress:addressData,
-            message:req.flash('')
+        const userData = await User.findById(userId);
+        const addressData = await Address.findOne({ userId: userId })
+        res.render('profile', {
+            user: userData,
+            userAddress: addressData,
+            message: req.flash('')
         })
     } catch (error) {
-        console.error('profile page not found',error);
+        console.error('profile page not found', error);
         res.redirect('/pageNotFound')
     }
 }
 //
-const getEditProfile = async (req,res)=>{
- try {
-    const userId = req.session.user;
-    const userData = await User.findById(userId);
-    res.render('edit-userProfile', {
-        user: userData,
-        message: req.flash('')
-    });
- } catch (error) {
-    
- }
+const getEditProfile = async (req, res) => {
+    try {
+        const userId = req.session.user;
+        const userData = await User.findById(userId);
+        res.render('edit-userProfile', {
+            user: userData,
+            message: req.flash('')
+        });
+    } catch (error) {
+
+    }
 
 }
 
-const editProfile =async (req,res)=>{
+const editProfile = async (req, res) => {
     try {
         const userId = req.session.user;
-        const {name,phone} = req.body;
+        const { name, phone } = req.body;
         if (!name || !phone) {
             req.flash('err', 'Name and phone are required.');
             return res.redirect('/edit-profile');
         }
         const updateUser = await User.findByIdAndUpdate(userId,
-            {name,phone},
-            {new:true}
+            { name, phone },
+            { new: true }
         )
         if (!updateUser) {
             req.flash('err', 'User not found.');
             return res.redirect('/edit-profile');
         }
-        req.flash('success', 'Profile updated successfully.');       
-         res.redirect('/userProfile');
+        req.flash('success', 'Profile updated successfully.');
+        res.redirect('/userProfile');
 
     } catch (error) {
         console.error('Error updating profile:', error);
@@ -81,7 +81,7 @@ const changePassword = async (req, res) => {
             return res.redirect('/userProfile');
         }
 
-      
+
         if (!req.session.user) {
             req.flash('err', 'You must be logged in to change your password.');
             return res.redirect('/login');
@@ -100,7 +100,7 @@ const changePassword = async (req, res) => {
             return res.redirect('/userProfile');
         }
 
- 
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
         await user.save();
@@ -117,7 +117,7 @@ const changePassword = async (req, res) => {
 const getAddress = async (req, res) => {
     try {
         const userId = req.session.user;
-        const userData= await User.findById(userId);
+        const userData = await User.findById(userId);
 
         // console.log('Getting addresses for user ID:', userId);
 
@@ -185,8 +185,8 @@ const postAddAddress = async (req, res) => {
         }
 
         await userAddress.save();
-        req.flash('err','Address added successfully')
-       
+        req.flash('err', 'Address added successfully')
+
         res.status(200).json({ success: true, message: 'Address added successfully.' });
     } catch (error) {
         console.error('Error adding address:', error);
@@ -231,7 +231,6 @@ const editAddress = async (req, res) => {
         const data = req.body;
         const addressId = req.body.addressId;
 
-        // Validation
         if (!data.addressType || !data.name || !data.phone || !data.landMark || !data.city || !data.state || !data.pincode) {
             return res.status(400).json({ success: false, message: 'All fields are required.' });
         }
@@ -293,7 +292,7 @@ const deleteAddress = async (req, res) => {
         res.redirect('/myaddress');
     }
 };
-module.exports={
+module.exports = {
     getUserProfile,
     getEditProfile,
     editProfile,
@@ -303,5 +302,5 @@ module.exports={
     editAddress,
     deleteAddress,
     changePassword
-  
+
 }

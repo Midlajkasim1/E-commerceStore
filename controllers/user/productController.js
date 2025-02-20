@@ -5,7 +5,7 @@ const Review = require('../../models/reviewSchema');
 
 
 
-const productDetails = async (req,res)=>{
+const productDetails = async (req, res) => {
     try {
         const userId = req.session.user;
         const userData = await User.findById(userId);
@@ -16,7 +16,7 @@ const productDetails = async (req,res)=>{
         const productOffer = product.productOffer || 0;
         const totalOffer = categoryOffer + productOffer;
 
-       
+
         const reviews = await Review.find({ productId })
             .populate('userId', 'name')
             .sort({ createdAt: -1 });
@@ -26,13 +26,14 @@ const productDetails = async (req,res)=>{
         const totalReviews = reviews.length;
 
         const availableSizes = ['sizeS', 'sizeM', 'sizeL', 'sizeXL', 'sizeXXL'].map(sizeKey => ({
-            label: sizeKey.replace('size', ''), 
-            stock: product.size[sizeKey] || 0, 
+            label: sizeKey.replace('size', ''),
+            stock: product.size[sizeKey] || 0,
+            isLowStock: (product.size[sizeKey] || 0) < 2
         }));
 
         const allProducts = await Product.find({ category: findcategory, _id: { $ne: productId } });
         // const randomNum = new Set();
-        
+
         // while(randomNum.size < 3){
         //     const num = Math.floor(Math.random() * 10);
         //     if(num <= allProducts.length){
@@ -42,13 +43,12 @@ const productDetails = async (req,res)=>{
 
         // const ranNum = Array.from(randomNum);                
         const similarProducts = [];
-const availableProducts = [...allProducts]; // Create a copy to avoid mutating the original array
-
-while (similarProducts.length < 3 && availableProducts.length > 0) {
-    const randomIndex = Math.floor(Math.random() * availableProducts.length);
-    const selectedProduct = availableProducts.splice(randomIndex, 1)[0]; // Remove the selected product
-    similarProducts.push(selectedProduct);
-}
+        const availableProducts = [...allProducts];
+        while (similarProducts.length < 3 && availableProducts.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableProducts.length);
+            const selectedProduct = availableProducts.splice(randomIndex, 1)[0];
+            similarProducts.push(selectedProduct);
+        }
 
         res.render("productDetails", {
             user: userData,
@@ -56,14 +56,13 @@ while (similarProducts.length < 3 && availableProducts.length > 0) {
             quantity: product.quantity,
             totalOffer: totalOffer,
             category: findcategory,
-            // ranNum: ranNum,
-            similarProducts:similarProducts,
+            similarProducts: similarProducts,
             allProducts: allProducts,
             availableSizes: availableSizes,
             reviews: reviews,
             averageRating: averageRating,
             totalReviews: totalReviews,
-            messages: req.flash() 
+            messages: req.flash()
         });
 
     } catch (error) {
@@ -76,7 +75,7 @@ while (similarProducts.length < 3 && availableProducts.length > 0) {
 const submitReview = async (req, res) => {
     try {
         const { productId, rating, review } = req.body;
-     
+
         const userId = req.session.user;
 
         if (!userId) {
@@ -84,14 +83,14 @@ const submitReview = async (req, res) => {
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-       
+
         const existingReview = await Review.findOne({ userId, productId });
         if (existingReview) {
             req.flash('error', "You've already reviewed this product");
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-       
+
         const newReview = new Review({
             userId,
             productId,
@@ -100,7 +99,7 @@ const submitReview = async (req, res) => {
         });
         await newReview.save();
 
-       
+
         const allReviews = await Review.find({ productId });
         const totalRating = allReviews.reduce((sum, rev) => sum + rev.rating, 0);
         const averageRating = totalRating / allReviews.length;
@@ -137,40 +136,40 @@ const deleteReview = async (req, res) => {
     try {
         const reviewId = req.params.reviewId;
         const productId = req.params.productId;
-        
-       
+
+
         if (!req.session.user) {
             req.flash('error', 'Please login to delete review');
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-       
+
         const review = await Review.findById(reviewId);
-        
+
         if (!review) {
             req.flash('error', 'Review not found');
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-      
+
         if (review.userId.toString() !== req.session.user.toString()) {
             req.flash('error', 'You are not authorized to delete this review');
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-       
+
         await Review.findByIdAndDelete(reviewId);
 
-       
+
         const remainingReviews = await Review.find({ productId });
-        
+
         let newAverageRating = 0;
         if (remainingReviews.length > 0) {
             const totalRating = remainingReviews.reduce((sum, rev) => sum + rev.rating, 0);
             newAverageRating = totalRating / remainingReviews.length;
         }
 
-      
+
         await Product.findByIdAndUpdate(productId, {
             averageRating: newAverageRating.toFixed(1),
             totalReviews: remainingReviews.length
@@ -185,7 +184,7 @@ const deleteReview = async (req, res) => {
         return res.redirect(`/productDetails?id=${productId}`);
     }
 };
-module.exports  ={
+module.exports = {
     productDetails,
     submitReview,
     getProductReviews,

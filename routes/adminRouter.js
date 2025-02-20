@@ -49,6 +49,7 @@ router.get('/order',adminCheck,orderController.getOrder)
 router.get('/orderdetail/:id', adminCheck, orderController.getOrderDetails);
 router.post('/order/status-update/:id',adminCheck,orderController.updateStatus);
 router.post('/order/approve-return/:orderId', adminCheck, orderController.approveReturnRequest);
+router.post('/order/decline-return/:orderId',adminCheck,orderController.declineReturnRequest)
 
 //coupon
 router.get('/coupon',adminCheck,couponController.getCoupon);
@@ -58,13 +59,13 @@ router.get('/coupon/list-coupon',adminCheck,couponController.listCoupon);
 router.get('/coupon/unlist-coupon',adminCheck,couponController.unListCoupon);
 router.get('/coupon/edit-coupon/:id',adminCheck,couponController.getEditCoupon);
 router.post('/coupon/edit-coupon',adminCheck,couponController.editCoupon);
-router.get('/coupon/delete-coupon/:id',adminCheck,couponController.deleteCoupon);
+router.post('/coupon/delete-coupon/:id',adminCheck,couponController.deleteCoupon);
 
 //sales Report
-// router.get('/sales-report',adminCheck,salesReportController.getSalesReport);
+router.get('/dashboard/chart-data',adminCheck,adminController.getChartData)
 router.get('/sales-report/excel', adminCheck, adminController.downloadExcelReport);
 router.get('/sales-report/pdf', adminCheck, adminController.downloadPdfReport);
-
+// router.get('/dashboard-data',adminCheck,adminController.getDashboardData)
 
 
 module.exports = router;

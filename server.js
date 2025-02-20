@@ -43,7 +43,7 @@ app.use('/', userRoutes);
 app.use('/admin',adminRoutes);
 
 app.use((req,res)=>{
-    res.status(400).render('page-404')
+    res.status(404).render('page-404')
 })
 
 

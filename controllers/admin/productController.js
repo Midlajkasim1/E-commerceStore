@@ -106,7 +106,7 @@ const addProducts = async (req, res) => {
                 return res.redirect('/admin/products/addProducts');
            
             }
-     console.log(products);
+    //  console.log(products);
      const sizes = {
         sizeS: Number(products.sizeS) || 0,
         sizeM: Number(products.sizeM) || 0,
@@ -144,59 +144,93 @@ const addProducts = async (req, res) => {
         return res.redirect('/admin/pageerror');
     }
 };
-
-const addProductOffer = async (req,res)=>{
+const addProductOffer = async (req, res) => {
     try {
-        const {productId,percentage} = req.body;
-        const findProduct = await Product.findOne({_id:productId});
-        const findCategory = await Category.findOne({_id:findProduct.category})
-        if(findCategory.categoryOffer > percentage) {
-            return res.json({status: false, message: "This products category already has a category offer"});
+        const { productId, percentage } = req.body;
+        const parsedPercentage = parseInt(percentage);
+
+        // Validate percentage
+        if (parsedPercentage < 0 || parsedPercentage > 100) {
+            return res.json({ 
+                status: false, 
+                message: "Offer percentage must be between 0 and 100" 
+            });
         }
-        // findProduct.originalSalePrice = findProduct.salePrice;
-         findProduct.salePrice = findProduct.salePrice-Math.floor(findProduct.regularPrice*(percentage/100))
-         findProduct.productOffer =  parseInt(percentage);
-          await findProduct.save();
-          findCategory.categoryOffer=0;
-          await findCategory.save();
-          res.json({status:true});
+
+        const product = await Product.findById(productId).populate('category');
+        if (!product) {
+            return res.json({ 
+                status: false, 
+                message: "Product not found" 
+            });
+        }
+
+        // Check if category has an active offer
+        if (product.category.categoryOffer > 0) {
+            return res.json({ 
+                status: false, 
+                message: "This product's category already has a category offer",
+                categoryOffer: product.category.categoryOffer
+            });
+        }
+
+        // Store the current sale price before applying the offer
+        product.originalSalePrice = product.salePrice;
+
+        // Calculate new sale price with the offer
+        const discountAmount = Math.floor(product.regularPrice * (parsedPercentage/100));
+        product.salePrice = Math.max(product.regularPrice - discountAmount, 0);
+        product.productOffer = parsedPercentage;
+
+        await product.save();
+        res.json({ status: true });
+
     } catch (error) {
-         res.redirect("/pageerror");
+        console.error('Error in addProductOffer:', error);
+        res.status(500).json({ 
+            status: false, 
+            message: "An error occurred" 
+        });
     }
- }
+};
 
-
-//
 const removeProductOffer = async (req, res) => {
     try {
         const { productId } = req.body;
         console.log('Received productId:', productId);
 
-        const findProduct = await Product.findOne({ _id: productId });
-        if (!findProduct) {
-            return res.status(404).json({ status: false, message: "Product not found" });
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ 
+                status: false, 
+                message: "Product not found" 
+            });
         }
 
-        const percentage = findProduct.productOffer;
-        // const newPrice = product.originalSalePrice; 
+        // Restore the original sale price
+        if (product.originalSalePrice !== null) {
+            product.salePrice = product.originalSalePrice;
+            product.originalSalePrice = null;
+        }
         
-        findProduct.salePrice = findProduct.salePrice + Math.floor(findProduct.regularPrice * (percentage/100));
-        findProduct.productOffer = 0;
+        product.productOffer = 0;
         
-        await findProduct.save();
+        await product.save();
         console.log('Product updated successfully');
         
-        // Send only ONE response
-        return res.status(200).json({ status: true, message: "Offer removed successfully" });
+        return res.status(200).json({ 
+            status: true, 
+            message: "Offer removed successfully" 
+        });
 
     } catch (error) {
         console.error('Error in removeProductOffer:', error);
-        // Send only ONE error response
-        return res.status(500).json({ status: false, message: "Internal server error" });
+        return res.status(500).json({ 
+            status: false, 
+            message: "Internal server error" 
+        });
     }
 };
-
-
 //
 const blockProduct = async (req,res)=>{
     try {
@@ -227,6 +261,7 @@ const getEditProduct = async (req, res) => {
         res.render('editProduct', {
             product: product,
             cat: category,
+            messages:req.flash('error')
         });
     } catch (error) {
         res.redirect('/pagerror');
@@ -235,17 +270,15 @@ const getEditProduct = async (req, res) => {
 const editProduct = async (req, res) => {
     try {
         const id = req.params.id;
-        console.log('Product ID to update:', id);
-        console.log('Received data:', req.body);
-        console.log('Received files:', req.files);
+        // console.log('Product ID to update:', id);
+        // console.log('Received data:', req.body);
+        // console.log('Received files:', req.files);
 
-        // Validate if ID exists
         if (!id) {
             req.flash('error', 'Product ID is required');
             return res.redirect('/admin/products');
         }
 
-        // First check if product exists
         const existingProduct = await Product.findById(id);
         if (!existingProduct) {
             req.flash('error', 'Product not found');
@@ -254,14 +287,12 @@ const editProduct = async (req, res) => {
 
         const data = req.body;
 
-        // Validate category
         const categoryId = await Category.findById(data.category);
         if (!categoryId) {
             req.flash('error', 'Invalid category');
             return res.redirect('/admin/products');
         }
 
-        // Check for duplicate product name
         const duplicateProduct = await Product.findOne({
             productName: data.productName,
             _id: { $ne: id }
@@ -272,10 +303,8 @@ const editProduct = async (req, res) => {
             return res.redirect(`/admin/products/editProduct/${id}`);
         }
 
-        // Process images
-        const images = req.files?.map(file => file.filename) || [];
-
-        // Process size data
+         // Process images
+         const images = req.files?.map(file => file.filename) || [];
         const sizeData = {
             sizeS: parseInt(data.sizeS) || 0,
             sizeM: parseInt(data.sizeM) || 0,
@@ -284,10 +313,8 @@ const editProduct = async (req, res) => {
             sizeXXL: parseInt(data.sizeXXL) || 0
         };
 
-        // Calculate total quantity from all sizes
         const totalQuantity = Object.values(sizeData).reduce((sum, stock) => sum + stock, 0);
 
-        // Prepare update data
         const updateFields = {
             productName: data.productName,
             description: data.description,
@@ -303,20 +330,16 @@ const editProduct = async (req, res) => {
             updateFields.productImage = images;
         }
 
-        // Update product status based on total quantity
         updateFields.status = totalQuantity > 0 ? "Available" : "out of stock";
 
-        // Perform update
         await Product.findByIdAndUpdate(
             id,
             updateFields,
             { new: true, runValidators: true }
         );
 
-        // Add flash message for successful update
         req.flash('success', 'Product updated successfully');
 
-        // Redirect to products listing page
         return res.redirect('/admin/products');
 
     } catch (error) {

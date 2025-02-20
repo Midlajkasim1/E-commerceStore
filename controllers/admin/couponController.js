@@ -5,18 +5,16 @@ const mongoose = require('mongoose')
 const getCoupon = async (req,res)=>{
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = 10; // Number of items per page
+        const limit = 10; 
         const skip = (page - 1) * limit;
 
-        // Get total count of coupons for pagination
         const totalCoupons = await Coupon.countDocuments({});
         const totalPages = Math.ceil(totalCoupons / limit);
         const findCoupons = await Coupon.find({})
-        .sort({ createOn: -1 }) // Sort by creation date, newest first
+        .sort({ createOn: -1 }) 
         .skip(skip)
         .limit(limit);
 
-    // Handle search functionality if search query exists
     const searchQuery = req.query.search;
     if (searchQuery) {
         findCoupons = await Coupon.find({
@@ -34,7 +32,8 @@ const getCoupon = async (req,res)=>{
             nextPage: page + 1,
             prevPage: page - 1,
             lastPage: totalPages,
-            search: searchQuery || '' 
+            search: searchQuery || '' ,
+            messages:req.flash()
         })
 
     } catch (error) {
@@ -45,7 +44,7 @@ const getCoupon = async (req,res)=>{
 const getAddCoupon = async (req,res)=>{
     try {
         
-        res.render('addCoupon')
+        res.render('addCoupon',{messages:req.flash()})
     } catch (error) {
         res.redirect('/pageerror')
     }
@@ -60,62 +59,32 @@ const addCoupon = async (req, res) => {
             minimumPrice: parseInt(req.body.minimumPrice),
         };
 
-        // Validate required fields
-        if (!data.couponName || !data.startDate || !data.expiryDate || !data.offerPrice || !data.minimumPrice) {
-            return res.status(400).json({
-                status: false,
-                message: 'All fields are required'
+        // Add date validation
+        const currentDate = new Date();
+        currentDate.setHours(0, 0, 0, 0);
+
+        if (data.startDate < currentDate) {
+            return res.json({ 
+                success: false, 
+                message: 'Start date cannot be in the past' 
             });
         }
 
-        // Validate coupon name format
-        if (!/^[A-Z0-9]+$/.test(data.couponName)) {
-            return res.status(400).json({
-                status: false,
-                message: 'Coupon name must contain only uppercase letters and numbers'
+        if (data.expiryDate <= data.startDate) {
+            return res.json({ 
+                success: false, 
+                message: 'Expiry date must be after start date' 
             });
         }
 
-        // Validate dates
-        if (isNaN(data.startDate.getTime()) || isNaN(data.expiryDate.getTime())) {
-            return res.status(400).json({
-                status: false,
-                message: 'Invalid date format'
-            });
-        }
-
-        if (data.expiryDate < data.startDate) {
-            return res.status(400).json({
-                status: false,
-                message: 'Expiry date cannot be earlier than start date'
-            });
-        }
-
-        // Validate prices
-        if (isNaN(data.offerPrice) || isNaN(data.minimumPrice) || data.offerPrice <= 0 || data.minimumPrice <= 0) {
-            return res.status(400).json({
-                status: false,
-                message: 'Invalid price values'
-            });
-        }
-
-        if (data.offerPrice >= data.minimumPrice) {
-            return res.status(400).json({
-                status: false,
-                message: 'Offer price must be less than minimum price'
-            });
-        }
-
-        // Check if coupon already exists
         const existingCoupon = await Coupon.findOne({ name: data.couponName });
         if (existingCoupon) {
-            return res.status(400).json({
-                status: false,
-                message: 'Coupon with this name already exists'
+            return res.json({ 
+                success: false, 
+                message: 'Coupon with this name already exists' 
             });
         }
 
-        // Create new coupon
         const newCoupon = new Coupon({
             name: data.couponName,
             createOn: data.startDate,
@@ -125,13 +94,16 @@ const addCoupon = async (req, res) => {
         });
 
         await newCoupon.save();
-        return res.redirect('/admin/coupon');
+        return res.json({ 
+            success: true, 
+            message: 'Coupon added successfully' 
+        });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({
-            status: false,
-            message: 'Internal server error'
+        return res.json({ 
+            success: false, 
+            message: 'Internal server error' 
         });
     }
 };
@@ -189,9 +161,7 @@ const addCoupon = async (req, res) => {
  }
 
 
-// Server-side controller
-// Server-side controller
-const editCoupon = async (req, res) => {
+ const editCoupon = async (req, res) => {
     try {
         console.log('Received update request:', req.body);
         
@@ -226,7 +196,11 @@ const editCoupon = async (req, res) => {
         // Convert dates
         const startDateObj = new Date(startDate);
         const expiryDateObj = new Date(expiryDate);
+        const currentDate = new Date();
 
+        currentDate.setHours(0, 0, 0, 0);
+        startDateObj.setHours(0, 0, 0, 0);
+        expiryDateObj.setHours(0, 0, 0, 0);
         // Validate dates
         if (isNaN(startDateObj.getTime()) || isNaN(expiryDateObj.getTime())) {
             return res.status(400).json({
@@ -235,7 +209,14 @@ const editCoupon = async (req, res) => {
             });
         }
 
-        if (expiryDateObj < startDateObj) {
+        if (startDateObj < currentDate) {
+            return res.status(400).json({
+                status: false,
+                message: 'Start date cannot be in the past'
+            });
+        }
+
+        if (expiryDateObj <= startDateObj) {
             return res.status(400).json({
                 status: false,
                 message: 'Expiry date cannot be earlier than start date'
@@ -297,7 +278,6 @@ const editCoupon = async (req, res) => {
         });
     }
 };
-
 const deleteCoupon = async (req, res) => {
     try {
         const id = req.params.id; 

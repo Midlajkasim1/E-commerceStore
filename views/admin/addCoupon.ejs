@@ -6,10 +6,7 @@
     <title>Add New Coupon</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
-     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    
     <style>
         .main-content {
             margin-left: 250px;
@@ -101,7 +98,19 @@
         <div class="header">
             <h1>Add New Coupon</h1>
         </div>
-
+        <% if(messages.success){ %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <%= messages.success %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <% } %>
+        
+        <% if(messages.error){ %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <%= messages.error %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <% } %>
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title">Coupon Details</h5>
@@ -118,7 +127,7 @@
                                 class="form-control" 
                                 id="couponName" 
                                 name="couponName" 
-                                placeholder="e.g. WELCOME50" 
+                                placeholder="Coupon name" 
                                 required
                                 pattern="[A-Z0-9]+"
                             >
@@ -217,87 +226,113 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
      <script>
+        
         // Form validation
-         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('.needs-validation');
-            const couponNameInput = document.getElementById('couponName');
-            const couponNameError = document.getElementById('couponNameError');
-            const startDateInput = document.getElementById('startDate');
-            const expiryDateInput = document.getElementById('expiryDate');
+        document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.needs-validation');
+    const couponNameInput = document.getElementById('couponName');
+    const couponNameError = document.getElementById('couponNameError');
+    const startDateInput = document.getElementById('startDate');
+    const expiryDateInput = document.getElementById('expiryDate');
 
-            // Set minimum date as today for start date
-            const today = new Date().toISOString().split('T')[0];
-            startDateInput.setAttribute('min', today);
+    // Set minimum date for start date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayString = today.toISOString().split('T')[0];
+    startDateInput.setAttribute('min', todayString);
 
-            // Validate coupon code format
-            couponNameInput.addEventListener('input', function() {
-                const value = this.value.toUpperCase();
-                this.value = value;
-                
-                if (!/^[A-Z0-9]+$/.test(value)) {
-                    couponNameError.textContent = 'Only uppercase letters and numbers are allowed';
-                } else {
-                    couponNameError.textContent = '';
-                }
+    // Prevent selecting past dates for start date
+    startDateInput.addEventListener('change', function() {
+        const selectedDate = new Date(this.value);
+        if (selectedDate < today) {
+            this.value = todayString;
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Date',
+                text: 'Start date cannot be in the past'
             });
+        }
+        
+        // Update expiry date minimum
+        expiryDateInput.setAttribute('min', this.value);
+        if (expiryDateInput.value && expiryDateInput.value < this.value) {
+            expiryDateInput.value = this.value;
+        }
+    });
 
-            // Update expiry date minimum based on start date
-            startDateInput.addEventListener('change', function() {
-                expiryDateInput.setAttribute('min', this.value);
-                if (expiryDateInput.value && expiryDateInput.value < this.value) {
-                    expiryDateInput.value = this.value;
-                }
+    // Form submission
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        const startDate = new Date(startDateInput.value);
+        const expiryDate = new Date(expiryDateInput.value);
+        
+        if (startDate < today) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Date',
+                text: 'Start date cannot be in the past'
             });
-
-            // Form submission validation
-            form.addEventListener('submit', function(event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add('was-validated');
-            });
-        });
-
-        function setDefaultStartDate(){
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = (today.getMonth()+1).toString().padStart(2,"0");
-            const day = today.getDate().toString().padStart(2,"0");
-            document.getElementById('startDate').value =  `${year}-${month}-${day}`
+            return false;
         }
 
-        
+        if (expiryDate <= startDate) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Date',
+                text: 'Expiry date must be after start date'
+            });
+            return false;
+        }
 
-        document.querySelector('#addCouponForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return false;
+        }
 
-            try {
-                const response = await fetch('/admin/coupon/add-coupon', {
-                    method: 'POST',
-                    body: formData
+        try {
+            const formData = new FormData(form);
+            const response = await fetch('/admin/coupon/add-coupon', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(Object.fromEntries(formData))
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: result.message,
+                    showConfirmButton: false,
+                    timer: 1500
+                }).then(() => {
+                    window.location.href = '/admin/coupon';
                 });
-                const result = await response.json();
-
-                if (result.status) {
-                    Swal.fire('Success', result.message, 'success').then(() => {
-                        window.location.href = '/admin/coupon';
-                    });
-                } else {
-                    Swal.fire('Error', result.message, 'error');
-                }
-            } catch (error) {
-                console.error(error);
-                Swal.fire('Error', 'An error occurred while adding the coupon', 'error');
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: result.message
+                });
             }
-        });
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Something went wrong. Please try again.'
+            });
+        }
+    });
+});
+      
     </script> 
 </body>
 </html>

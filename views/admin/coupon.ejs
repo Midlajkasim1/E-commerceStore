@@ -31,7 +31,9 @@
         .search-bar input {
             width: 100%;
             padding: 8px 35px 8px 15px;
-            border: 1px solid #ddd;
+            background-color: #1e2227;
+
+            border: 1px solid #2d3035;
             border-radius: 5px;
         }
 
@@ -40,12 +42,12 @@
             right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            color: #666;
+            color: #8b8b8b;
         }
 
         .add-user-btn {
-            background-color: #8B5CF6;
-            color: white;
+            background-color:#4ade80;
+            color:black;
             padding: 8px 20px;
             border-radius: 5px;
             text-decoration: none;
@@ -53,7 +55,7 @@
         }
 
         .add-user-btn:hover {
-            background-color: #7C3AED;
+            background-color:rgb(6, 96, 6);
             color: white;
         }
 
@@ -67,17 +69,17 @@
         }
 
         .users-table th {
-            background-color: #f8f9fa;
+            background-color: #1e2227;
             padding: 12px 15px;
             text-align: left;
             font-weight: 600;
-            color: #374151;
+            color: #8b8b8b;
         }
 
         .users-table td {
             padding: 12px 15px;
             border-top: 1px solid #e5e7eb;
-            color: #6b7280;
+            color: white;
         }
 
         .custom-badge {
@@ -155,6 +157,19 @@
                 </div>
             </div>
         </div>
+         <% if(messages.success){ %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <%= messages.success %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <% } %>
+        
+        <% if(messages.error){ %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <%= messages.error %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <% } %>
 
         <table class="users-table">
             <thead>
@@ -177,7 +192,7 @@
                     
                     <td><%=coupons[i].name%></td>
                     <td><%=new Date(coupons[i].createOn).toLocaleDateString('en-US')%></td>
-                    <td><%=new Date(coupons[i].expireOn)%></td>
+                    <td><%=new Date(coupons[i].expireOn).toLocaleDateString('en-US')%></td>
                     <td><%=coupons[i].offerPrice%></td>
                     <td><%=coupons[i].minimumPrice%></td>  
                     <td>
@@ -204,9 +219,9 @@
                         </a>
                     </td>
                     <td>
-                        <a href="/admin/coupon/delete-coupon/<%= coupons[i]._id %>" class="btn btn-primary btn-icon" title="delete">
-                            <i class="fa fa-trash"></i>  
-                        </a>
+                        <button onclick="handleDelete('<%= coupons[i]._id %>')" class="btn btn-primary btn-icon" title="delete">
+                            <i class="fa fa-trash"></i>
+                        </button>
                     </td>
                 </tr>
              
@@ -250,6 +265,57 @@
         </div>
     </div>
 
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        function handleDelete(couponId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Send DELETE request
+                    fetch(`/admin/coupon/delete-coupon/${couponId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status) {
+                            Swal.fire(
+                                'Deleted!',
+                                'Coupon has been deleted.',
+                                'success'
+                            ).then(() => {
+                                // Reload the page after successful deletion
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire(
+                                'Error!',
+                                data.message || 'Failed to delete coupon',
+                                'error'
+                            );
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire(
+                            'Error!',
+                            'Something went wrong while deleting the coupon.',
+                            'error'
+                        );
+                    });
+                }
+            });
+        }
+        </script>
 </body>
 </html>

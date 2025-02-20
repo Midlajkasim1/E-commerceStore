@@ -260,7 +260,7 @@
                 <div class="col-md-4" id="product-<%=product._id%>">
                   <div class="product-card">
                     <button class="remove-wishlist-btn" onclick="confirmRemove('<%=product._id%>')">×</button>
-                    <a href="#">
+                    <a href="/productDetails?id=<%=product._id%>">
                       <img src="/uploads/re-image/<%=product.productImage[0]%>" alt="Product Name" class="img-fluid rounded">
                     </a>
                     <h5 class="mt-3"><%=product.productName%></h5>

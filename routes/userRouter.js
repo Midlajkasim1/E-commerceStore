@@ -107,16 +107,21 @@ router.post('/verify-payment',userAuth,ordercontroller.verifyPayment);
 //order
 router.get('/profile/order',userAuth,ordercontroller.getOrderDetails)
 router.get('/details/:id',userAuth,ordercontroller.getOrderMoreDetails);
+router.get('/download-invoice/:orderId',userAuth,ordercontroller.generateInvoice )
 router.post('/order/cancel-product',userAuth,ordercontroller.cancelProductOrder);
 router.post('/order/return-product',userAuth,ordercontroller.returnProductOrder);
+router.get('/payment-failed/:orderId',userAuth,ordercontroller.handleFailedPayment);
+router.post('/retry-payment',userAuth,ordercontroller.retryPayment);
+router.post('/verify-retry-payment',userAuth,ordercontroller.verifyRetryPayment)
 
-//widshlist            
+//wishlist            
 router.get('/wishlist',userAuth,wishlistController.getWishlist)
 router.post('/addToWishlist',userAuth,wishlistController.addToWishlist);
 router.get('/removeFromWishlist',userAuth,wishlistController.removeProduct);
 
 // userRouter.post('/applycouoponcode',applyCoupon)
 // userRouter.post('/removecoupon',removeCoupon)
+router.get('/get-available-coupons',userAuth,checkoutController.getAvailableCoupons)
 router.post('/applycouponcode',userAuth,checkoutController.applyCoupon);
 router.post('/removecoupon',userAuth,checkoutController.removeCoupon);
 
@@ -124,6 +129,5 @@ router.post('/removecoupon',userAuth,checkoutController.removeCoupon);
 router.get('/wallet',userAuth,WalletController.getWallet)
 // router.get('/wallet/transactions', userAuth, WalletController.getTransactions);
 router.get('/wallet/history', userAuth, WalletController.getTransactionHistory);
-// router.get('/get-wallet-balance',userAuth,ordercontroller.getWalletBalance)
 
 module.exports= router;

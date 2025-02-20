@@ -62,9 +62,11 @@
                 <a class="nav-link active" href="/userProfile">
                     <i class="bi bi-person"></i> My Profile
                 </a>
-                <a class="nav-link logout-link" href="/logout">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
+                
+                <form action="/logout" method="post">
+                    <button class="nav-link logout-link">
+                        <i class="bi bi-box-arrow-right"></i>Logout</button>
+                    </form>
             </nav>
         </div>
     </div>

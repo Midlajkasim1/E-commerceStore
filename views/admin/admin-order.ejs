@@ -173,6 +173,7 @@ color: green;
                 <% if (successMessage && successMessage.length > 0) { %>
                           <p id="msg"><%=successMessage %></p>
                     <% } %>
+                  
                 <div class="search-bar">
                     <form action="" method="get">
                         <input type="text" name="search" placeholder="Search orders" value="">
@@ -199,8 +200,8 @@ color: green;
                     <tr>
                         <td><%= order.orderId %></td>
                         <td><%= order.userId ? order.userId.name : 'N/A' %></td>
-                        <td><%= order.createOn.toLocaleDateString() %></td>
-                        <td>₹<%= order.finalAmount.toFixed(2) %></td>
+                        <td><%= order.createOn %></td>
+                        <td>₹<%= order.finalAmount %></td>
                         <td>
                             <span class="btn btn-<%= 
                                 order.status === 'Pending' ? 'warning' :
@@ -214,7 +215,7 @@ color: green;
                                 <%= order.status %>
                             </span>
                         </td>
-                        <td>COD</td>
+                        <td><%= order.paymentMethod %></td>
                         <td>
                             <a href="/admin/orderdetail/<%= order._id %>" class="btn btn-white  border btn-sm">View</a>
                         </td>

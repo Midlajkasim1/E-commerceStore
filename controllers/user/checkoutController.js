@@ -14,7 +14,7 @@ const getCheckout = async (req, res) => {
         const user = await User.findById(req.session.user);
 
         const userAddress = await Address.findOne({ userId: req.session.user });
-        
+
         const userCart = await Cart.findOne({ userId: req.session.user })
             .populate({
                 path: 'items.productId',
@@ -26,7 +26,7 @@ const getCheckout = async (req, res) => {
         }
         let wallet = await Wallet.findOne({ userId: req.session.user });
         if (!wallet) {
-            wallet = { balance: 0 }; 
+            wallet = { balance: 0 };
         }
 
         const cartItems = userCart.items.map(item => ({
@@ -38,19 +38,26 @@ const getCheckout = async (req, res) => {
             price: item.price,
             salePrice: item.productId.salePrice,
             totalPrice: item.totalPrice,
-           
+
         }));
 
         const subtotal = cartItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-        const shipping = 100;
-        const tax = 20;
-        let discount =0   
+        const taxRate = 0.02; // 2% tax
+        const tax = subtotal * taxRate;
+        let shipping = subtotal >= 2000 ? 0 : 100; // Free shipping for orders ≥ 2000
+        let discount = 0;
+        let couponCode = null;
+        let appliedCoupon = null;
+
 
         if (user && user.redeemedUser) {
-            const coupon = await Coupon.findById(user.redeemedUser);
-            if (coupon) discount = coupon.offerPrice;
+            appliedCoupon = await Coupon.findById(user.redeemedUser);
+            if (appliedCoupon) {
+                discount = appliedCoupon.offerPrice;
+                couponCode = appliedCoupon.name; // Changed from coupon.code to coupon.name
+            }
         }
-        
+
         const total = subtotal + shipping + tax - discount;
 
         res.render('checkout', {
@@ -59,11 +66,18 @@ const getCheckout = async (req, res) => {
             subtotal,
             shipping,
             tax,
+            discount,
+            couponCode,
             total,
-            wallet: wallet.balance, 
-            user: req.user || req.session.user ,
-            message:req.flash()
+            wallet: wallet.balance,
+            user: req.user || req.session.user,
+            message: req.flash(),
+            appliedCoupon: appliedCoupon ? {
+                name: appliedCoupon.name,
+                offerPrice: appliedCoupon.offerPrice
+            } : null
         });
+
 
     } catch (error) {
         console.error("Error in getCheckout:", error);
@@ -73,10 +87,10 @@ const getCheckout = async (req, res) => {
 
 const checkoutAddAddress = async (req, res) => {
     try {
-        const userId = req.session.user;  // Use the ID string directly
+        const userId = req.session.user;
         console.log('Adding address for user ID:', userId);
 
-        const {addressType, name, phone, altPhone, landMark, city, state, pincode} = req.body;
+        const { addressType, name, phone, altPhone, landMark, city, state, pincode } = req.body;
         console.log('Address data to save:', {
             userId,
             addressType,
@@ -94,36 +108,36 @@ const checkoutAddAddress = async (req, res) => {
 
         if (!userAddress) {
             userAddress = new Address({
-                userId: userId,  // Use the ID string
+                userId: userId,
                 address: [{
-                    addressType, 
-                    name, 
-                    phone, 
-                    altPhone, 
-                    landMark, 
-                    city, 
-                    state, 
+                    addressType,
+                    name,
+                    phone,
+                    altPhone,
+                    landMark,
+                    city,
+                    state,
                     pincode
                 }]
             });
             console.log('Created new address document:', userAddress);
         } else {
             userAddress.address.push({
-                addressType, 
-                name, 
-                phone, 
-                altPhone, 
-                landMark, 
-                city, 
-                state, 
+                addressType,
+                name,
+                phone,
+                altPhone,
+                landMark,
+                city,
+                state,
                 pincode
             });
             console.log('Added to existing address document:', userAddress);
         }
-        
+
         const savedAddress = await userAddress.save();
         // console.log('Successfully saved address:', savedAddress);
-           req.flash('err','Address added successfully')
+        req.flash('err', 'Address added successfully')
         return res.status(200).json({
             success: true,
             message: 'Address added successfully'
@@ -142,7 +156,7 @@ const checkoutAddAddress = async (req, res) => {
 const checkOuteditAddress = async (req, res) => {
     try {
         const data = req.body;
-        const addressId = req.body.addressId; 
+        const addressId = req.body.addressId;
         const userId = req.session.user._id;
 
         console.log('Debug Info:', {
@@ -151,9 +165,8 @@ const checkOuteditAddress = async (req, res) => {
             data
         });
 
-        // Find the address document
-        const findAddress = await Address.findOne({ 
-            "address._id": addressId 
+        const findAddress = await Address.findOne({
+            "address._id": addressId
         });
 
         console.log('Found Address Document:', findAddress);
@@ -214,8 +227,29 @@ const checkOuteditAddress = async (req, res) => {
     }
 };
 
+const getAvailableCoupons = async (req, res) => {
+    try {
+        const userId = req.session.user;
+        const currentDate = new Date();
 
-//
+        const coupons = await Coupon.find({
+            isList: true,
+            expireOn: { $gte: currentDate },
+            usedUsers: { $nin: [userId] }
+        });
+
+        res.status(200).json({
+            status: true,
+            coupons
+        });
+    } catch (error) {
+        console.error('Error in getAvailableCoupons:', error);
+        res.status(500).json({
+            status: false,
+            message: 'Failed to fetch available coupons'
+        });
+    }
+};
 const applyCoupon = async (req, res) => {
     try {
         const { couponcode, totalAmount } = req.body;
@@ -244,6 +278,20 @@ const applyCoupon = async (req, res) => {
             });
         }
 
+        // Check if the user already has a coupon applied
+        if (user.redeemedUser) {
+            // Remove the existing coupon
+            const existingCoupon = await Coupon.findById(user.redeemedUser);
+            if (existingCoupon) {
+                await Coupon.updateOne(
+                    { _id: existingCoupon._id },
+                    { $pull: { usedUsers: userId } }
+                );
+            }
+            user.redeemedUser = null;
+            await user.save();
+        }
+
         const coupon = await Coupon.findOne({
             name: couponcode.toUpperCase(),
             isList: true
@@ -256,7 +304,6 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Check coupon validity
         if (coupon.expireOn < new Date()) {
             return res.status(400).json({
                 status: false,
@@ -264,7 +311,6 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // **ENSURE THAT THE MINIMUM PURCHASE AMOUNT IS CHECKED**
         if (parsedAmount < coupon.minimumPrice) {
             return res.status(400).json({
                 status: false,
@@ -272,12 +318,6 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Ensure usedUsers is initialized
-        if (!coupon.usedUsers) {
-            coupon.usedUsers = [];
-        }
-
-        // Check if the user has already used the coupon
         if (coupon.usedUsers.includes(userId)) {
             return res.status(400).json({
                 status: false,
@@ -285,13 +325,10 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Apply the coupon discount
         let discount = coupon.offerPrice;
-         req.session.discount = discount
-        // Prevent discount from exceeding total amount
+        req.session.discount = discount;
         let finalAmount = Math.max(parsedAmount - discount, 0);
 
-        // Mark coupon as used for the user
         coupon.usedUsers.push(userId);
         await coupon.save();
 
@@ -301,7 +338,8 @@ const applyCoupon = async (req, res) => {
         return res.status(200).json({
             status: true,
             message: 'Coupon applied successfully',
-            finalAmount: finalAmount
+            finalAmount: finalAmount,
+            discount: discount
         });
 
     } catch (error) {
@@ -313,14 +351,13 @@ const applyCoupon = async (req, res) => {
     }
 };
 
-
-
 const removeCoupon = async (req, res) => {
     try {
-        const code=req.query.couponCode
+        const code = req.query.couponCode;
         const userId = req.session.user;
-        const user = await User.findById(userId);
 
+        // Find the user
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(400).json({
                 status: false,
@@ -328,7 +365,26 @@ const removeCoupon = async (req, res) => {
             });
         }
 
-        // Recalculate total without coupon
+        // Find the coupon
+        const coupon = await Coupon.findOne({ name: code });
+        if (!coupon) {
+            return res.status(400).json({
+                status: false,
+                message: 'Coupon not found'
+            });
+        }
+
+        // Remove the user from the coupon's usedUsers array
+        await Coupon.updateOne(
+            { name: code },
+            { $pull: { usedUsers: userId } }
+        );
+
+        // Reset the redeemedUser field in the User model
+        user.redeemedUser = null;
+        await user.save();
+
+        // Recalculate the total amount
         const cart = await Cart.findOne({ userId }).populate('items.productId');
         if (!cart) {
             return res.status(400).json({
@@ -337,24 +393,10 @@ const removeCoupon = async (req, res) => {
             });
         }
 
-        await Coupon.updateOne(
-            {
-                name:code
-            },
-            {
-                $pull:{
-                    usedUsers:userId
-                }
-            }
-        )
-
         const subtotal = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
-        const shipping = 100;
-        const tax = 20;
+        const shipping = subtotal >= 2000 ? 0 : 100; // Free shipping for orders ≥ 2000
+        const tax = subtotal * 0.02; // 2% tax
         const total = subtotal + shipping + tax;
-
-        user.redeemedUser = null;
-        await user.save();
 
         res.status(200).json({
             status: true,
@@ -374,7 +416,7 @@ module.exports = {
     getCheckout,
     checkoutAddAddress,
     checkOuteditAddress,
-    // placeOrder,
+    getAvailableCoupons,
     applyCoupon,
     removeCoupon
 

@@ -19,6 +19,10 @@ const orderSchema = new mongoose.Schema({
          ref: "Product",
          required: true
      },
+     productName: {  
+        type: String,
+        required: false
+    },
      quantity: {
          type: Number,
          required: true
@@ -32,8 +36,8 @@ const orderSchema = new mongoose.Schema({
      },
      status: { 
         type: String,
-        default: "Pending",
-        enum: ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Returned", "Return Request"]
+        required: true,
+        enum: ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Returned", "Return Request","Payment Failed","failed"]
     },
     cancellationReason: {
         type: String,
@@ -42,12 +46,16 @@ const orderSchema = new mongoose.Schema({
       returnReason: {
         type: String,
         default: null
+    },
+    returnDeclinedReason: {
+        type: String
     }
     }],
     totalPrice: {
       type: Number,
       required: true
     },
+    
     discount: {
         type: Number,
         default: 0
@@ -61,6 +69,16 @@ const orderSchema = new mongoose.Schema({
      ref: "Address",
      required: true
     },
+    shippingAddress: {
+        addressType: String,
+        name: String,
+        city: String,
+        landMark: String,
+        state: String,
+        pincode: Number,
+        phone: String,
+        altPhone: String
+    },
     trackingInfo: {
      trackingNumber: String,
      courier: String,
@@ -69,7 +87,7 @@ const orderSchema = new mongoose.Schema({
     status: {
      type: String,
      required: true,
-     enum: ["Pending","Processing","Shipped","Out for Delivery","Delivered","Cancelled","Returned","Return Request"]
+     enum: ["Pending","Processing","Shipped","Out for Delivery","Delivered","Cancelled","Returned","Return Request","failed","completed"]
     },
     paymentMethod: {
         type: String,

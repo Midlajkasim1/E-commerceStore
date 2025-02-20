@@ -19,14 +19,19 @@ body, html {
 .card {
   width: 100%;
   max-width: 400px;
-  height: 620px;
+  height: auto; /* Change from fixed 620px to auto */
+  min-height: 620px; /* Set a minimum height */
+  max-height: 700px;
   background-color: white;
   border-radius: 15px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
 }
-
+.text-center.mt-4 {
+  z-index: 10; /* Ensure it's above other elements */
+  position: relative;
+}
 .card-body {
   padding: 2rem;
   height: 100%;
@@ -64,6 +69,20 @@ body, html {
   color: #333;
   text-align: center;
 }
+/* .password-input {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+} */
 
 /* Form groups */
 .form-group {
@@ -79,7 +98,7 @@ body, html {
 
 /* Input fields */
 .form-control {
-  width: calc(100% - 24px);
+  /* width: calc(100% - 24px); */
   height: 40px;
   padding: 0 12px;
   border: 1px solid #e1e1e1;
@@ -112,7 +131,7 @@ body, html {
   display: block;
   text-align: right;
   margin-bottom: 1.5rem;
-  padding-left: 239px;
+  padding-left: 236px;
 }
 .forgot-password-link:hover{
    color: #007bff;
@@ -184,8 +203,14 @@ body, html {
 /* Sign up section */
 .text-center {
   text-align: center;
-  margin-top: 0.5rem;
+  margin-top: 1.5rem; /* Increased from 0.5rem for better visibility */
+  width: 100%; /* Ensure it takes full width */
   flex-shrink: 0;
+  display: block; 
+}
+.d-flex.justify-content-between.align-items-center {
+  margin-bottom: 1rem; /* Add some space before the signup link */
+  width: 100%;
 }
 
 .sign-up-link {
@@ -213,4 +238,35 @@ body, html {
   .btn-primary {
       width: 90%;
   }
+}
+
+/* Password input field styling */
+.password-input {
+  position: relative;
+  width: 100%;
+}
+
+.password-input input {
+  width: 100%;
+  padding-right: 40px; /* Make room for the icon */
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.toggle-password:focus {
+  outline: none;
 }

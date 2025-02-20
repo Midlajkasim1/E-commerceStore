@@ -145,32 +145,54 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-   
-    async function addOffer(productId,event){
-        event.preventDefault();
-        const {value:amount} = await Swal.fire({
-            title:'Offer in percentage',
-            input:'number',
-            inputLabel:'percentage',
-            inputPlaceholder:'%'
-        })
+  async function addOffer(productId, event) {
+    event.preventDefault();
+    
+    const { value: amount } = await Swal.fire({
+        title: 'Offer in percentage',
+        input: 'number',
+        inputLabel: 'percentage',
+        inputPlaceholder: '%',
+        showCancelButton: true,
+        inputValidator: (value) => {
+            if (!value) return 'Please enter a percentage';
+            if (value < 0 || value > 100) return 'Percentage must be between 0 and 100';
+        }
+    });
+
+    if (amount) {
         $.ajax({
-            url:'/admin/products/addProductOffer',
-            method:'post',
-            data:{
-                percentage:amount,
-                productId:productId
+            url: '/admin/products/addProductOffer',
+            method: 'post',
+            data: { percentage: amount, productId },
+            success: (response) => {
+                if (response.status) {
+                    Swal.fire('Success', 'Offer added successfully', 'success')
+                        .then(() => location.reload());
+                } else if (response.categoryOffer) {
+                    Swal.fire({
+                        title: 'Category Offer Active',
+                        text: `This product's category has an active offer of ${response.categoryOffer}%`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        // confirmButtonText: 'View Category Offers',
+                        cancelButtonText: 'Close'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // window.location.href = '/admin/category-offers';
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
             },
-            success:(response)=>{
-               if(response.status===true){
-                location.reload()
-                Swal.fire('Offer added','The offer has been removed','success')
-               }else{
-                alert('failed')
-               } 
+            error: () => {
+                Swal.fire('Error', 'Failed to add offer', 'error');
             }
-        })
+        });
     }
+}
+
   function removeOffer(productId) {
     if (!productId) {
         Swal.fire('Error', 'Invalid product selection', 'error');
