@@ -49,6 +49,9 @@ const orderSchema = new mongoose.Schema({
     },
     returnDeclinedReason: {
         type: String
+    },
+    deliveredDate:{
+        type:Date
     }
     }],
     totalPrice: {
@@ -97,6 +100,9 @@ const orderSchema = new mongoose.Schema({
      type: Date,
      default: Date.now,
      required: true
+    },
+    deliveredAt: {
+        type: Date
     }
  });
  

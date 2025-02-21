@@ -64,13 +64,15 @@ const addToCartByGet = async (req, res) => {
         const selectedSize = req.body.size || '';
         const quantity = parseInt(req.body.quantity) || 1;
 
+        if (!selectedSize) {
+            return res.json({
+                success: false,
+                message: 'Please select a size'
+            });
+        }
+
         console.log('Selected Size:', selectedSize);
         console.log('Product ID:', productId);
-
-        if (!selectedSize) {
-            req.flash('error', 'Please select a size');
-            return res.redirect(`/productDetails?id=${productId}`);
-        }
 
         const product = await Product.findById(productId);
         if (!product) {
@@ -78,14 +80,14 @@ const addToCartByGet = async (req, res) => {
             return res.redirect('/pageNotFound');
         }
 
-
-
-        // const sizeKey = `size${selectedSize}`;
-        //   // Check if selected size has enough stock
-        //   if (!product.size[sizeKey] || product.size[sizeKey] < quantity) {
-        //     req.flash('error', 'Selected size is out of stock or insufficient quantity');
-        //     return res.redirect(`/productDetails?id=${productId}`);
-        // }
+        const sizeKey = `size${selectedSize}`;
+        if (!product.size[sizeKey] || product.size[sizeKey] < quantity) {
+            return res.json({
+                success: false,
+                message: 'Selected size is out of stock',
+                outOfStock: true
+            });
+        }
 
         let userCart = await Cart.findOne({ userId: req.user._id });
         if (!userCart) {
@@ -94,31 +96,45 @@ const addToCartByGet = async (req, res) => {
                 items: []
             });
         }
-
+        
         const existingItemIndex = userCart.items.findIndex(
             item => item.productId.toString() === productId.toString() &&
                 item.size === selectedSize
         );
-
+    
+        const MAX_PURCHASE_LIMIT = 3;
 
         if (existingItemIndex > -1) {
-            userCart.items[existingItemIndex].quantity += quantity;
-            userCart.items[existingItemIndex].totalPrice =
-                userCart.items[existingItemIndex].quantity * userCart.items[existingItemIndex].price;
+            // Check if product is already in cart
+            return res.json({
+                success: false,
+                message: 'This product with selected size is already in your cart',
+                alreadyInCart: true
+            });
         } else {
+            if (quantity > MAX_PURCHASE_LIMIT) {
+                return res.json({
+                    success: false,
+                    message: `Maximum ${MAX_PURCHASE_LIMIT} items allowed per product`,
+                    purchaseLimit: true,
+                    maxLimit: MAX_PURCHASE_LIMIT
+                });
+            }
             userCart.items.push({
                 productId: product._id,
                 size: selectedSize,
-                quantity: 1,
+                quantity: quantity,
                 price: product.salePrice,
-                totalPrice: product.salePrice,
+                totalPrice: product.salePrice * quantity, // Fix: totalPrice should be price * quantity
                 status: 'placed'
             });
         }
 
         await userCart.save();
-        req.flash('success', 'Product added to cart successfully');
-        return res.redirect('/cart');
+        return res.json({
+            success: true,
+            message: 'Product added to cart successfully'
+        });
 
     } catch (error) {
         console.error("Error in addToCartByGet:", error);

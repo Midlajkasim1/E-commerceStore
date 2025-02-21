@@ -129,5 +129,9 @@ router.post('/removecoupon',userAuth,checkoutController.removeCoupon);
 router.get('/wallet',userAuth,WalletController.getWallet)
 // router.get('/wallet/transactions', userAuth, WalletController.getTransactions);
 router.get('/wallet/history', userAuth, WalletController.getTransactionHistory);
+router.post('/create-wallet-order',userAuth,WalletController.createWalletOrder);
+router.post('/verify-wallet-payment',userAuth,WalletController.verifyWalletPayment);
+
+
 
 module.exports= router;

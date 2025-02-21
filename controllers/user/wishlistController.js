@@ -1,6 +1,7 @@
 const User = require('../../models/userSchema');
 const Wishlist = require('../../models/wishlistSchema');
 const Product = require('../../models/productSchema');
+const env = require('dotenv').config();
 
 
 

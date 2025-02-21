@@ -11,13 +11,15 @@ const path = require('path');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
+const env = require('dotenv').config();
+
 
 
 
 //razorpay
 const razorpayInstance = new Razorpay({
-    key_id: "rzp_test_ax31K21pHYTV8z",
-    key_secret: "jZindVIE58oehKnqH45fY4sW"
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
 })
 
 const createRazorpayOrder = async (amount, receipt) => {
@@ -1091,20 +1093,35 @@ const returnProductOrder = async (req, res) => {
                 message: "Only delivered products can be returned."
             });
         }
+        const deliveryDate = productItem.deliveredDate || order.deliveredAt;
+        if(!deliveryDate){
+            return res.status(400).json({
+                success:false,
+                message:"Delivery date not found for this product."
+            })
+        }
 
-        if (productItem.status === 'Return Request') {
+        const daysSinceDelivery = Math.floor((new Date() - new Date(deliveryDate)) / (1000 * 60 * 60 * 24));
+        if (daysSinceDelivery > 7) {
             return res.status(400).json({
                 success: false,
-                message: "Return request already submitted for this product."
+                message: "Return window has expired. Products can only be returned within 7 days of delivery."
             });
         }
 
-        if (productItem.status === 'Returned') {
-            return res.status(400).json({
-                success: false,
-                message: "Product is already returned."
-            });
-        }
+        // if (productItem.status === 'Return Request') {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Return request already submitted for this product."
+        //     });
+        // }
+
+        // if (productItem.status === 'Returned') {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Product is already returned."
+        //     });
+        // }
         if (['Return Request', 'Returned'].includes(productItem.status)) {
             return res.status(400).json({
                 success: false,

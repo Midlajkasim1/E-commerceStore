@@ -534,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!data.success) {
                 Swal.fire({
-                    icon: data.stockLimit ? 'warning' : 'error',
+                    icon: data.stockLimit ? 'warning' :'error',
                     title: data.stockLimit ? 'Stock Limit Reached' : 'Error',
                     text: data.message,
                     confirmButtonColor: '#088178'
