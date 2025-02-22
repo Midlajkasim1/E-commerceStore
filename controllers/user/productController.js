@@ -1,22 +1,58 @@
 const Product = require('../../models/productSchema');
+const ProductVariant = require('../../models/productVariantSchema');
 const Category = require('../../models/categorySchema');
 const User = require('../../models/userSchema');
 const Review = require('../../models/reviewSchema');
-
-
 
 const productDetails = async (req, res) => {
     try {
         const userId = req.session.user;
         const userData = await User.findById(userId);
         const productId = req.query.id;
+        
+        // Get main product data
         const product = await Product.findById(productId).populate('category');
+        if (!product) {
+            return res.redirect('/pageNotFound');
+        }
+        
         const findcategory = product.category;
         const categoryOffer = findcategory?.categoryOffer || 0;
         const productOffer = product.productOffer || 0;
         const totalOffer = categoryOffer + productOffer;
 
+        // Get product variants (sizes only)
+        const variants = await ProductVariant.find({ 
+            productId: productId,
+            isActive: true
+        });
+        
+        // Prepare size availability data
+        const sizeVariants = {};
+        const availableSizes = [];
+        
+        // Get unique sizes from variants
+        const uniqueSizes = [...new Set(variants.map(v => v.size))];
+        
+        // Calculate total stock per size
+        uniqueSizes.forEach(size => {
+            const sizeVariant = variants.filter(v => v.size === size);
+            const totalStock = sizeVariant.reduce((sum, v) => sum + v.quantity, 0);
+            
+            if (totalStock > 0) {
+                sizeVariants[size] = totalStock;
+                availableSizes.push({
+                    label: size,
+                    stock: totalStock,
+                    isLowStock: totalStock < 2
+                });
+            }
+        });
+        
+        // Calculate total product quantity across all variants
+        const totalProductQuantity = variants.reduce((sum, variant) => sum + variant.quantity, 0);
 
+        // Get reviews
         const reviews = await Review.find({ productId })
             .populate('userId', 'name')
             .sort({ createdAt: -1 });
@@ -25,39 +61,41 @@ const productDetails = async (req, res) => {
         const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(1) : 0;
         const totalReviews = reviews.length;
 
-        const availableSizes = ['sizeS', 'sizeM', 'sizeL', 'sizeXL', 'sizeXXL'].map(sizeKey => ({
-            label: sizeKey.replace('size', ''),
-            stock: product.size[sizeKey] || 0,
-            isLowStock: (product.size[sizeKey] || 0) < 2
-        }));
-
-        const allProducts = await Product.find({ category: findcategory, _id: { $ne: productId } });
-        // const randomNum = new Set();
-
-        // while(randomNum.size < 3){
-        //     const num = Math.floor(Math.random() * 10);
-        //     if(num <= allProducts.length){
-        //         randomNum.add(num);
-        //     }
-        // }
-
-        // const ranNum = Array.from(randomNum);                
+        // Get similar products
+        const allProducts = await Product.find({ 
+            category: findcategory, 
+            _id: { $ne: productId },
+            isBlocked: false,
+            status: "Available"
+        });
+        
         const similarProducts = [];
         const availableProducts = [...allProducts];
         while (similarProducts.length < 3 && availableProducts.length > 0) {
             const randomIndex = Math.floor(Math.random() * availableProducts.length);
             const selectedProduct = availableProducts.splice(randomIndex, 1)[0];
-            similarProducts.push(selectedProduct);
+            
+            // Get variants for this similar product to check if it has stock
+            const productVariants = await ProductVariant.find({
+                productId: selectedProduct._id,
+                isActive: true
+            });
+            
+            const hasStock = productVariants.some(v => v.quantity > 0);
+            if (hasStock) {
+                // Add total quantity info
+                selectedProduct._totalQuantity = productVariants.reduce((sum, v) => sum + v.quantity, 0);
+                similarProducts.push(selectedProduct);
+            }
         }
 
         res.render("productDetails", {
             user: userData,
             product: product,
-            quantity: product.quantity,
+            quantity: totalProductQuantity,
             totalOffer: totalOffer,
             category: findcategory,
             similarProducts: similarProducts,
-            allProducts: allProducts,
             availableSizes: availableSizes,
             reviews: reviews,
             averageRating: averageRating,
@@ -71,11 +109,9 @@ const productDetails = async (req, res) => {
     }
 }
 
-
 const submitReview = async (req, res) => {
     try {
         const { productId, rating, review } = req.body;
-
         const userId = req.session.user;
 
         if (!userId) {
@@ -83,13 +119,11 @@ const submitReview = async (req, res) => {
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-
         const existingReview = await Review.findOne({ userId, productId });
         if (existingReview) {
             req.flash('error', "You've already reviewed this product");
             return res.redirect(`/productDetails?id=${productId}`);
         }
-
 
         const newReview = new Review({
             userId,
@@ -98,7 +132,6 @@ const submitReview = async (req, res) => {
             review
         });
         await newReview.save();
-
 
         const allReviews = await Review.find({ productId });
         const totalRating = allReviews.reduce((sum, rev) => sum + rev.rating, 0);
@@ -137,12 +170,10 @@ const deleteReview = async (req, res) => {
         const reviewId = req.params.reviewId;
         const productId = req.params.productId;
 
-
         if (!req.session.user) {
             req.flash('error', 'Please login to delete review');
             return res.redirect(`/productDetails?id=${productId}`);
         }
-
 
         const review = await Review.findById(reviewId);
 
@@ -151,15 +182,12 @@ const deleteReview = async (req, res) => {
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-
         if (review.userId.toString() !== req.session.user.toString()) {
             req.flash('error', 'You are not authorized to delete this review');
             return res.redirect(`/productDetails?id=${productId}`);
         }
 
-
         await Review.findByIdAndDelete(reviewId);
-
 
         const remainingReviews = await Review.find({ productId });
 
@@ -168,7 +196,6 @@ const deleteReview = async (req, res) => {
             const totalRating = remainingReviews.reduce((sum, rev) => sum + rev.rating, 0);
             newAverageRating = totalRating / remainingReviews.length;
         }
-
 
         await Product.findByIdAndUpdate(productId, {
             averageRating: newAverageRating.toFixed(1),
@@ -181,12 +208,86 @@ const deleteReview = async (req, res) => {
     } catch (error) {
         console.error('Error deleting review:', error);
         req.flash('error', 'Error deleting review');
-        return res.redirect(`/productDetails?id=${productId}`);
+        return res.redirect(`/productDetails?id=${req.params.productId}`);
     }
 };
+
+// Add to cart function needs to be modified to work with variants
+const addToCart = async (req, res) => {
+    try {
+        const userId = req.session.user;
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Login required' });
+        }
+        
+        const productId = req.params.id;
+        const { size, quantity } = req.body;
+        
+        // Find variant based on product ID and size
+        const variant = await ProductVariant.findOne({
+            productId: productId,
+            size: size,
+            isActive: true
+        });
+        
+        if (!variant || variant.quantity < 1) {
+            return res.status(400).json({ 
+                success: false, 
+                outOfStock: true,
+                message: 'Product is out of stock in the selected size' 
+            });
+        }
+        
+        // Check if product is already in cart
+        const existingCartItem = await Cart.findOne({
+            userId: userId,
+            'items.productId': productId,
+            'items.size': size
+        });
+        
+        if (existingCartItem) {
+            return res.status(200).json({
+                success: false,
+                alreadyInCart: true,
+                message: 'Product already in cart'
+            });
+        }
+        
+        // Add to cart logic - depends on your Cart model structure
+        // This is a placeholder - adjust according to your actual Cart model
+        const result = await Cart.findOneAndUpdate(
+            { userId: userId },
+            { 
+                $push: { 
+                    items: {
+                        productId: productId,
+                        variantId: variant._id,
+                        size: size,
+                        quantity: quantity || 1
+                    }
+                }
+            },
+            { upsert: true, new: true }
+        );
+        
+        return res.status(200).json({
+            success: true,
+            message: 'Product added to cart successfully'
+        });
+        
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
 module.exports = {
     productDetails,
     submitReview,
     getProductReviews,
-    deleteReview
-}
+    deleteReview,
+    addToCart
+};

@@ -1128,7 +1128,7 @@
                             <span>(<%= totalReviews %> reviews)</span>
                         </div>
                     </div>
-
+    
                     <div class="product-price">
                         <span class="current-price">₹<%=product.salePrice%></span>
                         <span class="old-price">₹<%=product.regularPrice%></span>
@@ -1140,12 +1140,12 @@
                             <%}%>
                         </span>
                     </div>
-
+    
                     <div class="product-description">
                         <h4>Description</h4>
                         <p><%=product.description%></p>
                     </div>
-
+    
                     <div class="product-info">
                         <ul>
                             <li><i class="fas fa-check-circle"></i> 100% Cotton</li>
@@ -1161,18 +1161,22 @@
                             <h4>Select Size</h4>
                         </div>
                         <div class="size-options">
-                            <% availableSizes.forEach(size => { %>
-                                <label class="size-option <%= size.stock === 0 ? 'out-of-stock' : '' %>" 
-                                       for="size-<%= size.label %>"
-                                       onclick="showStock(this, <%= size.stock %>)">
-                                    <input type="radio" 
-                                           id="size-<%= size.label %>" 
-                                           name="size" 
-                                           value="<%= size.label %>"
-                                           <%= size.stock === 0 ? 'disabled' : '' %>>
-                                    <%= size.label %>
-                                </label>
-                            <% }); %>
+                            <% if(availableSizes.length > 0) { %>
+                                <% availableSizes.forEach(size => { %>
+                                    <label class="size-option <%= size.stock === 0 ? 'out-of-stock' : '' %>" 
+                                           for="size-<%= size.label %>"
+                                           onclick="showStock(this, <%= size.stock %>)">
+                                        <input type="radio" 
+                                               id="size-<%= size.label %>" 
+                                               name="size" 
+                                               value="<%= size.label %>"
+                                               <%= size.stock === 0 ? 'disabled' : '' %>>
+                                        <%= size.label %>
+                                    </label>
+                                <% }); %>
+                            <% } else { %>
+                                <p class="text-danger">No sizes available</p>
+                            <% } %>
                         </div>
                         
                         <div id="selectedStockInfo" class="mt-2" style="display: none;"></div>
@@ -1203,7 +1207,7 @@
                             </span>
                         </div>
                     </div>
-
+    
                     <div class="product-detail-meta">
                         <ul>
                             <li>
@@ -1224,7 +1228,7 @@
                 </div>
             </div>
         </div>
-        </div>
+    </div>
             <!-- Others Also Bought Section -->
             <div class="others-bought">
                 <div class="section-title">
@@ -1350,7 +1354,6 @@
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-             const isUserLoggedIn = <%- locals.user ? 'true' : 'false' %>;
 
       
     document.addEventListener('DOMContentLoaded', function() {
@@ -1434,7 +1437,7 @@
      });
      
     // 1. Modify the showStock function to update URL
-function showStock(element, stock) {
+    function showStock(element, stock) {
     const selectedStockInfo = document.getElementById('selectedStockInfo');
     const size = element.textContent.trim();
     selectedStockInfo.style.display = 'block';
@@ -1457,7 +1460,11 @@ function showStock(element, stock) {
         `;
         selectedStockInfo.className = 'mt-2 text-warning';
     } else {
-        selectedStockInfo.style.display = 'none';
+        selectedStockInfo.innerHTML = `
+            <i class="fas fa-check-circle"></i> 
+            ${stock} in stock
+        `;
+        selectedStockInfo.className = 'mt-2 text-success';
     }
 }
 
@@ -1482,6 +1489,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function handleAddToCart(productId) {
+    const isUserLoggedIn = <%- locals.user ? 'true' : 'false' %>;
+
     if (!isUserLoggedIn) {
         Swal.fire({
             title: 'Login Required',

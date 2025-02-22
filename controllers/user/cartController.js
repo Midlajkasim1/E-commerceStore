@@ -1,22 +1,27 @@
+const mongoose = require('mongoose'); // Add this at the top of your controller file
 const User = require('../../models/userSchema');
 const Product = require('../../models/productSchema');
+const ProductVariant = require('../../models/productVariantSchema')
 const Cart = require('../../models/cartSchema');
 
 
 const getAddToCart = async (req, res) => {
     try {
-        const userId = await User.findById(req.session.user);
-
+        // First, make sure you're using req.user._id consistently
         const userCart = await Cart.findOne({ userId: req.user._id })
-            .populate({
-                path: 'items.productId',
-                select: 'productName salePrice productImage'
-            });
+        .populate({
+            path: 'items.productId',
+            select: 'productName salePrice productImage'
+        })
+        .populate({
+            path: 'items.variantId',
+            select: 'size quantity'
+        });
 
-        if (!userCart) {
+        if (!userCart || userCart.items.length === 0) {
             return res.render('cart', {
                 cart: [],
-                user: userId,
+                user: req.user,
                 total: 0,
                 messages: {
                     success: req.flash('success'),
@@ -25,27 +30,31 @@ const getAddToCart = async (req, res) => {
             });
         }
 
-        const cartItems = userCart.items.map(item => ({
-            productId: item.productId._id,
-            productName: item.productId.productName,
-            productImage: item.productId.productImage,
-            quantity: item.quantity,
-            size: item.size,
-            price: item.price,
-            salePrice: item.productId.salePrice,
-            totalPrice: item.totalPrice,
-            status: item.status
-        }));
+        // Map cart items with correct total price data
+        const cartItems = userCart.items.map(item => {
+            // Make sure we're using the stored price and totals rather than recalculating
+            return {
+                productId: item.productId._id,
+                productName: item.productId.productName,
+                productImage: item.productId.productImage,
+                quantity: item.quantity,
+                size: item.size,
+                price: item.price,
+                salePrice: item.price, // Use the stored price for consistency
+                totalPrice: item.totalPrice, // Use the calculated totalPrice from the database
+                status: item.status
+            };
+        });
 
+        // Calculate total based on the totalPrice fields
         const total = cartItems.reduce(
             (sum, item) => sum + (item.totalPrice || 0), 0
         );
 
-
         return res.render('cart', {
             cart: cartItems,
             total,
-            user: await User.findById(userId),
+            user: req.user,
             messages: {
                 success: req.flash('success'),
                 error: req.flash('error')
@@ -57,7 +66,6 @@ const getAddToCart = async (req, res) => {
         return res.redirect('back');
     }
 };
-
 const addToCartByGet = async (req, res) => {
     try {
         const productId = req.params.id;
@@ -71,17 +79,37 @@ const addToCartByGet = async (req, res) => {
             });
         }
 
-        console.log('Selected Size:', selectedSize);
-        console.log('Product ID:', productId);
-
+        // Fetch the product to get the salePrice
         const product = await Product.findById(productId);
+
         if (!product) {
-            req.flash('error', 'Product not found');
-            return res.redirect('/pageNotFound');
+            console.error('Product not found for product ID:', productId);
+            return res.json({
+                success: false,
+                message: 'Product not found',
+                notFound: true
+            });
         }
 
-        const sizeKey = `size${selectedSize}`;
-        if (!product.size[sizeKey] || product.size[sizeKey] < quantity) {
+        // Fetch the variant to check quantity
+        const variant = await ProductVariant.findOne({
+            productId: productId,
+            size: selectedSize,
+            isActive: true
+        });
+
+        if (!variant) {
+            console.error('Product variant not found for product ID:', productId, 'and size:', selectedSize);
+            return res.json({
+                success: false,
+                message: 'Product variant not found',
+                notFound: true
+            });
+        }
+
+        console.log('Fetched Variant:', variant); // Debug line
+
+        if (variant.quantity < quantity) {
             return res.json({
                 success: false,
                 message: 'Selected size is out of stock',
@@ -96,16 +124,15 @@ const addToCartByGet = async (req, res) => {
                 items: []
             });
         }
-        
+
         const existingItemIndex = userCart.items.findIndex(
             item => item.productId.toString() === productId.toString() &&
                 item.size === selectedSize
         );
-    
+
         const MAX_PURCHASE_LIMIT = 3;
 
         if (existingItemIndex > -1) {
-            // Check if product is already in cart
             return res.json({
                 success: false,
                 message: 'This product with selected size is already in your cart',
@@ -120,12 +147,32 @@ const addToCartByGet = async (req, res) => {
                     maxLimit: MAX_PURCHASE_LIMIT
                 });
             }
+
+            // Use salePrice from the Product schema
+            const price = product.salePrice || 0;
+            const totalPrice = price * quantity;
+            // if (!variant || !variant._id) {
+            //     console.error('Invalid variant object:', variant);
+            //     return res.json({
+            //         success: false,
+            //         message: 'Product variant information is incomplete',
+            //         technicalError: true
+            //     });
+            // }
+            // console.log('Adding to cart:', {
+            //     productId: productId,
+            //     variantId: variant._id.toString(),
+            //     size: selectedSize,
+            //     quantity: quantity,
+            //     price: price
+            // });
             userCart.items.push({
-                productId: product._id,
+                productId: productId,
+                variantId: variant._id, // Important: Include the variant ID
                 size: selectedSize,
                 quantity: quantity,
-                price: product.salePrice,
-                totalPrice: product.salePrice * quantity, // Fix: totalPrice should be price * quantity
+                price: price,
+                totalPrice: totalPrice,
                 status: 'placed'
             });
         }
@@ -142,6 +189,9 @@ const addToCartByGet = async (req, res) => {
         return res.redirect('/pageNotFound');
     }
 };
+
+
+
 const MAX_PURCHASE_LIMIT = 3;
 const updateCartQuantity = async (req, res) => {
     try {
@@ -179,8 +229,8 @@ const updateCartQuantity = async (req, res) => {
             });
         }
 
-        const sizeKey = `size${size}`;
-        const currentStock = product.size[sizeKey] || 0;
+        // Assuming `size` is directly accessible from the product object
+        const currentStock = product.availableSizes.find(s => s === size) ? product.quantity : 0;
         const currentQuantity = userCart.items[itemIndex].quantity;
 
         if (action === 'increase') {
@@ -208,7 +258,7 @@ const updateCartQuantity = async (req, res) => {
         }
 
         userCart.items[itemIndex].totalPrice =
-            userCart.items[itemIndex].quantity * userCart.items[itemIndex].productId.salePrice;
+        userCart.items[itemIndex].quantity * userCart.items[itemIndex].price;
 
         await userCart.save();
 

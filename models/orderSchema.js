@@ -19,6 +19,11 @@ const orderSchema = new mongoose.Schema({
          ref: "Product",
          required: true
      },
+     variant: {  
+        type: Schema.Types.ObjectId,
+        ref: "ProductVariant",
+        required: true
+    },
      productName: {  
         type: String,
         required: false

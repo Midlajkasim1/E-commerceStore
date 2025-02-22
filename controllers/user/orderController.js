@@ -1,6 +1,7 @@
 const Order = require('../../models/orderSchema');
 const Cart = require('../../models/cartSchema');
 const Product = require('../../models/productSchema');
+const ProductVariant = require('../../models/productVariantSchema')
 const Address = require('../../models/addressSchema');
 const Coupon = require('../../models/couponSchema');
 const User = require('../../models/userSchema');
@@ -88,13 +89,30 @@ const placeOrder = async (req, res) => {
             });
         }
 
-        const cart = await Cart.findOne({ userId }).populate('items.productId');
+        const cart = await Cart.findOne({ userId }).populate('items.productId items.variantId');
 
         if (!cart || !cart.items || cart.items.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Cart is empty'
             });
+        }
+
+        for (const item of cart.items) {
+            const variant = await ProductVariant.findById(item.variantId);
+            if (!variant) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Product variant not found for ${item.productId.productName}`
+                });
+            }
+
+            if (variant.quantity < item.quantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Insufficient stock for ${item.productId.productName} in size ${variant.size}`
+                });
+            }
         }
 
         const user = await User.findById(userId);
@@ -126,6 +144,7 @@ const placeOrder = async (req, res) => {
 
         const orderedItems = cart.items.map(item => ({
             product: item.productId._id,
+            variant: item.variantId._id, 
             quantity: item.quantity,
             price: item.price,
             size: item.size,
@@ -205,41 +224,32 @@ const placeOrder = async (req, res) => {
 
         if (order.status !== 'Payment Failed') {
             for (const item of cart.items) {
-                const product = await Product.findById(item.productId._id);
-                if (!product) {
+                const variant = await ProductVariant.findById(item.variantId);
+                if (!variant) {
                     return res.status(400).json({
                         success: false,
-                        message: `Product ${item.productId._id} not found`
+                        message: `Product variant not found`
                     });
                 }
 
-                const selectedSize = `size${item.size}`;
-
-                if (!product.size || typeof product.size[selectedSize] === 'undefined' || product.size[selectedSize] < item.quantity) {
+                if (variant.quantity < item.quantity) {
                     return res.status(400).json({
                         success: false,
-                        message: `${product.name} in size ${item.size} is out of stock`
+                        message: `Insufficient stock for ${item.productId.productName} in ${variant.color} color and size ${variant.size}`
                     });
                 }
 
-                const updateObj = {
-                    $inc: {
-                        [`size.${selectedSize}`]: -item.quantity,
-                        quantity: -item.quantity
-                    }
-                };
+                variant.quantity -= item.quantity;
+                await variant.save();
 
-                const updatedProduct = await Product.findByIdAndUpdate(
-                    product._id,
-                    updateObj,
-                    { new: true }
-                );
-
-                if (!updatedProduct) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Failed to update stock for ${product.name}`
-                    });
+                // Update product status if all variants are out of stock
+                const product = await Product.findById(item.productId);
+                const allVariants = await ProductVariant.find({ productId: item.productId });
+                const totalQuantity = allVariants.reduce((sum, variant) => sum + variant.quantity, 0);
+                
+                if (totalQuantity === 0) {
+                    product.status = "out of stock";
+                    await product.save();
                 }
             }
 
@@ -249,6 +259,7 @@ const placeOrder = async (req, res) => {
                 { new: true }
             );
         }
+
 
         return res.status(200).json({
             success: true,
@@ -327,30 +338,73 @@ const verifyPayment = async (req, res) => {
 
         await existingOrder.save();
 
-        const cart = await Cart.findOne({ userId }).populate('items.productId');
-        if (cart && cart.items.length) {
-            for (const item of cart.items) {
-                const product = await Product.findById(item.productId._id);
-                if (product) {
-                    const selectedSize = `size${item.size}`;
-                    const updateObj = {
-                        $inc: {
-                            [`size.${selectedSize}`]: -item.quantity,
-                            quantity: -item.quantity
-                        }
-                    };
-                    await Product.findByIdAndUpdate(product._id, updateObj);
-                }
+        for (const item of existingOrder.orderedItems) {
+            const product = await Product.findById(item.product);
+            if (!product) {
+                throw new Error(`Product ${item.product} not found`);
             }
 
-            await Cart.findOneAndUpdate(
-                { userId },
-                { $set: { items: [] } },
-                { new: true }
-            );
+            if (!product.hasVariants) {
+                throw new Error(`Product ${product.productName} does not support variants`);
+            }
+
+            const variant = await ProductVariant.findOne({
+                productId: item.product,
+                size: item.size,
+                isActive: true
+            });
+
+            if (!variant) {
+                throw new Error(`Variant not found for product ${product.productName} in size ${item.size}`);
+            }
+
+            if (variant.quantity < item.quantity) {
+                throw new Error(`Insufficient stock for ${product.productName} in size ${item.size}`);
+            }
+
+            // Update variant quantity
+            variant.quantity -= item.quantity;
+            await variant.save();
+
+            // Check if all variants are out of stock
+            const allVariants = await ProductVariant.find({
+                productId: item.product,
+                isActive: true
+            });
+
+            const totalQuantity = allVariants.reduce((sum, v) => sum + v.quantity, 0);
+            
+            if (totalQuantity === 0) {
+                product.status = "out of stock";
+                await product.save();
+            }
         }
 
+        // Update order status
+        const updatedOrder = await Order.findOneAndUpdate(
+            { orderId },
+            {
+                status: 'Processing',
+                paymentStatus: 'completed',
+                paymentDetails: {
+                    razorpayPaymentId,
+                    razorpayOrderId,
+                    razorpaySignature
+                }
+            },
+            { new: true }
+        );
+
+        // Clear cart
+        await Cart.findOneAndUpdate(
+            { userId },
+            { $set: { items: [] } },
+            { new: true }
+        );
+
+        // Clear session order details
         delete req.session.orderDetails;
+
 
         return res.status(200).json({
             success: true,
@@ -359,17 +413,35 @@ const verifyPayment = async (req, res) => {
             redirect: `/profile/order`
         });
 
-    } catch (error) {
+    } catch (error){
         console.error('Payment verification error:', error);
 
+        // Rollback stock changes
         if (req.body.orderId) {
-            await Order.findOneAndUpdate(
-                { orderId: req.body.orderId },
-                {
-                    status: 'failed',
-                    paymentStatus: 'failed'
+            const order = await Order.findOne({ orderId: req.body.orderId })
+                .populate('orderedItems.product');
+            
+            if (order) {
+                for (const item of order.orderedItems) {
+                    const variant = await ProductVariant.findOne({
+                        productId: item.product,
+                        size: item.size,
+                        isActive: true
+                    });
+
+                    if (variant) {
+                        variant.quantity += item.quantity;
+                        await variant.save();
+
+                        // Update product status if necessary
+                        const product = await Product.findById(item.product);
+                        if (product && product.status === "out of stock" && variant.quantity > 0) {
+                            product.status = "Available";
+                            await product.save();
+                        }
+                    }
                 }
-            );
+            }
         }
 
         return res.status(500).json({
@@ -378,6 +450,7 @@ const verifyPayment = async (req, res) => {
         });
     }
 };
+
 //wallet payment
 
 const handleWalletPayment = async (userId, amount, cartItems) => {
@@ -559,7 +632,6 @@ const retryPayment = async (req, res) => {
     }
 };
 
-
 const verifyRetryPayment = async (req, res) => {
     try {
         const {
@@ -567,18 +639,25 @@ const verifyRetryPayment = async (req, res) => {
             razorpay_order_id,
             razorpay_signature,
             orderId,
-            amount
         } = req.body;
 
-        const userId = req.session.user;
-
-        if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !orderId || !userId) {
+        // Validate required fields
+        if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !orderId) {
             return res.status(400).json({
                 success: false,
                 message: 'Missing required payment verification details'
             });
         }
 
+        const userId = req.session.user;
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+        }
+
+        // Verify payment signature
         const generated_signature = crypto
             .createHmac('sha256', razorpayInstance.key_secret)
             .update(razorpay_order_id + '|' + razorpay_payment_id)
@@ -591,7 +670,12 @@ const verifyRetryPayment = async (req, res) => {
             });
         }
 
-        const order = await Order.findOne({ orderId }).populate('orderedItems.product');
+        // Find and validate order
+        const order = await Order.findOne({ orderId, userId })
+            .populate({
+                path: 'orderedItems.product',
+                select: 'productName status hasVariants'
+            });
 
         if (!order) {
             return res.status(404).json({
@@ -600,54 +684,57 @@ const verifyRetryPayment = async (req, res) => {
             });
         }
 
+        if (order.paymentStatus === 'completed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Payment already completed for this order'
+            });
+        }
+
+        // Check and update variant stock
         for (const item of order.orderedItems) {
             const product = await Product.findById(item.product);
-
             if (!product) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Product ${item.product} not found`
-                });
+                throw new Error(`Product ${item.product} not found`);
             }
 
-            const selectedSize = `size${item.size}`;
-
-            if (!product.size ||
-                typeof product.size[selectedSize] === 'undefined' ||
-                product.size[selectedSize] < item.quantity) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Insufficient stock for product ${product.name} in size ${item.size}`
-                });
+            if (!product.hasVariants) {
+                throw new Error(`Product ${product.productName} does not support variants`);
             }
 
-            const updateObj = {
-                $inc: {
-                    [`size.${selectedSize}`]: -item.quantity,
-                    quantity: -item.quantity
-                }
-            };
+            const variant = await ProductVariant.findOne({
+                productId: item.product,
+                size: item.size,
+                isActive: true
+            });
 
-            const updatedProduct = await Product.findByIdAndUpdate(
-                product._id,
-                updateObj,
-                { new: true }
-            );
+            if (!variant) {
+                throw new Error(`Variant not found for product ${product.productName} in size ${item.size}`);
+            }
 
-            if (!updatedProduct) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Failed to update stock for ${product.name}`
-                });
+            if (variant.quantity < item.quantity) {
+                throw new Error(`Insufficient stock for ${product.productName} in size ${item.size}`);
+            }
+
+            // Update variant quantity
+            variant.quantity -= item.quantity;
+            await variant.save();
+
+            // Check if all variants are out of stock
+            const allVariants = await ProductVariant.find({
+                productId: item.product,
+                isActive: true
+            });
+
+            const totalQuantity = allVariants.reduce((sum, v) => sum + v.quantity, 0);
+            
+            if (totalQuantity === 0) {
+                product.status = "out of stock";
+                await product.save();
             }
         }
 
-        await Cart.findOneAndUpdate(
-            { userId },
-            { $set: { items: [] } },
-            { new: true }
-        );
-
+        // Update order status
         const updatedOrder = await Order.findOneAndUpdate(
             { orderId },
             {
@@ -662,6 +749,14 @@ const verifyRetryPayment = async (req, res) => {
             { new: true }
         );
 
+        // Clear cart
+        await Cart.findOneAndUpdate(
+            { userId },
+            { $set: { items: [] } },
+            { new: true }
+        );
+
+        // Clear session order details
         if (req.session.orderDetails) {
             delete req.session.orderDetails;
         }
@@ -676,21 +771,32 @@ const verifyRetryPayment = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error in payment verification:', error);
+        console.error('Payment verification error:', error);
 
+        // Rollback stock changes
         if (req.body.orderId) {
-            const order = await Order.findOne({ orderId: req.body.orderId });
+            const order = await Order.findOne({ orderId: req.body.orderId })
+                .populate('orderedItems.product');
+            
             if (order) {
                 for (const item of order.orderedItems) {
-                    await Product.findByIdAndUpdate(
-                        item.product,
-                        {
-                            $inc: {
-                                [`size.size${item.size}`]: item.quantity,
-                                quantity: item.quantity
-                            }
+                    const variant = await ProductVariant.findOne({
+                        productId: item.product,
+                        size: item.size,
+                        isActive: true
+                    });
+
+                    if (variant) {
+                        variant.quantity += item.quantity;
+                        await variant.save();
+
+                        // Update product status if necessary
+                        const product = await Product.findById(item.product);
+                        if (product && product.status === "out of stock" && variant.quantity > 0) {
+                            product.status = "Available";
+                            await product.save();
                         }
-                    );
+                    }
                 }
             }
         }
@@ -701,6 +807,7 @@ const verifyRetryPayment = async (req, res) => {
         });
     }
 };
+
 
 //get order details
 const getOrderDetails = async (req, res) => {
@@ -993,16 +1100,25 @@ const cancelProductOrder = async (req, res) => {
 
         const refundAmount = productItem.price * productItem.quantity;
 
-        const product = await Product.findById(productId);
-        if (!product) {
-            return res.status(404).json({ success: false, message: "Product not found." });
+        const variant = await ProductVariant.findById(productItem.variant);
+        if (variant) {
+            variant.quantity += productItem.quantity;
+            await variant.save();
+
+            // Update product status if necessary
+            const product = await Product.findById(productId);
+            if (product && product.status === "out of stock") {
+                product.status = "Available";
+                await product.save();
+            }
         }
+
         let refundResult = null;
         if (order.paymentMethod !== 'COD') {
             refundResult = await handleRefund(
                 userId,
                 refundAmount,
-                [product.name],
+                [productItem.productName],
                 orderId
             );
         }
@@ -1011,12 +1127,12 @@ const cancelProductOrder = async (req, res) => {
         productItem.cancellationReason = cancellationReason;
 
 
-        const selectedSize = `size${productItem.size}`;
-        if (product.size && product.size[selectedSize] !== undefined) {
-            product.size[selectedSize] += productItem.quantity;
-            product.quantity += productItem.quantity;
-            await product.save();
-        }
+        // const selectedSize = `size${productItem.size}`;
+        // if (product.size && product.size[selectedSize] !== undefined) {
+        //     product.size[selectedSize] += productItem.quantity;
+        //     product.quantity += productItem.quantity;
+        //     await product.save();
+        // }
 
         const allProducts = order.orderedItems;
         if (allProducts.every(item => item.status === "Delivered")) {

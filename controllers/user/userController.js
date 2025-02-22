@@ -1,6 +1,7 @@
 const User = require('../../models/userSchema');
 const Category = require('../../models/categorySchema');
 const Product = require('../../models/productSchema');
+const ProductVariant = require('../../models/productVariantSchema');
 const Wallet = require('../../models/walletSchema');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
@@ -514,12 +515,11 @@ const loadShoppingPage = async (req, res) => {
         // Build the base query
         let baseQuery = {
             isBlocked: false,
-            quantity: { $gt: 0 }
+            status: { $ne: "Discontinued" }
         };
 
         // Enhanced search filter for both product name and category
         if (searchQuery.trim()) {
-            // First, find matching category IDs
             const matchingCategories = await Category.find({
                 name: { $regex: searchQuery.trim(), $options: 'i' }
             }).select('_id');
@@ -527,28 +527,15 @@ const loadShoppingPage = async (req, res) => {
             const matchingCategoryIds = matchingCategories.map(cat => cat._id);
 
             baseQuery.$or = [
-                // Match product name
-                {
-                    productName: {
-                        $regex: searchQuery.trim(),
-                        $options: 'i'  // Case-insensitive
-                    }
-                },
-                // Match products in matching categories
-                {
-                    category: {
-                        $in: matchingCategoryIds
-                    }
-                }
+                { productName: { $regex: searchQuery.trim(), $options: 'i' } },
+                { category: { $in: matchingCategoryIds } }
             ];
         }
 
         // Add category filter if specifically selected
         if (selectedCategory) {
-            // Override the category condition from search
             baseQuery.category = selectedCategory;
         } else if (!searchQuery.trim()) {
-            // If no search and no specific category, show all listed categories
             baseQuery.category = { $in: categoriesIds };
         }
 
@@ -561,22 +548,65 @@ const loadShoppingPage = async (req, res) => {
 
         // Define sort options
         const sortOptions = {
-            default: { createdOn: -1 },
+            default: { createdAt: -1 },
             priceHighToLow: { salePrice: -1 },
             priceLowToHigh: { salePrice: 1 },
             nameAtoZ: { productName: 1 },
             nameZtoA: { productName: -1 }
         };
 
-        // Execute product query
-        const products = await Product.find(baseQuery)
+        // Get base products
+        let products = await Product.find(baseQuery)
+            .populate('category')
             .sort(sortOptions[sort])
             .skip(skip)
             .limit(limit)
             .lean();
 
-        // Get total count for pagination
-        const totalProducts = await Product.countDocuments(baseQuery);
+        // Enhance products with variant information
+        products = await Promise.all(products.map(async (product) => {
+            // Get all active variants for the product
+            const variants = await ProductVariant.find({
+                productId: product._id,
+                isActive: true
+            }).lean();
+
+            // Calculate total quantity and get available sizes
+            const totalQuantity = variants.reduce((sum, variant) => sum + variant.quantity, 0);
+            const availableSizes = [...new Set(variants
+                .filter(v => v.quantity > 0)
+                .map(v => v.size))];
+            const availableColors = [...new Set(variants.map(v => v.color))];
+
+            // Calculate final price with offers
+            const productOffer = product.productOffer || 0;
+            const categoryOffer = product.category?.categoryOffer || 0;
+            const totalDiscount = productOffer + categoryOffer;
+            const finalPrice = product.salePrice * (1 - totalDiscount / 100);
+
+            return {
+                ...product,
+                totalQuantity,
+                availableSizes,
+                availableColors,
+                finalPrice: Math.round(finalPrice * 100) / 100,
+                hasStock: totalQuantity > 0
+            };
+        }));
+
+        // Filter out products with no stock
+        products = products.filter(product => product.hasStock);
+
+        // Recalculate total count for pagination (only in-stock products)
+        const productsWithStock = await Promise.all((await Product.find(baseQuery).lean()).map(async (product) => {
+            const variantCount = await ProductVariant.aggregate([
+                { $match: { productId: product._id, isActive: true } },
+                { $group: { _id: null, total: { $sum: "$quantity" } } }
+            ]);
+            return variantCount[0]?.total > 0;
+        }));
+        
+        const totalProducts = productsWithStock.filter(Boolean).length;
         const totalPages = Math.ceil(totalProducts / limit);
 
         // Build query string for pagination and filters
@@ -609,6 +639,7 @@ const loadShoppingPage = async (req, res) => {
         res.redirect("/pageNotFound");
     }
 };
+
 //email update
 
 const getupdateEmail = async (req, res) => {

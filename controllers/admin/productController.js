@@ -1,13 +1,10 @@
 const Product = require('../../models/productSchema');
+const ProductVariant = require('../../models/productVariantSchema');
 const Category = require('../../models/categorySchema');
-const User = require('../../models/userSchema');
 const path = require('path');
 const sharp = require('sharp');
 const fs = require('fs');
 const mongoose = require('mongoose');
-
-
-
 
 const getProducts = async (req, res) => {
     try {
@@ -17,133 +14,194 @@ const getProducts = async (req, res) => {
             const limit = 4;
             const skip = (page - 1) * limit;
 
+            // Add isBlocked check to query
             const productData = await Product.find({
-                productName: { $regex: new RegExp(".*" + search + ".*", "i") }
+                productName: { $regex: new RegExp(".*" + search + ".*", "i") },
+                isBlocked: false  // Only get non-blocked products
             })
                 .skip(skip)
                 .limit(limit)
                 .populate('category')
-                .exec();
+                .lean();
+
+            // Get total quantity for each product from variants
+            for (let product of productData) {
+                const variantCount = await ProductVariant.aggregate([
+                    { $match: { 
+                        productId: new mongoose.Types.ObjectId(product._id),
+                        isActive: true  // Only count active variants
+                    } },
+                    { $group: { _id: null, totalQuantity: { $sum: "$quantity" } } }
+                ]);
+
+                product.totalQuantity = variantCount[0]?.totalQuantity || 0;
+
+                // Update product status based on total quantity
+                const newStatus = product.totalQuantity === 0 ? "out of stock" : "Available";
+                if (product.status !== newStatus && product.status !== "Discontinued") {
+                    await Product.findByIdAndUpdate(product._id, { status: newStatus });
+                    product.status = newStatus;
+                }
+
+                // Get all colors and sizes from variants
+                const variants = await ProductVariant.find({ 
+                    productId: product._id,
+                    isActive: true 
+                });
+                product.availableColors = [...new Set(variants.map(v => v.color))];
+                product.availableSizes = [...new Set(variants.map(v => v.size))];
+            }
 
             const count = await Product.countDocuments({
-                productName: { $regex: new RegExp(".*" + search + ".*", "i") }
+                productName: { $regex: new RegExp(".*" + search + ".*", "i") },
+                isBlocked: false
             });
 
             const category = await Category.find({ isListed: true });
 
             if (category) {
                 const totalPages = Math.ceil(count / limit);
-                
+
                 res.render('product', {
                     search: search,
                     data: productData,
                     currentPage: page,
                     totalPages: totalPages,
                     cat: category,
-                    message:req.flash('success')
+                    message: req.flash('success')
                 });
             } else {
                 res.render('page-404');
             }
+        } else {
+            res.redirect('/admin/login');  // Add redirect if not admin
         }
     } catch (error) {
         console.error('Pagination Error:', error);
         res.redirect('/pageerror');
     }
-}
+};
 
-const getaddProduct = async (req,res)=>{
+
+
+const getaddProduct = async (req, res) => {
     try {
-        if(req.session.admin){
-            const message =req.session.error
-            const category = await Category.find({isListed:true});
-            res.render("addProducts",{cat:category,message:req.flash('added')})
-        }else{
-            res.redirect('/admin/login')
+        if(req.session.admin) {
+            const category = await Category.find({isListed: true});
+            res.render("addProducts", {
+                cat: category,
+                message: req.flash('added')
+            });
+        } else {
+            res.redirect('/admin/login');
         }
-        
-    
     } catch (error) {
-        res.redirect('/pageerror')
+        res.redirect('/pageerror');
     }
 }
 
-
 const addProducts = async (req, res) => {
-    console.log("checkind product");
-    
     try {
         const products = req.body;
+
+        // Validate required fields
+        if (!products.productName || !products.description || !products.category || 
+            !products.regularPrice || !products.salePrice || !products.color) {
+            req.flash('error', 'All required fields must be filled');
+            return res.redirect('/admin/products/addProducts');
+        }
 
         const productExists = await Product.findOne({
             productName: products.productName,
         });
 
-        if (!productExists) {
-            const images = [];
-
-            const uploadDir = path.join('public', 'uploads', 'product-images');
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-            }
-
-            if (req.files && req.files.length > 0) {
-                for (let i = 0; i < req.files.length; i++) {
-                    const originalImagePath = req.files[i].path;
-                    const resizedImagePath = path.join(uploadDir, req.files[i].filename);
-
-                    await sharp(originalImagePath)
-                        .resize({ width: 440, height: 440 })
-                        .toFile(resizedImagePath);
-
-                    images.push(req.files[i].filename);
-                }
-            }
-
-            const categoryId = await Category.findOne({ name: products.category });
-            if (!categoryId) {
-                req.session.error = 'Invalid Category name'
-                return res.redirect('/admin/products/addProducts');
-           
-            }
-    //  console.log(products);
-     const sizes = {
-        sizeS: Number(products.sizeS) || 0,
-        sizeM: Number(products.sizeM) || 0,
-        sizeL: Number(products.sizeL) || 0,
-        sizeXL: Number(products.sizeXL) || 0,
-        sizeXXL: Number(products.sizeXXL) || 0,
-    };
-    
-            const newProduct = new Product({
-                productName: products.productName,
-                description: products.description,
-                category: categoryId._id,
-                regularPrice: products.regularPrice,
-                salePrice: products.salePrice,
-                createdOn: new Date(),
-                quantity: products.quantity,
-                size: {...sizes},
-                color: products.color,
-                productImage: images,
-                status: 'Available',
-            });
-        console.log(newProduct)
-            await newProduct.save();
-            req.flash('added','Product added successfully')
-
+        if (productExists) {
+            req.flash('error', 'Product already exists. Please try another name');
             return res.redirect('/admin/products/addProducts');
-        } else {
-            req.session.error = 'Product already exists. Please try another name'
-            return res.redirect('/admin/products/addProducts');
-
         }
-       
+
+        // Process images
+        const images = [];
+        if (!req.files || req.files.length === 0) {
+            req.flash('error', 'At least one image is required');
+            return res.redirect('/admin/products/addProducts');
+        }
+
+        const uploadDir = path.join('public', 'uploads', 'product-images');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        for (let file of req.files) {
+            const resizedImagePath = path.join(uploadDir, file.filename);
+            await sharp(file.path)
+                .resize({ width: 440, height: 440 })
+                .toFile(resizedImagePath);
+            images.push(file.filename);
+        }
+
+        const categoryId = await Category.findOne({ name: products.category });
+        if (!categoryId) {
+            req.flash('error', 'Invalid Category name');
+            return res.redirect('/admin/products/addProducts');
+        }
+
+        // Calculate and validate quantities
+        const sizeQuantities = {
+            S: Number(products.sizeS) || 0,
+            M: Number(products.sizeM) || 0,
+            L: Number(products.sizeL) || 0,
+            XL: Number(products.sizeXL) || 0,
+            XXL: Number(products.sizeXXL) || 0
+        };
+
+        const totalQuantity = Object.values(sizeQuantities).reduce((sum, qty) => sum + qty, 0);
+        if (totalQuantity === 0) {
+            req.flash('error', 'At least one size must have quantity greater than 0');
+            return res.redirect('/admin/products/addProducts');
+        }
+
+        // Create new product
+        const newProduct = new Product({
+            productName: products.productName,
+            description: products.description,
+            category: categoryId._id,
+            regularPrice: products.regularPrice,
+            salePrice: products.salePrice,
+            productImage: images,
+            status: 'Available',
+            availableColors: [products.color],
+            availableSizes: Object.keys(sizeQuantities).filter(size => sizeQuantities[size] > 0)
+        });
+
+        await newProduct.save();
+
+        // Create variants
+        const variants = Object.entries(sizeQuantities)
+            .filter(([_, qty]) => qty > 0)
+            .map(([size, quantity]) => ({
+                productId: newProduct._id,
+                color: products.color,
+                size,
+                quantity,
+                images,
+                isActive: true
+            }));
+
+        if (variants.length > 0) {
+            await ProductVariant.insertMany(variants);
+        }
+
+        req.flash('success', 'Product added successfully');
+        return res.redirect('/admin/products');
+
     } catch (error) {
-        console.error("Error saving products", error);
-        return res.redirect('/admin/pageerror');
+        console.error("Error saving products:", error);
+        req.flash('error', 'Error saving product');
+        return res.redirect('/admin/products/addProducts');
     }
 };
+
 const addProductOffer = async (req, res) => {
     try {
         const { productId, percentage } = req.body;
@@ -197,7 +255,6 @@ const addProductOffer = async (req, res) => {
 const removeProductOffer = async (req, res) => {
     try {
         const { productId } = req.body;
-        console.log('Received productId:', productId);
 
         const product = await Product.findById(productId);
         if (!product) {
@@ -216,7 +273,6 @@ const removeProductOffer = async (req, res) => {
         product.productOffer = 0;
         
         await product.save();
-        console.log('Product updated successfully');
         
         return res.status(200).json({ 
             status: true, 
@@ -231,48 +287,75 @@ const removeProductOffer = async (req, res) => {
         });
     }
 };
-//
-const blockProduct = async (req,res)=>{
-    try {
-      let id = req.query.id;
-      await Product.updateOne({_id:id},{$set:{isBlocked:true}});
-      res.redirect('/admin/products')
-    } catch (error) {
-       res.redirect('/pageerror') 
-    }
-}
-//
-const unblockProduct = async (req,res)=>{
+
+const blockProduct = async (req, res) => {
     try {
         let id = req.query.id;
-        await Product.updateOne({_id:id},{isBlocked:false});
-        res.redirect('/admin/products')
+        await Product.updateOne({_id: id}, {$set: {isBlocked: true}});
+        res.redirect('/admin/products');
     } catch (error) {
-        res.redirect('/pageerror')
+        res.redirect('/pageerror');
     }
 }
 
-//edit product
+const unblockProduct = async (req, res) => {
+    try {
+        let id = req.query.id;
+        await Product.updateOne({_id: id}, {isBlocked: false});
+        res.redirect('/admin/products');
+    } catch (error) {
+        res.redirect('/pageerror');
+    }
+}
+
 const getEditProduct = async (req, res) => {
     try {
         const id = req.params.id;
-        const product = await Product.findOne({ _id: id }).populate('category');
+        const product = await Product.findOne({ _id: id }).populate('category').lean();
+
+        if (!product) {
+            req.flash('error', 'Product not found');
+            return res.redirect('/admin/products');
+        }
+
+        // Get variants for this product and organize by size
+        const variants = await ProductVariant.find({ productId: id }).lean();
+
+        // Map variant quantities to sizes
+        product.size = {
+            sizeS: 0,
+            sizeM: 0,
+            sizeL: 0,
+            sizeXL: 0,
+            sizeXXL: 0
+        };
+
+        variants.forEach(variant => {
+            product.size[`size${variant.size}`] = variant.quantity;
+        });
+        product.totalQuantity = variants.reduce((sum, variant) => sum + variant.quantity, 0);
+
+        // Get the color (assuming one color per product for simplicity)
+        if (variants.length > 0) {
+            product.color = variants[0].color;
+        }
+
         const category = await Category.find({});
         res.render('editProduct', {
             product: product,
             cat: category,
-            messages:req.flash('error')
+            messages: req.flash('error')
         });
     } catch (error) {
-        res.redirect('/pagerror');
+        console.error('Error in getEditProduct:', error);
+        res.redirect('/pageerror');
     }
 };
+
+
 const editProduct = async (req, res) => {
     try {
         const id = req.params.id;
-        // console.log('Product ID to update:', id);
-        // console.log('Received data:', req.body);
-        // console.log('Received files:', req.files);
 
         if (!id) {
             req.flash('error', 'Product ID is required');
@@ -303,34 +386,41 @@ const editProduct = async (req, res) => {
             return res.redirect(`/admin/products/editProduct/${id}`);
         }
 
-         // Process images
-         const images = req.files?.map(file => file.filename) || [];
+        // Process images
+        const images = req.files?.map(file => file.filename) || [];
+        const finalImages = images.length > 0 ? images : existingProduct.productImage;
+
         const sizeData = {
-            sizeS: parseInt(data.sizeS) || 0,
-            sizeM: parseInt(data.sizeM) || 0,
-            sizeL: parseInt(data.sizeL) || 0,
-            sizeXL: parseInt(data.sizeXL) || 0,
-            sizeXXL: parseInt(data.sizeXXL) || 0
+            S: parseInt(data.sizeS) || 0,
+            M: parseInt(data.sizeM) || 0,
+            L: parseInt(data.sizeL) || 0,
+            XL: parseInt(data.sizeXL) || 0,
+            XXL: parseInt(data.sizeXXL) || 0
         };
 
-        const totalQuantity = Object.values(sizeData).reduce((sum, stock) => sum + stock, 0);
+        const availableSizes = Object.keys(sizeData).filter(size => sizeData[size] > 0);
+        const totalQuantity = Object.values(sizeData).reduce((sum, val) => sum + val, 0);
 
+        // Update product
         const updateFields = {
             productName: data.productName,
             description: data.description,
             category: categoryId._id,
             regularPrice: parseFloat(data.regularPrice),
             salePrice: parseFloat(data.salePrice),
-            quantity: totalQuantity,
-            color: data.color,
-            size: sizeData
+            availableSizes: availableSizes,
+            status: totalQuantity > 0 ? "Available" : "out of stock",
         };
 
         if (images.length > 0) {
             updateFields.productImage = images;
         }
 
-        updateFields.status = totalQuantity > 0 ? "Available" : "out of stock";
+        // Safely check if color is changing
+        const existingColor = existingProduct.availableColors?.[0] || '';
+        if (data.color !== existingColor) {
+            updateFields.availableColors = [data.color];
+        }
 
         await Product.findByIdAndUpdate(
             id,
@@ -338,8 +428,29 @@ const editProduct = async (req, res) => {
             { new: true, runValidators: true }
         );
 
-        req.flash('success', 'Product updated successfully');
+        // Update variants
+        const variants = [];
+        const color = data.color;
 
+        for (const size in sizeData) {
+            if (sizeData[size] > 0) {
+                variants.push({
+                    productId: id,
+                    color,
+                    size,
+                    quantity: sizeData[size],
+                    images: finalImages
+                });
+            }
+        }
+
+        // Delete existing variants and insert new ones
+        await ProductVariant.deleteMany({ productId: id });
+        if (variants.length > 0) {
+            await ProductVariant.insertMany(variants);
+        }
+
+        req.flash('success', 'Product updated successfully');
         return res.redirect('/admin/products');
 
     } catch (error) {
@@ -348,7 +459,6 @@ const editProduct = async (req, res) => {
         return res.redirect('/admin/products');
     }
 };
-//
 const deleteSingle = async (req, res) => {
     try {
         const { imageNameToServer } = req.body;
@@ -358,6 +468,7 @@ const deleteSingle = async (req, res) => {
             return res.status(400).json({ status: false, message: 'Invalid Product ID' });
         }
 
+        // Update product main images
         const product = await Product.findByIdAndUpdate(productIdToServer, {
             $pull: { productImage: imageNameToServer }
         });
@@ -365,6 +476,12 @@ const deleteSingle = async (req, res) => {
         if (!product) {
             return res.status(404).json({ status: false, message: 'Product not found' });
         }
+
+        // Update variant images as well
+        await ProductVariant.updateMany(
+            { productId: productIdToServer },
+            { $pull: { images: imageNameToServer } }
+        );
 
         const imagePath = path.join('public', 'uploads', 're-image', imageNameToServer);
         if (fs.existsSync(imagePath)) {
@@ -381,7 +498,119 @@ const deleteSingle = async (req, res) => {
     }
 };
 
-  
+// New method to get product variants
+const getProductVariants = async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const variants = await ProductVariant.find({ productId }).lean();
+        
+        return res.json({ status: true, variants });
+    } catch (error) {
+        console.error('Error getting product variants:', error);
+        return res.status(500).json({ status: false, message: 'Error fetching variants' });
+    }
+};
+
+// New method to add a new variant
+const addProductVariant = async (req, res) => {
+    try {
+        const { productId, color, size, quantity } = req.body;
+        
+        // Validate inputs
+        if (!productId || !color || !size || !quantity) {
+            return res.status(400).json({ status: false, message: 'Missing required fields' });
+        }
+        
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ status: false, message: 'Product not found' });
+        }
+        
+        // Check if variant already exists
+        const existingVariant = await ProductVariant.findOne({
+            productId,
+            color,
+            size
+        });
+        
+        if (existingVariant) {
+            return res.status(400).json({ status: false, message: 'Variant already exists' });
+        }
+        
+        // Create new variant
+        const newVariant = new ProductVariant({
+            productId,
+            color,
+            size,
+            quantity: parseInt(quantity),
+            images: product.productImage
+        });
+        
+        await newVariant.save();
+        
+        // Update product's available colors and sizes
+        const updateData = {};
+        
+        if (!product.availableColors.includes(color)) {
+            updateData.availableColors = [...product.availableColors, color];
+        }
+        
+        if (!product.availableSizes.includes(size)) {
+            updateData.availableSizes = [...product.availableSizes, size];
+        }
+        
+        if (Object.keys(updateData).length > 0) {
+            await Product.findByIdAndUpdate(productId, { $set: updateData });
+        }
+        
+        // Update product status if it was out of stock
+        if (product.status === 'out of stock') {
+            await Product.findByIdAndUpdate(productId, { status: 'Available' });
+        }
+        
+        return res.json({ status: true, message: 'Variant added successfully', variant: newVariant });
+    } catch (error) {
+        console.error('Error adding variant:', error);
+        return res.status(500).json({ status: false, message: 'Server error' });
+    }
+};
+
+// New method to update a variant
+const updateProductVariant = async (req, res) => {
+    try {
+        const { variantId, quantity } = req.body;
+        
+        if (!variantId || quantity === undefined) {
+            return res.status(400).json({ status: false, message: 'Missing required fields' });
+        }
+        
+        const updatedVariant = await ProductVariant.findByIdAndUpdate(
+            variantId,
+            { quantity: parseInt(quantity) },
+            { new: true }
+        );
+        
+        if (!updatedVariant) {
+            return res.status(404).json({ status: false, message: 'Variant not found' });
+        }
+        
+        // Check if we need to update product status
+        const productId = updatedVariant.productId;
+        
+        const totalQuantity = await ProductVariant.aggregate([
+            { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+            { $group: { _id: null, total: { $sum: "$quantity" } } }
+        ]);
+        
+        const productStatus = totalQuantity[0]?.total > 0 ? 'Available' : 'out of stock';
+        await Product.findByIdAndUpdate(productId, { status: productStatus });
+        
+        return res.json({ status: true, message: 'Variant updated successfully' });
+    } catch (error) {
+        console.error('Error updating variant:', error);
+        return res.status(500).json({ status: false, message: 'Server error' });
+    }
+};
 
 module.exports = {
     getProducts,
@@ -393,6 +622,8 @@ module.exports = {
     unblockProduct,
     getEditProduct,
     editProduct,
-    deleteSingle
-
-}
+    deleteSingle,
+    getProductVariants,
+    addProductVariant,
+    updateProductVariant
+};

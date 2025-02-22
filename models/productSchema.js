@@ -1,92 +1,68 @@
 const mongoose = require('mongoose');
-const {Schema} =mongoose;
+const { Schema } = mongoose;
 
-const productSchema = new mongoose.Schema({
-  productName:{
-     type:String,
-     required:true,
+const productSchema = new Schema({
+  productName: {
+    type: String,
+    required: true,
   },
-  description:{
-    type:String,
-    required:true,
+  description: {
+    type: String,
+    required: true,
   },
-  category:{
-    type:Schema.Types.ObjectId,
-    ref:"Category",
-    required:true,
-
+  category: {
+    type: Schema.Types.ObjectId,
+    ref: "Category",
+    required: true,
   },
-  regularPrice:{
-    type:Number,
-    required:true,
+  regularPrice: {
+    type: Number,
+    required: true,
   },
-  salePrice:{
-    type:Number,
-    required:true
+  salePrice: {
+    type: Number,
+    required: true
   },
-  productOffer:{
-    type:Number,
-    default:0
+  productOffer: {
+    type: Number,
+    default: 0
   },
   originalSalePrice: {
     type: Number,
     default: null
   },
-  
-  quantity:{
-    type:Number,
-    default:true
-  },
-  color:{
-    type:String,
-    required:true
-  },
-  productImage:{
-    type:[String],
-    required:true
+  productImage: {
+    type: [String],
+    required: true
   },
   averageRating: {
     type: Number,
     default: 0
-},
-totalReviews: {
+  },
+  totalReviews: {
     type: Number,
     default: 0
-},
-  isBlocked:{
-    type:Boolean,
-    default:false 
   },
-  status:{
-    type:String,
-    enum:["Available","out of stock","Disconnected"],
-    required:true,
-    default:"Available",
+  isBlocked: {
+    type: Boolean,
+    default: false
   },
-  size: {
-    sizeS: {
-        type: Number,
-        default: 0
-    },
-    sizeM: {
-        type: Number,
-        default: 0
-    },
-    sizeL: {
-        type: Number,
-        default: 0
-    },
-    sizeXL: {
-        type: Number,
-        default: 0
-    },
-    sizeXXL: {
-        type: Number,
-        default: 0
-    }
-},
-},{timestamps:true})
+  status: {
+    type: String,
+    enum: ["Available", "out of stock", "Discontinued"],
+    required: true,
+    default: "Available",
+  },
+  hasVariants: {
+    type: Boolean,
+    default: true
+  },
+ 
+}, { timestamps: true });
 
-const Product = mongoose.model("Product",productSchema);
+productSchema.virtual('totalQuantity').get(function() {
+  return this._totalQuantity || 0;
+});
 
- module.exports = Product;
+const Product = mongoose.model("Product", productSchema);
+module.exports = Product;
