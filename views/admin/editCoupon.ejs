@@ -124,6 +124,17 @@
             const startDateInput = document.getElementById('startDate');
             const expiryDateInput = document.getElementById('expiryDate');
 
+
+            function formatDateForInput(dateString) {
+                const date = new Date(dateString);
+                return date.toISOString().split('T')[0];
+            }
+            
+            // Set start date from database
+            startDateInput.value = formatDateForInput('<%= findCoupon.createOn %>');
+            
+            // Set expiry date from database
+            expiryDateInput.value = formatDateForInput('<%= findCoupon.expireOn %>');
             // Set minimum date as today for start date
             const today = new Date().toISOString().split('T')[0];
             startDateInput.setAttribute('min', today);

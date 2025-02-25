@@ -218,8 +218,10 @@
 
     <section class="content-main">
         <h2 class="content-title">Add New Product</h2>
-        <% if(message && message.length>0){ %>
-            <h6 class="text-success text-center"><%=message%></h6>
+        <% if(messagess && messagess.length>0){ %>
+            <h6 class="text-success text-center"><%=messagess.error%></h6>
+            <h6 class="text-success text-center"><%=messagess.success%></h6>
+
             <%}%>
         <div class="main-container">
             <form id="productForm" action="/admin/products/addProducts" enctype="multipart/form-data" method="POST">

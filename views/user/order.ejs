@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="images/store-logo.png"> 
     <title>My Orders</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
@@ -370,12 +371,12 @@
                                             <span class="order-status <%= order.status.toLowerCase().replace(' ', '-') %>">
                                                 <%= order.status %>
                                             </span>
-                                            <% if (order.status === 'Payment Failed' || order.status === 'failed') { %>
+                                            <% if (order.status === 'failed') { %>
                                                 <button
-                                                class="btn btn-outline-primary btn-sm .btn-continue-payment"
-                                                onclick="retryPayment('<%= order.orderId %>', '<%= order.finalAmount %>')">
-                                                Continue Payment
-                                            </button>
+                                                    class="btn btn-outline-primary btn-sm btn-continue-payment"
+                                                    onclick="retryPayment('<%= order.orderId %>', '<%= order.finalAmount %>')">
+                                                    Continue Payment
+                                                </button>
                                             <% } else { %>
                                                 <a href="/details/<%= order._id %>" class="btn btn-outline-primary btn-sm ms-2">
                                                     Details

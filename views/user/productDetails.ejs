@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <link rel="icon" href="images/store-logo.png"> 
     <title>Product Details</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
@@ -1059,24 +1060,26 @@
     color: #333;
 }
 .size-option.out-of-stock {
-    opacity: 0.7;
+    opacity: 0.6;
     cursor: not-allowed;
+    text-decoration: line-through;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    pointer-events: auto !important; /* Ensure click events still work */
 }
 
-.out-of-stock-label {
-    display: block;
-    font-size: 0.8em;
-    color: #dc3545;
-    margin-top: 2px;
-}
-.low-stock-label {
-    display: block;
-    font-size: 0.8em;
-    color: #ff9800;
-    margin-top: 2px;
+.size-option.out-of-stock:hover {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
 }
 
-    </style>
+/* Make sure the disabled input doesn't prevent interaction */
+.size-option.out-of-stock input[type="radio"] {
+    pointer-events: none;
+}
+
+
+</style>
 </head>
 <body>
     <%-include("../../views/partials/user/header")%>
@@ -1180,7 +1183,7 @@
                         </div>
                         
                         <div id="selectedStockInfo" class="mt-2" style="display: none;"></div>
-                    
+                        
                         <% if (messages.error) { %>
                             <div class="alert alert-danger mt-3">
                                 <%= messages.error %>
@@ -1436,60 +1439,110 @@
 
      });
      
-    // 1. Modify the showStock function to update URL
-    function showStock(element, stock) {
+     document.addEventListener('DOMContentLoaded', function() {
+    // Make sure all size options, including out-of-stock ones, are properly styled
+    const sizeOptions = document.querySelectorAll('.size-option');
+    sizeOptions.forEach(option => {
+        // Extract stock information from the onclick attribute
+        let stock = 0;
+        if (option.hasAttribute('onclick')) {
+            const onclickAttr = option.getAttribute('onclick');
+            const match = onclickAttr.match(/showStock\(this,\s*(\d+)\)/);
+            if (match && match[1]) {
+                stock = parseInt(match[1]);
+            }
+        }
+        
+        // Apply out-of-stock class and styling if needed
+        if (stock === 0) {
+            option.classList.add('out-of-stock');
+            const input = option.querySelector('input[type="radio"]');
+            if (input) {
+                input.disabled = true;
+            }
+        }
+        
+        // Add click handler for all size options
+        option.addEventListener('click', function(e) {
+            // For out-of-stock options, prevent the radio selection but still show message
+            if (this.classList.contains('out-of-stock')) {
+                e.preventDefault();
+                showStock(this, 0);
+                return;
+            }
+            
+            // Show stock information for in-stock options
+            showStock(this, stock);
+        });
+    });
+
+    // Check URL for size parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const sizeParam = urlParams.get('size');
+
+    if (sizeParam) {
+        // Find the matching size option
+        const sizeOption = document.querySelector(`.size-option input[value="${sizeParam}"]`);
+        if (sizeOption && !sizeOption.disabled) {
+            sizeOption.checked = true;
+
+            // Get parent and extract stock
+            const parent = sizeOption.closest('.size-option');
+            let stock = 0;
+            if (parent && parent.hasAttribute('onclick')) {
+                const onclickAttr = parent.getAttribute('onclick');
+                const match = onclickAttr.match(/showStock\(this,\s*(\d+)\)/);
+                if (match && match[1]) {
+                    stock = parseInt(match[1]);
+                }
+            }
+
+            // Show stock info
+            if (parent) {
+                showStock(parent, stock);
+            }
+        }
+    }
+});
+
+function showStock(element, stock) {
     const selectedStockInfo = document.getElementById('selectedStockInfo');
     const size = element.textContent.trim();
+
+    // Update URL with selected size (only for in-stock sizes)
+    if (stock > 0) {
+        const url = new URL(window.location);
+        url.searchParams.set('size', size);
+        window.history.replaceState({}, '', url);
+    }
+
     selectedStockInfo.style.display = 'block';
-    
-    // Update URL with selected size
-    const url = new URL(window.location);
-    url.searchParams.set('size', size);
-    window.history.replaceState({}, '', url);
-    
+
     if (stock === 0) {
         selectedStockInfo.innerHTML = `
-            <i class="fas fa-times-circle"></i> 
+            <i class="fas fa-times-circle"></i>
             Out of Stock
         `;
         selectedStockInfo.className = 'mt-2 text-danger';
-    } else if (stock < 2) {
+    } else if (stock <= 2) {
         selectedStockInfo.innerHTML = `
-            <i class="fas fa-exclamation-circle"></i> 
+            <i class="fas fa-exclamation-circle"></i>
             Only ${stock} left in stock!
         `;
         selectedStockInfo.className = 'mt-2 text-warning';
     } else {
         selectedStockInfo.innerHTML = `
-            <i class="fas fa-check-circle"></i> 
-            ${stock} in stock
+            <i class="fas fa-check-circle"></i>
+            In Stock
         `;
         selectedStockInfo.className = 'mt-2 text-success';
     }
 }
 
-// 2. Add code to read URL parameters and pre-select size on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Get size from URL if present
-    const urlParams = new URLSearchParams(window.location.search);
-    const sizeParam = urlParams.get('size');
-    
-    if (sizeParam) {
-        // Find the corresponding size option
-        const sizeInput = document.querySelector(`input[value="${sizeParam}"]`);
-        if (sizeInput && !sizeInput.disabled) {
-            // Select the size and trigger the stock display
-            sizeInput.checked = true;
-            const sizeLabel = sizeInput.closest('.size-option');
-            const stock = parseInt(sizeLabel.getAttribute('onclick').match(/\d+/)[0]);
-            showStock(sizeLabel, stock);
-        }
-    }
-    
-});
+const isUserLoggedIn = <%- locals.user ? 'true' : 'false' %>;
+
 
 function handleAddToCart(productId) {
-    const isUserLoggedIn = <%- locals.user ? 'true' : 'false' %>;
 
     if (!isUserLoggedIn) {
         Swal.fire({

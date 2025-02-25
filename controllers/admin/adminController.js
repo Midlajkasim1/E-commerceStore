@@ -644,8 +644,7 @@ const downloadPdfReport = async (req, res) => {
         };
 
         const formatCurrency = (amount) => {
-            const formattedAmount = (amount || 0).toFixed(2);
-            return `₹${formattedAmount}`;
+            return amount.toFixed(2);
         };
 
         const docDefinition = {
@@ -653,7 +652,7 @@ const downloadPdfReport = async (req, res) => {
             pageMargins: [40, 60, 40, 60],
             content: [
                 {
-                    text: 'Sales Report',
+                    text: ' Urban Row Sales Report',
                     style: 'header'
                 },
                 {
@@ -685,9 +684,18 @@ const downloadPdfReport = async (req, res) => {
                                     order.orderId,
                                     new Date(order.createOn).toLocaleDateString(),
                                     totalItems,
-                                    formatCurrency(baseAmount),
-                                    formatCurrency(discount),
-                                    formatCurrency(finalAmount),
+                                    {
+                                        text: formatCurrency(baseAmount),
+                                        alignment: 'right'
+                                    },
+                                    {
+                                        text: formatCurrency(discount),
+                                        alignment: 'right'
+                                    },
+                                    {
+                                        text: formatCurrency(finalAmount),
+                                        alignment: 'right'
+                                    },
                                     order.paymentMethod || 'N/A'
                                 ];
                             })
@@ -712,9 +720,28 @@ const downloadPdfReport = async (req, res) => {
                         body: [
                             ['Total Orders', summary.totalOrders.toString()],
                             ['Total Items', summary.totalItems.toString()],
-                            ['Total Base Amount', formatCurrency(summary.totalBaseAmount)],
-                            ['Total Discount', formatCurrency(summary.totalDiscount)],
-                            ['Total Final Amount', formatCurrency(summary.totalFinalAmount)]
+                            [
+                                'Total Base Amount', 
+                                {
+                                    text: formatCurrency(summary.totalBaseAmount),
+                                    alignment: 'right'
+                                }
+                            ],
+                            [
+                                'Total Discount', 
+                                {
+                                    text: formatCurrency(summary.totalDiscount),
+                                    alignment: 'right'
+                                }
+                            ],
+                            [
+                                'Total Final Amount', 
+                                {
+                                    // Completely remove the ₹ symbol
+                                    text: formatCurrency(summary.totalFinalAmount),
+                                    alignment: 'right'
+                                }
+                            ]
                         ]
                     },
                     layout: 'lightHorizontalLines'

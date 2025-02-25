@@ -105,14 +105,28 @@ const updateStatus = async (req, res) => {
             return res.redirect(`/admin/orderdetail/${orderId}`);
         }
 
+        
         const order = await Order.findById(orderId);
         if (!order) {
             req.flash('err', 'Order not found');
             return res.redirect('/admin/orders');
         }
         
-        if (orderStatus === "Pending" && order.status !== "Pending") {
-            req.flash('err', 'Cannot change status back to Pending once the order is in Processing or beyond');
+          // Define the valid status transitions
+          const statusFlow = {
+            "Pending": ["Processing", "Cancelled"],
+            "Processing": ["Shipped", "Cancelled"],
+            "Shipped": ["Out for Delivery", "Cancelled"],
+            "Out for Delivery": ["Delivered", "Cancelled"],
+            "Delivered": ["Return Request"],
+            "Cancelled": [],
+            "Return Request": ["Returned"],
+            "Returned": []
+        };
+
+        // Check if the new status is a valid transition from the current status
+        if (!statusFlow[order.status].includes(orderStatus)) {
+            req.flash('err', `Cannot change status from ${order.status} to ${orderStatus}`);
             return res.redirect(`/admin/orderdetail/${orderId}`);
         }
 

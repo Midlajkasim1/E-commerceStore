@@ -21,10 +21,9 @@ router.post('/resend-otp',userController.resendOtp)
 
 
 router.get('/',blockCheck, userController.loadHomePage);
+// router.get('/getAvailableSizes/:productId',blockCheck,userController.getAvailableSizes)
 router.get('/shop',blockCheck,userController.loadShoppingPage);
-// router.get('/filter',userController.filterProduct);
-// router.get('/filterPrice',userController.filterByPrice);
-// router.post('/search',userController.searchProducts);
+
 
 
 router.get('/auth/google',passport.authenticate('google'))

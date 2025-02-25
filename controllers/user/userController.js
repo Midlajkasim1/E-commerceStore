@@ -301,15 +301,38 @@ const loadHomePage = async (req, res) => {
         const userId = req.session.user;
         const categories = await Category.find({ isListed: true });
 
-
+        // Get the latest products
         let productData = await Product.find({
             isBlocked: false,
             category: { $in: categories.map(category => category._id) },
-            quantity: { $gt: 0 }
-        }).lean();
+        })
+        .sort({ createdAt: -1 })
+        .limit(8) // Fetch more initially since we'll filter some out
+        .lean();
 
+        // Get variants for each product and calculate total quantity
+        for (let product of productData) {
+            const variants = await ProductVariant.find({ 
+                productId: product._id,
+                isActive: true 
+            });
+            
+            // Calculate total quantity across all variants
+            product._totalQuantity = variants.reduce((sum, variant) => sum + variant.quantity, 0);
+            
+            // Get the first variant's images if product doesn't have its own
+            if (!product.productImage || product.productImage.length === 0) {
+                const firstVariant = variants[0];
+                if (firstVariant && firstVariant.images && firstVariant.images.length > 0) {
+                    product.productImage = firstVariant.images;
+                }
+            }
+        }
 
-        productData.sort((a, b) => new Date(b.createdOn) - new Date(a.createdOn));
+        // Filter out products with no available quantity
+        productData = productData.filter(product => product._totalQuantity > 0);
+        
+        // Limit to 4 products after filtering
         productData = productData.slice(0, 4);
 
         if (userId) {
@@ -323,7 +346,6 @@ const loadHomePage = async (req, res) => {
             }
         }
 
-
         return res.render('home', { user: null, products: productData });
 
     } catch (error) {
@@ -331,7 +353,6 @@ const loadHomePage = async (req, res) => {
         return res.status(500).send("Server Error");
     }
 };
-
 const logout = async (req, res) => {
     try {
         req.session.destroy((err) => {

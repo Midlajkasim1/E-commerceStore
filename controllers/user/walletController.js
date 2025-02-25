@@ -14,11 +14,15 @@ const getWallet = async (req, res) => {
         const userData = await User.findById(userId);
         const walletData = await Wallet.findOne({ user: userId });
         const filterType = req.query.type || 'all';
-
-        let transactions = [];
-
+        
+        const page = parseInt(req.query.page) || 1;
+        const limit = 5; 
+        
+        let filteredTransactions = [];
+        let paginatedTransactions = [];
+        
         if (walletData && walletData.transaction) {
-            transactions = walletData.transaction
+            filteredTransactions = walletData.transaction
                 .filter(trans => {
                     if (filterType === 'all') return true;
                     return trans.type === filterType;
@@ -27,11 +31,13 @@ const getWallet = async (req, res) => {
                     ...trans.toObject(),
                     formattedDate: trans.createdAt ? new Date(trans.createdAt).toLocaleDateString() : 'N/A'
                 }))
-                .sort((a, b) => b.createdAt - a.createdAt)
-                .slice(0, 5);
+                .sort((a, b) => b.createdAt - a.createdAt);
+            
+            const startIndex = (page - 1) * limit;
+            const endIndex = page * limit;
+            paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
         }
-
-        // Calculate totals
+        
         const totalCredit = walletData ? walletData.transaction
             .filter(trans => trans.type === 'credit')
             .reduce((sum, trans) => sum + trans.amount, 0) : 0;
@@ -39,23 +45,29 @@ const getWallet = async (req, res) => {
         const totalDebit = walletData ? walletData.transaction
             .filter(trans => trans.type === 'debit')
             .reduce((sum, trans) => sum + trans.amount, 0) : 0;
+            
+        const totalTransactions = filteredTransactions.length;
+        const totalPages = Math.ceil(totalTransactions / limit);
 
         res.render('wallet', {
             user: userData,
             wallet: walletData || { balance: 0, transaction: [] },
-            recentTransactions: transactions,
+            recentTransactions: paginatedTransactions,
             filterType,
             totalCredit,
             totalDebit,
-            razorpayKeyId: process.env.RAZORPAY_KEY_ID  
-
+            razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+            currentPage: page,
+            totalPages: totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            totalTransactions: totalTransactions
         });
     } catch (error) {
         console.error(error);
         res.redirect('/pageNotFound');
     }
 };
-
 
 const getTransactionHistory = async (req, res) => {
     try {

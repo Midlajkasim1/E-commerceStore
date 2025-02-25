@@ -12,15 +12,33 @@ const getWishlist = async (req, res) => {
         const userId = req.session.user;
         const user = await User.findById(userId);
         const wishlist = await Wishlist.findOne({ userId }).populate('products.productId');
-
+        const page = parseInt(req.query.page) || 1;
+        const limit = 6;
 
         if (!wishlist) {
-            return res.render('wishlist', { user, wishlist: [] });
+            return res.render('wishlist', { 
+                user,
+                wishlist: [], 
+                currentPage: page,
+                totalPages: 0,
+                hasNextPage: false,
+                hasPrevPage: false
+            });
         }
         const products = wishlist.products.map((item) => item.productId);
+
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
+        const paginatedProducts = products.slice(startIndex, endIndex);
+        const totalPages = Math.ceil(products.length / limit);
+
         res.render('wishlist', {
             user,
-            wishlist: products
+            wishlist: paginatedProducts,
+            currentPage: page,
+            totalPages: totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1
         })
     } catch (error) {
         console.error("error wishlist load", error);
@@ -36,11 +54,7 @@ const addToWishlist = async (req, res) => {
             return res.status(200).json({ status: false, message: 'Please login to add To wishlist' });
 
         }
-        // if(user.wishlist.includes(productId)){
-        //     return res.status(200).json({status:false,message: 'Product already in Wishlist'});
-        // }
-        // user.wishlist.push(productId);
-        // await user.save();
+     
         let wishlist = await Wishlist.findOne({ userId });
 
         if (!wishlist) {
@@ -49,7 +63,6 @@ const addToWishlist = async (req, res) => {
                 products: [{ productId }]
             });
         } else {
-            //   wishlist.products.push({ productId });
             const productExists = wishlist.products.some(item =>
                 item.productId.toString() === productId.toString()
             );

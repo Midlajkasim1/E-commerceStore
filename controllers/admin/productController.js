@@ -90,7 +90,7 @@ const getaddProduct = async (req, res) => {
             const category = await Category.find({isListed: true});
             res.render("addProducts", {
                 cat: category,
-                message: req.flash('added')
+                messagess: req.flash()
             });
         } else {
             res.redirect('/admin/login');

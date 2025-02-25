@@ -10,7 +10,6 @@ const productDetails = async (req, res) => {
         const userData = await User.findById(userId);
         const productId = req.query.id;
         
-        // Get main product data
         const product = await Product.findById(productId).populate('category');
         if (!product) {
             return res.redirect('/pageNotFound');
@@ -20,50 +19,46 @@ const productDetails = async (req, res) => {
         const categoryOffer = findcategory?.categoryOffer || 0;
         const productOffer = product.productOffer || 0;
         const totalOffer = categoryOffer + productOffer;
-
-        // Get product variants (sizes only)
-        const variants = await ProductVariant.find({ 
+        
+        const variants = await ProductVariant.find({
             productId: productId,
             isActive: true
         });
         
-        // Prepare size availability data
-        const sizeVariants = {};
-        const availableSizes = [];
         
-        // Get unique sizes from variants
-        const uniqueSizes = [...new Set(variants.map(v => v.size))];
+        const allPossibleSizes = ["S", "M", "L", "XL", "XXL"];
         
-        // Calculate total stock per size
-        uniqueSizes.forEach(size => {
-            const sizeVariant = variants.filter(v => v.size === size);
-            const totalStock = sizeVariant.reduce((sum, v) => sum + v.quantity, 0);
-            
-            if (totalStock > 0) {
-                sizeVariants[size] = totalStock;
-                availableSizes.push({
-                    label: size,
-                    stock: totalStock,
-                    isLowStock: totalStock < 2
-                });
+        const sizeStockMap = {};
+        
+        allPossibleSizes.forEach(size => {
+            sizeStockMap[size] = 0;
+        });
+        
+        variants.forEach(variant => {
+            if (sizeStockMap.hasOwnProperty(variant.size)) {
+                sizeStockMap[variant.size] += variant.quantity;
             }
         });
         
-        // Calculate total product quantity across all variants
+        const availableSizes = Object.keys(sizeStockMap).map(size => ({
+            label: size,
+            stock: sizeStockMap[size],
+            isLowStock: sizeStockMap[size] <= 2 && sizeStockMap[size] > 0
+        }));
+        
+        
         const totalProductQuantity = variants.reduce((sum, variant) => sum + variant.quantity, 0);
-
-        // Get reviews
+        
         const reviews = await Review.find({ productId })
             .populate('userId', 'name')
             .sort({ createdAt: -1 });
-
+        
         const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
         const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(1) : 0;
         const totalReviews = reviews.length;
-
-        // Get similar products
-        const allProducts = await Product.find({ 
-            category: findcategory, 
+        
+        const allProducts = await Product.find({
+            category: findcategory,
             _id: { $ne: productId },
             isBlocked: false,
             status: "Available"
@@ -75,7 +70,6 @@ const productDetails = async (req, res) => {
             const randomIndex = Math.floor(Math.random() * availableProducts.length);
             const selectedProduct = availableProducts.splice(randomIndex, 1)[0];
             
-            // Get variants for this similar product to check if it has stock
             const productVariants = await ProductVariant.find({
                 productId: selectedProduct._id,
                 isActive: true
@@ -83,12 +77,11 @@ const productDetails = async (req, res) => {
             
             const hasStock = productVariants.some(v => v.quantity > 0);
             if (hasStock) {
-                // Add total quantity info
                 selectedProduct._totalQuantity = productVariants.reduce((sum, v) => sum + v.quantity, 0);
                 similarProducts.push(selectedProduct);
             }
         }
-
+        
         res.render("productDetails", {
             user: userData,
             product: product,
@@ -102,13 +95,11 @@ const productDetails = async (req, res) => {
             totalReviews: totalReviews,
             messages: req.flash()
         });
-
     } catch (error) {
         console.log("error for product details", error);
         res.redirect('/pageNotFound');
     }
 }
-
 const submitReview = async (req, res) => {
     try {
         const { productId, rating, review } = req.body;

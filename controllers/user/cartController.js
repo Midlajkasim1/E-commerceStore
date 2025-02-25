@@ -1,4 +1,4 @@
-const mongoose = require('mongoose'); // Add this at the top of your controller file
+const mongoose = require('mongoose');
 const User = require('../../models/userSchema');
 const Product = require('../../models/productSchema');
 const ProductVariant = require('../../models/productVariantSchema')
@@ -7,7 +7,9 @@ const Cart = require('../../models/cartSchema');
 
 const getAddToCart = async (req, res) => {
     try {
-        // First, make sure you're using req.user._id consistently
+        const page = parseInt(req.query.page) || 1;
+        const itemsPerPage = 5;
+
         const userCart = await Cart.findOne({ userId: req.user._id })
         .populate({
             path: 'items.productId',
@@ -23,6 +25,8 @@ const getAddToCart = async (req, res) => {
                 cart: [],
                 user: req.user,
                 total: 0,
+                currentPage: 1,
+                totalPages: 1,
                 messages: {
                     success: req.flash('success'),
                     error: req.flash('error')
@@ -30,9 +34,7 @@ const getAddToCart = async (req, res) => {
             });
         }
 
-        // Map cart items with correct total price data
         const cartItems = userCart.items.map(item => {
-            // Make sure we're using the stored price and totals rather than recalculating
             return {
                 productId: item.productId._id,
                 productName: item.productId.productName,
@@ -40,21 +42,30 @@ const getAddToCart = async (req, res) => {
                 quantity: item.quantity,
                 size: item.size,
                 price: item.price,
-                salePrice: item.price, // Use the stored price for consistency
-                totalPrice: item.totalPrice, // Use the calculated totalPrice from the database
+                salePrice: item.price,
+                totalPrice: item.totalPrice, 
                 status: item.status
             };
         });
 
-        // Calculate total based on the totalPrice fields
         const total = cartItems.reduce(
             (sum, item) => sum + (item.totalPrice || 0), 0
         );
 
+        const totalItems = cartItems.length;
+        const totalPages = Math.ceil(totalItems/itemsPerPage);
+        const skip = (page - 1) * itemsPerPage;
+        const paginationItems = cartItems.slice(skip, skip + itemsPerPage);
+
         return res.render('cart', {
-            cart: cartItems,
+            cart: paginationItems,
             total,
             user: req.user,
+            currentPage: page,
+            totalPages: totalPages,
+            itemsPerPage: itemsPerPage, 
+
+            totalItems: totalItems,
             messages: {
                 success: req.flash('success'),
                 error: req.flash('error')
@@ -79,7 +90,6 @@ const addToCartByGet = async (req, res) => {
             });
         }
 
-        // Fetch the product to get the salePrice
         const product = await Product.findById(productId);
 
         if (!product) {
@@ -91,7 +101,6 @@ const addToCartByGet = async (req, res) => {
             });
         }
 
-        // Fetch the variant to check quantity
         const variant = await ProductVariant.findOne({
             productId: productId,
             size: selectedSize,
@@ -107,8 +116,7 @@ const addToCartByGet = async (req, res) => {
             });
         }
 
-        console.log('Fetched Variant:', variant); // Debug line
-
+        console.log('Fetched Variant:', variant); 
         if (variant.quantity < quantity) {
             return res.json({
                 success: false,
@@ -148,27 +156,12 @@ const addToCartByGet = async (req, res) => {
                 });
             }
 
-            // Use salePrice from the Product schema
             const price = product.salePrice || 0;
             const totalPrice = price * quantity;
-            // if (!variant || !variant._id) {
-            //     console.error('Invalid variant object:', variant);
-            //     return res.json({
-            //         success: false,
-            //         message: 'Product variant information is incomplete',
-            //         technicalError: true
-            //     });
-            // }
-            // console.log('Adding to cart:', {
-            //     productId: productId,
-            //     variantId: variant._id.toString(),
-            //     size: selectedSize,
-            //     quantity: quantity,
-            //     price: price
-            // });
+         
             userCart.items.push({
                 productId: productId,
-                variantId: variant._id, // Important: Include the variant ID
+                variantId: variant._id,
                 size: selectedSize,
                 quantity: quantity,
                 price: price,
@@ -192,10 +185,11 @@ const addToCartByGet = async (req, res) => {
 
 
 
-const MAX_PURCHASE_LIMIT = 3;
 const updateCartQuantity = async (req, res) => {
     try {
         const { productId, action, size } = req.body;
+        const MAX_PURCHASE_LIMIT = 3;
+
 
         const userCart = await Cart.findOne({ userId: req.user._id })
             .populate({
@@ -227,10 +221,19 @@ const updateCartQuantity = async (req, res) => {
                 success: false,
                 message: 'Product not found'
             });
+        }  if (product.hasVariants) {
+            const variant = await ProductVariant.findOne({
+                productId: productId,
+                size: size,
+                isActive: true
+            });
+            if (variant) {
+                currentStock = variant.quantity;
+            }
+        } else {
+            currentStock = 0; 
         }
 
-        // Assuming `size` is directly accessible from the product object
-        const currentStock = product.availableSizes.find(s => s === size) ? product.quantity : 0;
         const currentQuantity = userCart.items[itemIndex].quantity;
 
         if (action === 'increase') {
@@ -262,7 +265,6 @@ const updateCartQuantity = async (req, res) => {
 
         await userCart.save();
 
-        // Calculate new totals
         const subtotal = userCart.items.reduce((total, item) =>
             total + (item.quantity * item.productId.salePrice), 0);
         const shipping = subtotal >= 2000 ? 0 : 100;
@@ -320,7 +322,6 @@ const removeFromCart = async (req, res) => {
         const subtotal = updatedCart.items.reduce((total, item) =>
             total + (item.quantity * item.productId.salePrice), 0);
 
-        // Set shipping to 0 if cart is empty, otherwise calculate based on subtotal
         const shipping = updatedCart.items.length === 0 ? 0 : (subtotal >= 2000 ? 0 : 100);
         const tax = updatedCart.items.length > 0 ? 20 : 0;
         const total = subtotal + shipping + tax;

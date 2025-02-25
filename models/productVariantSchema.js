@@ -31,10 +31,10 @@ const productVariantSchema = new Schema({
     type: Boolean,
     default: true
   },
-  images: {
-    type: [String],
-    default: []
-  }
+  // images: {
+  //   type: [String],
+  //   default: []
+  // }
 }, { timestamps: true });
 
 const ProductVariant = mongoose.model("ProductVariant", productVariantSchema);

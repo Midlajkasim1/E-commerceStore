@@ -173,7 +173,7 @@ const placeOrder = async (req, res) => {
                 altPhone: shippingAddress.altPhone
             },
             address: addressDoc._id,
-            status: paymentMethod === 'RAZORPAY' || paymentMethod === 'WALLET' ? 'Processing' : 'Pending',
+            status: 'Pending',
             paymentMethod,
             paymentStatus: paymentMethod === 'RAZORPAY' ? 'pending' : 'not_applicable',
             createOn: new Date()
@@ -384,7 +384,7 @@ const verifyPayment = async (req, res) => {
         const updatedOrder = await Order.findOneAndUpdate(
             { orderId },
             {
-                status: 'Processing',
+                status: 'Pending',
                 paymentStatus: 'completed',
                 paymentDetails: {
                     razorpayPaymentId,
@@ -402,7 +402,6 @@ const verifyPayment = async (req, res) => {
             { new: true }
         );
 
-        // Clear session order details
         delete req.session.orderDetails;
 
 
@@ -416,7 +415,6 @@ const verifyPayment = async (req, res) => {
     } catch (error){
         console.error('Payment verification error:', error);
 
-        // Rollback stock changes
         if (req.body.orderId) {
             const order = await Order.findOne({ orderId: req.body.orderId })
                 .populate('orderedItems.product');
@@ -524,7 +522,7 @@ const handleFailedPayment = async (req, res) => {
         }
 
         finalAmount = Number(finalAmount) || 0;
-
+        delete req.session.orderDetails;
         res.render('payment-failed', {
             orderId: orderId,
             totalAmount: finalAmount,
@@ -738,7 +736,7 @@ const verifyRetryPayment = async (req, res) => {
         const updatedOrder = await Order.findOneAndUpdate(
             { orderId },
             {
-                status: 'Processing',
+                status: 'Pending',
                 paymentStatus: 'completed',
                 paymentDetails: {
                     razorpayPaymentId: razorpay_payment_id,
@@ -1209,7 +1207,7 @@ const returnProductOrder = async (req, res) => {
                 message: "Only delivered products can be returned."
             });
         }
-        const deliveryDate = productItem.deliveredDate || order.deliveredAt;
+        const deliveryDate = productItem.deliveredDate || order.deliveredAt || order.createOn;
         if(!deliveryDate){
             return res.status(400).json({
                 success:false,
