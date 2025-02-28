@@ -167,7 +167,6 @@ const addCoupon = async (req, res) => {
         
         const couponId = req.body.couponId;
         
-        // Validate coupon ID
         if (!mongoose.Types.ObjectId.isValid(couponId)) {
             return res.status(400).json({
                 status: false,
@@ -175,7 +174,6 @@ const addCoupon = async (req, res) => {
             });
         }
 
-        // Validate required fields
         const { couponName, startDate, expiryDate, offerPrice, minimumPrice, status } = req.body;
         
         if (!couponName || !startDate || !expiryDate || !offerPrice || !minimumPrice) {
@@ -185,7 +183,6 @@ const addCoupon = async (req, res) => {
             });
         }
 
-        // Validate coupon name format
         if (!/^[A-Z0-9]+$/.test(couponName)) {
             return res.status(400).json({
                 status: false,
@@ -193,7 +190,6 @@ const addCoupon = async (req, res) => {
             });
         }
 
-        // Convert dates
         const startDateObj = new Date(startDate);
         const expiryDateObj = new Date(expiryDate);
         const currentDate = new Date();
@@ -201,7 +197,6 @@ const addCoupon = async (req, res) => {
         currentDate.setHours(0, 0, 0, 0);
         startDateObj.setHours(0, 0, 0, 0);
         expiryDateObj.setHours(0, 0, 0, 0);
-        // Validate dates
         if (isNaN(startDateObj.getTime()) || isNaN(expiryDateObj.getTime())) {
             return res.status(400).json({
                 status: false,
@@ -223,7 +218,6 @@ const addCoupon = async (req, res) => {
             });
         }
 
-        // Convert and validate prices
         const offerPriceNum = parseFloat(offerPrice);
         const minimumPriceNum = parseFloat(minimumPrice);
 

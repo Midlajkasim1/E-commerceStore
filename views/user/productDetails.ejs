@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
        <link rel="icon" href="images/store-logo.png"> 
-    <title>Product Details</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+       <title>Urban row</title>
+       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
 
 
@@ -75,7 +75,7 @@
 /* Breadcrumb Links */
 .breadcrumb a {
     text-decoration: none;
-    color: #0073e6;
+    color: #15181b;
 }
 
 .breadcrumb a:hover {
@@ -1073,7 +1073,6 @@
     border-color: #dee2e6;
 }
 
-/* Make sure the disabled input doesn't prevent interaction */
 .size-option.out-of-stock input[type="radio"] {
     pointer-events: none;
 }
@@ -1085,10 +1084,10 @@
     <%-include("../../views/partials/user/header")%>
     <div class="container my-4">
     <div class="breadcrumb">
-        <a href="/">Home</a>
-        <span>/</span>
-        <a href="/shop">Shop</a>
-        <span>/</span>
+        <a href="/">Home &nbsp; </a>
+        <span> / </span>
+        <a href="/shop">&nbsp; Shop</a>
+        
        
     </div>
     <div class="product-details-banner">
@@ -1356,37 +1355,31 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script>
 
       
     document.addEventListener('DOMContentLoaded', function() {
-        // Image Gallery and Zoom Functionality
         const mainImage = document.querySelector('.product-image-slider img');
         const thumbnails = document.querySelectorAll('.slider-nav-thumbnails img');
         const imageContainer = document.querySelector('.product-image-container');
 
-        // Initialize first thumbnail as active
         if (thumbnails.length > 0) {
             thumbnails[0].classList.add('active');
         }
 
-        // Thumbnail click handling
         thumbnails.forEach(thumbnail => {
             thumbnail.addEventListener('click', function() {
-                // Update main image
                 mainImage.src = this.src;
                 
-                // Update active state
                 thumbnails.forEach(thumb => thumb.classList.remove('active'));
                 this.classList.add('active');
 
-                // Reset zoom transform
                 mainImage.style.transform = 'scale(1)';
                 mainImage.style.transformOrigin = 'center center';
             });
         });
 
-        // Image zoom handling
         if (imageContainer) {
             let isZoomed = false;
 
@@ -1411,7 +1404,6 @@
                 mainImage.style.transformOrigin = 'center center';
             });
 
-            // Add touch support for mobile devices
             let touchTimeout;
             imageContainer.addEventListener('touchstart', function() {
                 touchTimeout = setTimeout(() => {
@@ -1433,17 +1425,15 @@
                 const y = (touch.clientY - top) / height;
 
                 mainImage.style.transformOrigin = `${x * 100}% ${y * 100}%`;
-                e.preventDefault(); // Prevent page scrolling while zoomed
+                e.preventDefault(); 
             });
         }
 
      });
      
      document.addEventListener('DOMContentLoaded', function() {
-    // Make sure all size options, including out-of-stock ones, are properly styled
     const sizeOptions = document.querySelectorAll('.size-option');
     sizeOptions.forEach(option => {
-        // Extract stock information from the onclick attribute
         let stock = 0;
         if (option.hasAttribute('onclick')) {
             const onclickAttr = option.getAttribute('onclick');
@@ -1453,7 +1443,6 @@
             }
         }
         
-        // Apply out-of-stock class and styling if needed
         if (stock === 0) {
             option.classList.add('out-of-stock');
             const input = option.querySelector('input[type="radio"]');
@@ -1462,31 +1451,25 @@
             }
         }
         
-        // Add click handler for all size options
         option.addEventListener('click', function(e) {
-            // For out-of-stock options, prevent the radio selection but still show message
             if (this.classList.contains('out-of-stock')) {
                 e.preventDefault();
                 showStock(this, 0);
                 return;
             }
             
-            // Show stock information for in-stock options
             showStock(this, stock);
         });
     });
 
-    // Check URL for size parameter
     const urlParams = new URLSearchParams(window.location.search);
     const sizeParam = urlParams.get('size');
 
     if (sizeParam) {
-        // Find the matching size option
         const sizeOption = document.querySelector(`.size-option input[value="${sizeParam}"]`);
         if (sizeOption && !sizeOption.disabled) {
             sizeOption.checked = true;
 
-            // Get parent and extract stock
             const parent = sizeOption.closest('.size-option');
             let stock = 0;
             if (parent && parent.hasAttribute('onclick')) {
@@ -1497,7 +1480,6 @@
                 }
             }
 
-            // Show stock info
             if (parent) {
                 showStock(parent, stock);
             }
@@ -1509,7 +1491,6 @@ function showStock(element, stock) {
     const selectedStockInfo = document.getElementById('selectedStockInfo');
     const size = element.textContent.trim();
 
-    // Update URL with selected size (only for in-stock sizes)
     if (stock > 0) {
         const url = new URL(window.location);
         url.searchParams.set('size', size);
@@ -1539,10 +1520,13 @@ function showStock(element, stock) {
     }
 }
 
-const isUserLoggedIn = <%- locals.user ? 'true' : 'false' %>;
+
+    
+const isUserLoggedIn = <%- locals.user ? 'true' : 'false' %>
 
 
 function handleAddToCart(productId) {
+
 
     if (!isUserLoggedIn) {
         Swal.fire({

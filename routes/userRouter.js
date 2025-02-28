@@ -131,6 +131,10 @@ router.get('/wallet/history', userAuth, WalletController.getTransactionHistory);
 router.post('/create-wallet-order',userAuth,WalletController.createWalletOrder);
 router.post('/verify-wallet-payment',userAuth,WalletController.verifyWalletPayment);
 
+//about
+router.get('/about',userController.loadAbout);
+router.get('/contact-us',userController.loadContactUs)
+
 
 
 module.exports= router;

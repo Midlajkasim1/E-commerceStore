@@ -42,9 +42,9 @@ const getCheckout = async (req, res) => {
         }));
 
         const subtotal = cartItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-        const taxRate = 0.02; // 2% tax
+        const taxRate = 0.02; 
         const tax = subtotal * taxRate;
-        let shipping = subtotal >= 2000 ? 0 : 100; // Free shipping for orders ≥ 2000
+        let shipping = subtotal >= 2000 ? 0 : 100; 
         let discount = 0;
         let couponCode = null;
         let appliedCoupon = null;
@@ -54,7 +54,7 @@ const getCheckout = async (req, res) => {
             appliedCoupon = await Coupon.findById(user.redeemedUser);
             if (appliedCoupon) {
                 discount = appliedCoupon.offerPrice;
-                couponCode = appliedCoupon.name; // Changed from coupon.code to coupon.name
+                couponCode = appliedCoupon.name; 
             }
         }
 
@@ -136,7 +136,6 @@ const checkoutAddAddress = async (req, res) => {
         }
 
         const savedAddress = await userAddress.save();
-        // console.log('Successfully saved address:', savedAddress);
         req.flash('err', 'Address added successfully')
         return res.status(200).json({
             success: true,
@@ -278,9 +277,7 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Check if the user already has a coupon applied
         if (user.redeemedUser) {
-            // Remove the existing coupon
             const existingCoupon = await Coupon.findById(user.redeemedUser);
             if (existingCoupon) {
                 await Coupon.updateOne(
@@ -365,7 +362,6 @@ const removeCoupon = async (req, res) => {
             });
         }
 
-        // Find the coupon
         const coupon = await Coupon.findOne({ name: code });
         if (!coupon) {
             return res.status(400).json({
@@ -374,17 +370,14 @@ const removeCoupon = async (req, res) => {
             });
         }
 
-        // Remove the user from the coupon's usedUsers array
         await Coupon.updateOne(
             { name: code },
             { $pull: { usedUsers: userId } }
         );
 
-        // Reset the redeemedUser field in the User model
         user.redeemedUser = null;
         await user.save();
 
-        // Recalculate the total amount
         const cart = await Cart.findOne({ userId }).populate('items.productId');
         if (!cart) {
             return res.status(400).json({
@@ -394,8 +387,8 @@ const removeCoupon = async (req, res) => {
         }
 
         const subtotal = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
-        const shipping = subtotal >= 2000 ? 0 : 100; // Free shipping for orders ≥ 2000
-        const tax = subtotal * 0.02; // 2% tax
+        const shipping = subtotal >= 2000 ? 0 : 100; 
+        const tax = subtotal * 0.02; 
         const total = subtotal + shipping + tax;
 
         res.status(200).json({

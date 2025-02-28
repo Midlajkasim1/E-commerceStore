@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// ProductVariant Schema
 const productVariantSchema = new Schema({
   productId: {
     type: Schema.Types.ObjectId,
@@ -22,19 +21,12 @@ const productVariantSchema = new Schema({
     default: 0,
     required: true
   },
-//   sku: {
-//     type: String,
-//     required: true,
-//     unique: true
-//   },
+
   isActive: {
     type: Boolean,
     default: true
   },
-  // images: {
-  //   type: [String],
-  //   default: []
-  // }
+
 }, { timestamps: true });
 
 const ProductVariant = mongoose.model("ProductVariant", productVariantSchema);

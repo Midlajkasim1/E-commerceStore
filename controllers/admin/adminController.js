@@ -33,7 +33,7 @@ const login = async (req, res) => {
 
         if (admin) {
             const passwordMatch = await bcrypt.compare(password, admin.password);
-            console.log('Password match:', passwordMatch);
+            // console.log('Password match:', passwordMatch);
         
 
             if (!passwordMatch) {
@@ -54,7 +54,6 @@ const login = async (req, res) => {
     }
 };
 
-// adminController.js
 const loadDashboard = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
@@ -737,7 +736,6 @@ const downloadPdfReport = async (req, res) => {
                             [
                                 'Total Final Amount', 
                                 {
-                                    // Completely remove the ₹ symbol
                                     text: formatCurrency(summary.totalFinalAmount),
                                     alignment: 'right'
                                 }

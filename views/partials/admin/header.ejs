@@ -134,9 +134,7 @@
 
 <div class="container">
     <div class="top-header">
-        <div class="profile-section">
-            <img src="/images/admin-pro.jpeg" alt="Admin">
-        </div>
+  
     </div>
 
 <div class="sidebar">
@@ -168,23 +166,19 @@
             <i class="fas fa-ticket"></i>
             Coupon
         </a>
-        <!-- <a href="#" class="nav-item">
-            <i class="fas fa-image"></i>
-            Banner
-        </a> -->
+        <form method="post" action="/admin/logout">
+            <button type="submit" class="nav-item logout">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </button>
+        </form>
         
-       <form method="post" action="/admin/logout">
-          <button  class="nav-item logout">
-              <i class="fas fa-sign-out-alt"></i>
-              Logout
-          </form>
-       </form>
     </nav>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-            const navItems = document.querySelectorAll('.nav-item');
+            const navItems = document.querySelectorAll('.nav-item:not(.logout)');
 
             navItems.forEach(item => {
                 item.addEventListener('click', function (e) {
@@ -202,6 +196,13 @@
                     }
                 });
             });
+
+            const logoutBtn = document.querySelector('.logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            this.classList.add('active');
+        });
+    }
 
             const currentPath = window.location.pathname;
             navItems.forEach(item => {

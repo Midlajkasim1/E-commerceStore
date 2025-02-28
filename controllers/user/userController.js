@@ -283,7 +283,7 @@ const login = async (req, res) => {
 
 
         req.session.user = user._id;
-        console.log("Session user ID:", req.session.user);
+        // console.log("Session user ID:", req.session.user);
 
         res.redirect('/');
 
@@ -301,26 +301,22 @@ const loadHomePage = async (req, res) => {
         const userId = req.session.user;
         const categories = await Category.find({ isListed: true });
 
-        // Get the latest products
         let productData = await Product.find({
             isBlocked: false,
             category: { $in: categories.map(category => category._id) },
         })
         .sort({ createdAt: -1 })
-        .limit(8) // Fetch more initially since we'll filter some out
+        .limit(8) 
         .lean();
 
-        // Get variants for each product and calculate total quantity
         for (let product of productData) {
             const variants = await ProductVariant.find({ 
                 productId: product._id,
                 isActive: true 
             });
             
-            // Calculate total quantity across all variants
             product._totalQuantity = variants.reduce((sum, variant) => sum + variant.quantity, 0);
             
-            // Get the first variant's images if product doesn't have its own
             if (!product.productImage || product.productImage.length === 0) {
                 const firstVariant = variants[0];
                 if (firstVariant && firstVariant.images && firstVariant.images.length > 0) {
@@ -329,16 +325,14 @@ const loadHomePage = async (req, res) => {
             }
         }
 
-        // Filter out products with no available quantity
         productData = productData.filter(product => product._totalQuantity > 0);
         
-        // Limit to 4 products after filtering
         productData = productData.slice(0, 4);
 
         if (userId) {
             const user = await User.findById(userId);
             if (user) {
-                console.log("User data retrieved successfully:", user);
+                // console.log("User data retrieved successfully:", user);
                 return res.render('home', { user: user, products: productData });
             } else {
                 console.log("No user data found in the database.");
@@ -353,6 +347,31 @@ const loadHomePage = async (req, res) => {
         return res.status(500).send("Server Error");
     }
 };
+
+const loadAbout = async(req,res)=>{
+    try {
+        const user = req.session.user;
+        const userId = await User.findById(user);
+
+
+        res.render('about',{user:userId})
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+const loadContactUs = async (req,res)=>{
+    try {
+        const user = req.session.user;
+        const userId = await User.findById(user);
+        res.render('contactUs',{user:userId})
+        
+    } catch (error) {
+        console.error(error);
+
+    }
+}
+
 const logout = async (req, res) => {
     try {
         req.session.destroy((err) => {
@@ -507,11 +526,9 @@ const resetPassword = async (req, res) => {
 };
 const loadShoppingPage = async (req, res) => {
     try {
-        // Get user data
         const user = req.session.user;
         const userData = await User.findOne({ _id: user });
 
-        // Get categories
         const categories = await Category.find({ isListed: true }).lean();
         const categoriesIds = categories.map(category => category._id.toString());
         const categoryOffers = {};
@@ -519,7 +536,6 @@ const loadShoppingPage = async (req, res) => {
             categoryOffers[category._id] = category.categoryOffer || 0;
         });
 
-        // Extract query parameters with defaults
         const {
             query: searchQuery = "",
             category: selectedCategory = "",
@@ -529,17 +545,14 @@ const loadShoppingPage = async (req, res) => {
             lt: maxPrice = ""
         } = req.query;
 
-        // Pagination setup
         const limit = 9;
         const skip = (parseInt(page) - 1) * limit;
 
-        // Build the base query
         let baseQuery = {
             isBlocked: false,
             status: { $ne: "Discontinued" }
         };
 
-        // Enhanced search filter for both product name and category
         if (searchQuery.trim()) {
             const matchingCategories = await Category.find({
                 name: { $regex: searchQuery.trim(), $options: 'i' }
@@ -553,21 +566,18 @@ const loadShoppingPage = async (req, res) => {
             ];
         }
 
-        // Add category filter if specifically selected
         if (selectedCategory) {
             baseQuery.category = selectedCategory;
         } else if (!searchQuery.trim()) {
             baseQuery.category = { $in: categoriesIds };
         }
 
-        // Add price range filter
         if (minPrice || maxPrice) {
             baseQuery.salePrice = {};
             if (minPrice) baseQuery.salePrice.$gte = parseFloat(minPrice);
             if (maxPrice) baseQuery.salePrice.$lte = parseFloat(maxPrice);
         }
 
-        // Define sort options
         const sortOptions = {
             default: { createdAt: -1 },
             priceHighToLow: { salePrice: -1 },
@@ -576,7 +586,6 @@ const loadShoppingPage = async (req, res) => {
             nameZtoA: { productName: -1 }
         };
 
-        // Get base products
         let products = await Product.find(baseQuery)
             .populate('category')
             .sort(sortOptions[sort])
@@ -584,22 +593,18 @@ const loadShoppingPage = async (req, res) => {
             .limit(limit)
             .lean();
 
-        // Enhance products with variant information
         products = await Promise.all(products.map(async (product) => {
-            // Get all active variants for the product
             const variants = await ProductVariant.find({
                 productId: product._id,
                 isActive: true
             }).lean();
 
-            // Calculate total quantity and get available sizes
             const totalQuantity = variants.reduce((sum, variant) => sum + variant.quantity, 0);
             const availableSizes = [...new Set(variants
                 .filter(v => v.quantity > 0)
                 .map(v => v.size))];
             const availableColors = [...new Set(variants.map(v => v.color))];
 
-            // Calculate final price with offers
             const productOffer = product.productOffer || 0;
             const categoryOffer = product.category?.categoryOffer || 0;
             const totalDiscount = productOffer + categoryOffer;
@@ -615,10 +620,8 @@ const loadShoppingPage = async (req, res) => {
             };
         }));
 
-        // Filter out products with no stock
         products = products.filter(product => product.hasStock);
 
-        // Recalculate total count for pagination (only in-stock products)
         const productsWithStock = await Promise.all((await Product.find(baseQuery).lean()).map(async (product) => {
             const variantCount = await ProductVariant.aggregate([
                 { $match: { productId: product._id, isActive: true } },
@@ -630,7 +633,6 @@ const loadShoppingPage = async (req, res) => {
         const totalProducts = productsWithStock.filter(Boolean).length;
         const totalPages = Math.ceil(totalProducts / limit);
 
-        // Build query string for pagination and filters
         const queryParams = new URLSearchParams();
         if (searchQuery) queryParams.set('query', searchQuery);
         if (selectedCategory) queryParams.set('category', selectedCategory);
@@ -638,7 +640,6 @@ const loadShoppingPage = async (req, res) => {
         if (minPrice) queryParams.set('gt', minPrice);
         if (maxPrice) queryParams.set('lt', maxPrice);
 
-        // Render the page
         res.render("shop", {
             user: userData,
             products,
@@ -798,6 +799,8 @@ module.exports = {
     getResetPassword,
     resendResetOtp,
     resetPassword,
+    loadAbout,
+    loadContactUs,
     logout,
     resetEmailOtp,
     resendEmailChangeOtp,

@@ -242,7 +242,6 @@ const placeOrder = async (req, res) => {
                 variant.quantity -= item.quantity;
                 await variant.save();
 
-                // Update product status if all variants are out of stock
                 const product = await Product.findById(item.productId);
                 const allVariants = await ProductVariant.find({ productId: item.productId });
                 const totalQuantity = allVariants.reduce((sum, variant) => sum + variant.quantity, 0);
@@ -362,11 +361,9 @@ const verifyPayment = async (req, res) => {
                 throw new Error(`Insufficient stock for ${product.productName} in size ${item.size}`);
             }
 
-            // Update variant quantity
             variant.quantity -= item.quantity;
             await variant.save();
 
-            // Check if all variants are out of stock
             const allVariants = await ProductVariant.find({
                 productId: item.product,
                 isActive: true
@@ -380,7 +377,6 @@ const verifyPayment = async (req, res) => {
             }
         }
 
-        // Update order status
         const updatedOrder = await Order.findOneAndUpdate(
             { orderId },
             {
@@ -395,7 +391,6 @@ const verifyPayment = async (req, res) => {
             { new: true }
         );
 
-        // Clear cart
         await Cart.findOneAndUpdate(
             { userId },
             { $set: { items: [] } },
@@ -431,7 +426,6 @@ const verifyPayment = async (req, res) => {
                         variant.quantity += item.quantity;
                         await variant.save();
 
-                        // Update product status if necessary
                         const product = await Product.findById(item.product);
                         if (product && product.status === "out of stock" && variant.quantity > 0) {
                             product.status = "Available";
@@ -639,7 +633,6 @@ const verifyRetryPayment = async (req, res) => {
             orderId,
         } = req.body;
 
-        // Validate required fields
         if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !orderId) {
             return res.status(400).json({
                 success: false,
@@ -655,7 +648,6 @@ const verifyRetryPayment = async (req, res) => {
             });
         }
 
-        // Verify payment signature
         const generated_signature = crypto
             .createHmac('sha256', razorpayInstance.key_secret)
             .update(razorpay_order_id + '|' + razorpay_payment_id)
@@ -668,7 +660,6 @@ const verifyRetryPayment = async (req, res) => {
             });
         }
 
-        // Find and validate order
         const order = await Order.findOne({ orderId, userId })
             .populate({
                 path: 'orderedItems.product',
@@ -689,7 +680,6 @@ const verifyRetryPayment = async (req, res) => {
             });
         }
 
-        // Check and update variant stock
         for (const item of order.orderedItems) {
             const product = await Product.findById(item.product);
             if (!product) {
@@ -714,11 +704,9 @@ const verifyRetryPayment = async (req, res) => {
                 throw new Error(`Insufficient stock for ${product.productName} in size ${item.size}`);
             }
 
-            // Update variant quantity
             variant.quantity -= item.quantity;
             await variant.save();
 
-            // Check if all variants are out of stock
             const allVariants = await ProductVariant.find({
                 productId: item.product,
                 isActive: true
@@ -732,7 +720,6 @@ const verifyRetryPayment = async (req, res) => {
             }
         }
 
-        // Update order status
         const updatedOrder = await Order.findOneAndUpdate(
             { orderId },
             {
@@ -747,14 +734,12 @@ const verifyRetryPayment = async (req, res) => {
             { new: true }
         );
 
-        // Clear cart
         await Cart.findOneAndUpdate(
             { userId },
             { $set: { items: [] } },
             { new: true }
         );
 
-        // Clear session order details
         if (req.session.orderDetails) {
             delete req.session.orderDetails;
         }
@@ -771,7 +756,6 @@ const verifyRetryPayment = async (req, res) => {
     } catch (error) {
         console.error('Payment verification error:', error);
 
-        // Rollback stock changes
         if (req.body.orderId) {
             const order = await Order.findOne({ orderId: req.body.orderId })
                 .populate('orderedItems.product');
@@ -788,7 +772,6 @@ const verifyRetryPayment = async (req, res) => {
                         variant.quantity += item.quantity;
                         await variant.save();
 
-                        // Update product status if necessary
                         const product = await Product.findById(item.product);
                         if (product && product.status === "out of stock" && variant.quantity > 0) {
                             product.status = "Available";
@@ -897,7 +880,6 @@ const generateInvoice = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=Invoice-${order.orderId}.pdf`);
         doc.pipe(res);
 
-        // Header
         doc.fontSize(20)
             .text('Urban Row', { align: 'center' })
             .moveDown()
@@ -905,13 +887,11 @@ const generateInvoice = async (req, res) => {
             .text('INVOICE', { align: 'center' })
             .moveDown();
 
-        // Invoice details in a right-aligned format
         doc.fontSize(10)
             .text(`Order ID: ${order.orderId}`, { align: 'right' })
             .text(`Date: ${new Date().toLocaleDateString()}`, { align: 'right' })
             .moveDown();
 
-        // Shipping address
         doc.fontSize(10)
             .text('SHIPPING ADDRESS:', { underline: true })
             .text(order.shippingAddress?.name)
@@ -921,13 +901,11 @@ const generateInvoice = async (req, res) => {
             .text(order.shippingAddress?.phone)
             .moveDown();
 
-        // Table for product details
         const tableTop = doc.y + 10;
         const tableHeaders = ['Product', 'Size', 'Qty', 'Price', 'Total'];
         const columnWidths = [240, 60, 60, 80, 80];
         let xPosition = 50;
 
-        // Draw table headers with background
         doc.fillColor('#f0f0f0')
             .rect(xPosition, tableTop, 520, 20)
             .fill();
@@ -941,7 +919,6 @@ const generateInvoice = async (req, res) => {
             xPosition += columnWidths[i];
         });
 
-        // Draw table rows
         let y = tableTop + 25;
         if (Array.isArray(order.orderedItems)) {
             order.orderedItems.forEach((item, index) => {
@@ -949,7 +926,6 @@ const generateInvoice = async (req, res) => {
                 const quantity = Number(item.quantity) || 0;
                 const total = price * quantity;
 
-                // Alternate row background
                 if (index % 2 === 1) {
                     doc.fillColor('#f9f9f9')
                         .rect(50, y - 5, 520, 20)
@@ -976,12 +952,10 @@ const generateInvoice = async (req, res) => {
             });
         }
 
-        // Draw bottom line
         doc.moveTo(50, y)
             .lineTo(570, y)
             .stroke();
 
-        // Summary section
         y += 20;
         const summaryX = 400;
         const totalPrice = Number(order.totalPrice) || 0;
@@ -1007,7 +981,6 @@ const generateInvoice = async (req, res) => {
             .text('Grand Total', summaryX, y, { bold: true })
             .text(finalAmount.toString(), summaryX + 100, y, { align: 'right', bold: true });
 
-        // Footer
         doc.fontSize(10)
             .text('        Thank you for shopping with Urban Row!', {
                 align: 'center',
@@ -1066,7 +1039,6 @@ const cancelProductOrder = async (req, res) => {
             return res.status(400).json({ success: false, message: "Order ID and Product ID are required." });
         }
 
-
         const order = await Order.findById(orderId);
 
         if (!order) {
@@ -1078,11 +1050,8 @@ const cancelProductOrder = async (req, res) => {
         let productItem;
 
         if (itemIndex !== undefined) {
-            // If index is provided, use it to get the exact item
             productItem = order.orderedItems[itemIndex];
         } else {
-            // Fallback to the current method for backward compatibility
-            // Find the first non-cancelled item with this product ID
             productItem = order.orderedItems.find(item =>
                 item.product.toString() === productId && item.status !== 'Cancelled'
             );
@@ -1096,14 +1065,83 @@ const cancelProductOrder = async (req, res) => {
             return res.status(400).json({ success: false, message: "Product is already canceled." });
         }
 
-        const refundAmount = productItem.price * productItem.quantity;
+        const itemAmount = productItem.price * productItem.quantity;
+
+        const remainingItems = order.orderedItems.filter(item => 
+            item.status !== 'Cancelled' && 
+            !(item.product.toString() === productItem.product.toString() && 
+              item._id.toString() === productItem._id.toString())
+        );
+
+        const remainingSubtotal = remainingItems.reduce((sum, item) => 
+            sum + (item.price * item.quantity), 0);
+
+        let refundAmount = itemAmount;
+        let couponAdjustment = 0;
+        
+        // First, check if any products in this order have already been cancelled
+        const hasPreviousCancellations = order.orderedItems.some(item => 
+            item.status === 'Cancelled'
+        );
+      
+        // Only apply coupon adjustment logic if there are no previous cancellations
+        if (order.discount > 0 && !hasPreviousCancellations) {
+            try {
+                const user = await User.findById(userId);
+                let couponMinimumPrice = 0;
+                
+                if (user && user.redeemedUser) {
+                    const coupon = await Coupon.findById(user.redeemedUser);
+                    if (coupon) {
+                        couponMinimumPrice = coupon.minimumPrice;
+                    }
+                } else {
+                    const coupons = await Coupon.find({ usedUsers: userId });
+                    if (coupons.length > 0) {
+                        couponMinimumPrice = coupons[0].minimumPrice;
+                    } 
+                }
+
+                if (remainingItems.length === 0) {
+                    // If this is a multi-item order
+                    if (order.orderedItems.length > 1) {
+                        // Calculate proportional discount for this item
+                        const orderSubtotal = order.totalPrice;
+                        const itemPercentage = itemAmount / orderSubtotal;
+                        couponAdjustment = order.discount * itemPercentage;
+                        refundAmount = itemAmount - couponAdjustment;
+                    } else {
+                        // Single item order - refund the finalAmount (which already accounts for discount)
+                        refundAmount = order.finalAmount;
+                    }
+                } 
+                // If remaining order would be below coupon threshold
+                else if (remainingSubtotal < couponMinimumPrice) {
+                    couponAdjustment = order.discount;
+                    refundAmount = itemAmount - couponAdjustment;
+                    
+                    if (refundAmount < 0) {
+                        refundAmount = 0;
+                    }
+                }
+            } catch (error) {
+                console.error("Error retrieving coupon information:", error);
+                // Only apply this logic for the first cancellation
+                if (remainingItems.length > 0) {
+                    couponAdjustment = order.discount;
+                    refundAmount = itemAmount - couponAdjustment;
+                    if (refundAmount < 0) refundAmount = 0;
+                }
+            }
+        }
+        // For subsequent cancellations, always give full refund with no deductions
+        // This code path is taken when hasPreviousCancellations is true
 
         const variant = await ProductVariant.findById(productItem.variant);
         if (variant) {
             variant.quantity += productItem.quantity;
             await variant.save();
 
-            // Update product status if necessary
             const product = await Product.findById(productId);
             if (product && product.status === "out of stock") {
                 product.status = "Available";
@@ -1112,25 +1150,17 @@ const cancelProductOrder = async (req, res) => {
         }
 
         let refundResult = null;
-        if (order.paymentMethod !== 'COD') {
+        if (order.paymentMethod !== 'COD' && refundAmount > 0) {
             refundResult = await handleRefund(
                 userId,
                 refundAmount,
-                [productItem.productName],
+                [productItem.productName || 'Canceled Product'],
                 orderId
             );
         }
 
         productItem.status = 'Cancelled';
         productItem.cancellationReason = cancellationReason;
-
-
-        // const selectedSize = `size${productItem.size}`;
-        // if (product.size && product.size[selectedSize] !== undefined) {
-        //     product.size[selectedSize] += productItem.quantity;
-        //     product.quantity += productItem.quantity;
-        //     await product.save();
-        // }
 
         const allProducts = order.orderedItems;
         if (allProducts.every(item => item.status === "Delivered")) {
@@ -1147,21 +1177,37 @@ const cancelProductOrder = async (req, res) => {
             order.status = "Pending";
         }
 
+        // Store information about coupon deduction applied to this cancellation
+        if (couponAdjustment > 0) {
+            // You might want to add a field to the order document to track this
+            // For example:
+            // order.couponDeductionApplied = true;
+        }
+
         await order.save();
+
+        let message;
+        if (order.paymentMethod === 'COD') {
+            message = "Product canceled successfully. No refund processed for Cash on Delivery orders.";
+        } else if (refundAmount <= 0) {
+            message = "Product canceled successfully. No refund processed as the coupon discount exceeded the item value.";
+        } else {
+            message = `Product canceled successfully. Refund of ₹${refundAmount} processed to wallet${couponAdjustment > 0 ? ` (coupon discount of ₹${couponAdjustment} was deducted)` : ''}.`;
+        }
 
         const response = {
             success: true,
-            message: order.paymentMethod === 'COD'
-                ? "Product canceled successfully. No refund processed for Cash on Delivery orders."
-                : "Product canceled successfully and refund processed to wallet.",
-            order
+            message: message,
+            order: {
+                id: order._id,
+                orderId: order.orderId,
+                status: order.status
+            }
         };
-
         if (refundResult) {
             response.refundTransactionId = refundResult.transactionId;
         }
         return res.status(200).json(response);
-
 
     } catch (error) {
         console.error("Error while canceling the product:", error);
@@ -1223,19 +1269,7 @@ const returnProductOrder = async (req, res) => {
             });
         }
 
-        // if (productItem.status === 'Return Request') {
-        //     return res.status(400).json({
-        //         success: false,
-        //         message: "Return request already submitted for this product."
-        //     });
-        // }
-
-        // if (productItem.status === 'Returned') {
-        //     return res.status(400).json({
-        //         success: false,
-        //         message: "Product is already returned."
-        //     });
-        // }
+        
         if (['Return Request', 'Returned'].includes(productItem.status)) {
             return res.status(400).json({
                 success: false,

@@ -261,9 +261,7 @@
     </div>
 
     <div class="top-header">
-        <div class="profile-section">
-            <img src="/images/admin-pro.jpeg" alt="Admin">
-        </div>
+    
     </div>
 
     <div class="main-content">
@@ -406,7 +404,7 @@
         <!-- Best Selling Products Table -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Best Selling Products (Top 10)</h5>
+        <h5 class="mb-0">Best Selling Products</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -439,7 +437,7 @@
 <!-- Best Selling Categories Table -->
 <div class="card mt-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Best Selling Categories (Top 10)</h5>
+        <h5 class="mb-0">Best Selling Categories</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -477,11 +475,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-     // Initialize chart variables
 let salesChart = null;
 let orderStatusChart = null;
 
-// Date range utility functions
 function setDateRange(range) {
     const endDate = new Date();
     const startDate = new Date();
@@ -504,9 +500,7 @@ function setDateRange(range) {
     handleApplyFilter();
 }
 
-// Initialize charts
 function initializeCharts() {
-    // Sales Chart with improved configuration
     const salesCtx = document.getElementById('salesChart').getContext('2d');
     salesChart = new Chart(salesCtx, {
         type: 'line',
@@ -605,7 +599,6 @@ function initializeCharts() {
         }
     });
 
-    // Order Status Chart with improved donut configuration
     const statusCtx = document.getElementById('orderStatusChart').getContext('2d');
     orderStatusChart = new Chart(statusCtx, {
         type: 'doughnut',
@@ -614,9 +607,9 @@ function initializeCharts() {
             datasets: [{
                 data: [],
                 backgroundColor: [
-                    '#10B981', // Delivered
-                    '#F59E0B', // Pending
-                    '#3B82F6'  // Processing
+                    '#10B981', 
+                    '#F59E0B',
+                    '#3B82F6'  
                 ],
                 borderWidth: 2,
                 borderColor: '#1F2937'
@@ -657,19 +650,15 @@ function initializeCharts() {
     });
 }
 function processOrderStatusData(data, filter) {
-    // Initialize status counters
     const statusTotals = {
         'Delivered': 0,
         'Pending': 0,
         'Processing': 0
     };
 
-    // Process data based on filter type
     data.forEach(entry => {
         if (entry.statusCounts) {
-            // For each status in the entry
             Object.entries(entry.statusCounts).forEach(([status, count]) => {
-                // Only count valid statuses
                 if (statusTotals.hasOwnProperty(status)) {
                     statusTotals[status] += count;
                 }
@@ -677,7 +666,6 @@ function processOrderStatusData(data, filter) {
         }
     });
 
-    // Filter out empty statuses and prepare chart data
     const chartData = Object.entries(statusTotals)
         .filter(([_, count]) => count > 0)
         .reduce((acc, [status, count]) => {
@@ -690,16 +678,12 @@ function processOrderStatusData(data, filter) {
 }
 
 
-// Update dashboard statistics
 function updateDashboardStats(data) {
-    // Format currency
     const formatCurrency = (value) => `₹${parseInt(value).toLocaleString()}`;
 
-    // Update basic stats
     document.querySelector('[data-stat="total-sales"]').textContent = formatCurrency(data.statistics.totalSales);
     document.querySelector('[data-stat="total-orders"]').textContent = data.statistics.totalOrders.toLocaleString();
 
-    // Update order status cards with proper error handling
     if (data.orderStatusSummary) {
         const statusCards = document.querySelectorAll('[data-status]');
         statusCards.forEach(card => {
@@ -721,11 +705,10 @@ function updateDashboardStats(data) {
         });
     }
 
-    // Update best selling products table with error handling
     const productsTableBody = document.querySelector('#bestSellingProducts tbody');
     if (productsTableBody && data.bestSellingProducts && Array.isArray(data.bestSellingProducts)) {
         productsTableBody.innerHTML = data.bestSellingProducts
-            .filter(product => product && product.name) // Ensure valid product data
+            .filter(product => product && product.name) 
             .map(product => `
                 <tr>
                     <td>${product.name || 'N/A'}</td>
@@ -737,11 +720,10 @@ function updateDashboardStats(data) {
             `).join('') || '<tr><td colspan="5">No products data available</td></tr>';
     }
 
-    // Update best selling categories table with error handling
     const categoriesTableBody = document.querySelector('#bestSellingCategories tbody');
     if (categoriesTableBody && data.bestSellingCategories && Array.isArray(data.bestSellingCategories)) {
         categoriesTableBody.innerHTML = data.bestSellingCategories
-            .filter(category => category && category._id) // Ensure valid category data
+            .filter(category => category && category._id) 
             .map(category => `
                 <tr>
                     <td>${category._id || 'N/A'}</td>
@@ -752,13 +734,11 @@ function updateDashboardStats(data) {
             `).join('') || '<tr><td colspan="4">No categories data available</td></tr>';
     }
 
-    // Update charts if data is available
     if (data.chartData) {
         updateCharts(data.chartData);
     }
 }
 
-// Validate date range
 function validateDateRange(startDate, endDate) {
     if (!startDate || !endDate) {
         Swal.fire({
@@ -776,7 +756,6 @@ function validateDateRange(startDate, endDate) {
     const end = new Date(endDate);
     const today = new Date();
 
-    // Normalize dates to midnight (00:00:00) in the local timezone
     start.setHours(0, 0, 0, 0);
     end.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
@@ -821,7 +800,6 @@ function validateDateRange(startDate, endDate) {
     return true;
 }
 
-// Handle filter application
 async function handleApplyFilter() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
@@ -842,14 +820,12 @@ async function handleApplyFilter() {
 
         const data = await response.json();
         
-        // Validate required data structures
         if (!data.statistics || !data.orderStatusSummary) {
             throw new Error('Invalid data structure received from server');
         }
 
         updateDashboardStats(data);
         
-        // Show success message
         Swal.fire({
             icon: 'success',
             title: 'Dashboard Updated',
@@ -874,7 +850,6 @@ async function handleApplyFilter() {
     }
 }
 
-// Update charts with new data
 async function updateCharts(filter = 'monthly') {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
@@ -885,7 +860,6 @@ async function updateCharts(filter = 'monthly') {
         
         const data = await response.json();
         
-        // Update Sales Chart
         if (salesChart && data.length > 0) {
             const labels = data.map(item => {
                 switch(filter) {
@@ -919,10 +893,8 @@ async function updateCharts(filter = 'monthly') {
             orderStatusChart.data.labels = processedData.labels;
             orderStatusChart.data.datasets[0].data = processedData.data;
             
-            // Update chart
             orderStatusChart.update();
             
-            // Update order status cards if they exist
             updateOrderStatusCards(processedData);
         }
 
@@ -949,13 +921,11 @@ function updateOrderStatusCards(processedData) {
             const count = processedData.data[index];
             const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
             
-            // Update count in card
             const countElement = cardWrapper.querySelector('.count');
             if (countElement) {
                 countElement.textContent = count.toLocaleString();
             }
             
-            // Update percentage if such element exists
             const percentageElement = cardWrapper.querySelector('.percentage');
             if (percentageElement) {
                 percentageElement.textContent = `${percentage}%`;
@@ -964,17 +934,14 @@ function updateOrderStatusCards(processedData) {
     });
 }
 function handleFilterChange(filter) {
-    // Update active state of filter buttons
     const buttons = document.querySelectorAll('[data-filter]');
     buttons.forEach(btn => {
         btn.classList.toggle('active', btn.dataset.filter === filter);
     });
     
-    // Update charts with new filter
     updateCharts(filter);
 }
 
-// Download report function
 function downloadReport(type) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
@@ -996,30 +963,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(today.getMonth() - 1);
 
-    // Format dates as YYYY-MM-DD (local timezone)
     const formatDate = (date) => {
         const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const month = String(date.getMonth() + 1).padStart(2, '0'); 
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     };
 
-    // Set the date input values
     const endDateInput = document.getElementById('endDate');
     const startDateInput = document.getElementById('startDate');
 
     endDateInput.value = formatDate(today);
     startDateInput.value = formatDate(oneMonthAgo);
 
-    // Set max date for date inputs to today
     endDateInput.max = formatDate(today);
     startDateInput.max = formatDate(today);
 
-    // Initialize charts and other functionality
     initializeCharts();
     updateCharts('daily');
 
-    // Add filter buttons to the sales chart card
     const chartFilters = document.createElement('div');
     chartFilters.className = 'btn-group mt-2';
     chartFilters.innerHTML = `
@@ -1034,7 +996,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('#salesChart')
     );
 
-    // Add click handlers for filter buttons
     chartFilters.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', (e) => {
             chartFilters.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -1043,7 +1004,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Set default date range to last month
     setDateRange('1m');
 });
   </script>
