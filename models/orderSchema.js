@@ -87,6 +87,10 @@ const orderSchema = new mongoose.Schema({
         phone: String,
         altPhone: String
     },
+    shipping: {
+        type: Number,
+        default: 0
+    },
     trackingInfo: {
      trackingNumber: String,
      courier: String,

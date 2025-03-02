@@ -155,7 +155,7 @@ const placeOrder = async (req, res) => {
 
         const orderedItems = cart.items.map(item => ({
             product: item.productId._id,
-            variant: item.variantId._id, // Ensure this is set correctly
+            variant: item.variantId._id, 
             quantity: item.quantity,
             price: item.price,
             size: item.size,
@@ -238,7 +238,6 @@ const placeOrder = async (req, res) => {
         
         await order.save();
 
-        // Update product inventory
         for (const item of cart.items) {
             const variant = await ProductVariant.findById(item.variantId);
             if (!variant) {
@@ -320,11 +319,9 @@ const verifyPayment = async (req, res) => {
             });
         }
 
-        // Check if an order with this ID already exists in the database
         let existingOrder = await Order.findOne({ orderId: orderId });
         
         if (existingOrder) {
-            // If order exists, update it instead of creating a new one
             existingOrder.status = 'Pending';
             existingOrder.paymentStatus = 'completed';
             existingOrder.paymentDetails = {
@@ -334,13 +331,11 @@ const verifyPayment = async (req, res) => {
             };
             await existingOrder.save();
             
-            // Update stock using the existing order
             for (const item of existingOrder.orderedItems) {
                 const variant = await ProductVariant.findById(item.variant);
                 const product = await Product.findById(item.product);
                 
                 if (variant && product) {
-                    // Only update stock if not already updated
                     if (existingOrder.paymentStatus !== 'completed' || existingOrder.status === 'failed') {
                         variant.quantity -= item.quantity;
                         await variant.save();
@@ -359,7 +354,6 @@ const verifyPayment = async (req, res) => {
                 }
             }
         } else {
-            // Create a new order only if it doesn't exist yet
             const orderedItems = orderDetails.cartItems.map(item => {
                 const variantId = item.variantId && (
                     typeof item.variantId === 'object' && item.variantId._id 
@@ -408,7 +402,6 @@ const verifyPayment = async (req, res) => {
 
             await order.save();
 
-            // Update stock for new order
             for (const item of order.orderedItems) {
                 const product = await Product.findById(item.product);
                 if (!product) {
@@ -442,7 +435,6 @@ const verifyPayment = async (req, res) => {
             }
         }
 
-        // Make sure to clear the cart
         await Cart.findOneAndUpdate(
             { userId },
             { $set: { items: [] } },
@@ -547,22 +539,19 @@ const handleFailedPayment = async (req, res) => {
         let id = userId;
 
         if (order) {
-            // Order already exists (e.g., from successful payment or previous failure)
             finalAmount = order.finalAmount;
             paymentMethod = order.paymentMethod;
             id = order._id;
 
             if (order.paymentStatus === 'completed') {
-                // If payment is already completed, redirect to order success page
+                
                 return res.redirect('/profile/order');
             } else if (order.status !== 'failed') {
                 order.status = 'failed';
                 await order.save();
             }
         } else if (orderDetails && orderDetails.orderId === orderId) {
-            // Create a failed order if it doesn't exist yet
             const orderedItems = orderDetails.cartItems.map(item => {
-                // Properly extract and validate the variant ID
                 const variantId = item.variantId && (
                     typeof item.variantId === 'object' && item.variantId._id 
                         ? item.variantId._id 
@@ -645,37 +634,22 @@ const retryPayment = async (req, res) => {
         const userId = req.session.user;
 
         if (!userId) {
-            return res.status(401).json({
-                success: false,
-                message: 'User not authenticated'
-            });
+            return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
 
         if (!totalAmount || !orderId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Missing required fields: totalAmount and orderId'
-            });
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
 
         const amount = parseFloat(totalAmount);
         if (isNaN(amount) || amount <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid amount value'
-            });
+            return res.status(400).json({ success: false, message: 'Invalid amount value' });
         }
 
-        let order = await Order.findOne({
-            orderId: orderId,
-            userId: userId
-        });
+        let order = await Order.findOne({ orderId: orderId, userId: userId });
 
         if (order && order.paymentStatus === 'completed') {
-            return res.status(400).json({
-                success: false,
-                message: 'Payment already completed for this order'
-            });
+            return res.status(400).json({ success: false, message: 'Payment already completed' });
         }
 
         const orderDetails = req.session.orderDetails || {};
@@ -706,11 +680,16 @@ const retryPayment = async (req, res) => {
                 createOn: orderDetails.createOn || new Date()
             });
             await order.save();
-        } else if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found and no session details available'
+        } else if (order) {
+            // If order exists, reset orderedItems statuses to 'Pending'
+            order.orderedItems.forEach(item => {
+                item.status = 'Pending';
             });
+            order.status = 'Pending';
+            order.paymentStatus = 'pending';
+            await order.save();
+        } else {
+            return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
         const razorpayOrder = await createRazorpayOrder(amount, orderId);
@@ -732,15 +711,6 @@ const retryPayment = async (req, res) => {
                 size: item.size
             }))
         };
-
-        await Order.findOneAndUpdate(
-            { orderId: orderId },
-            {
-                status: 'Pending',
-                paymentStatus: 'pending'
-            },
-            { new: true }
-        );
 
         return res.status(200).json({
             success: true,
@@ -854,6 +824,7 @@ const verifyRetryPayment = async (req, res) => {
                 product.status = "out of stock";
                 await product.save();
             }
+            item.status = 'Pending';
         }
 
         order.status = 'Pending';
@@ -1092,7 +1063,13 @@ const generateInvoice = async (req, res) => {
         const discount = Number(order.discount) || 0;
         const shipping = Number(order.shipping) || 0;
         const finalAmount = Number(order.finalAmount) || 0;
-
+        console.log('Invoice Values:', {
+            totalPrice,
+            discount,
+            shipping,
+            finalAmount,
+            rawShipping: order.shipping
+        });
         doc.text('Subtotal', summaryX, y)
             .text(totalPrice.toString(), summaryX + 100, y, { align: 'right' });
 
