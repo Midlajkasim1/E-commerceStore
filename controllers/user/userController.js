@@ -96,7 +96,10 @@ const signup = async (req, res) => {
         }
 
         const otp = generateOtp();
+        
         const emailSent = await sendVerificationEmail(email, otp);
+        console.log("otp is:",otp);
+
         if (!emailSent) {
             req.flash('err', 'Failed to send verification email. Try again.')
             return res.redirect("/signup");
@@ -108,7 +111,7 @@ const signup = async (req, res) => {
             referralCode: referralCode || null
         };
 
-        console.log("Session data saved:", req.session);
+        // console.log("Session data saved:", req.session);
         res.render("verifyOtp");
     } catch (error) {
         console.error("Signup error:", error);
@@ -376,7 +379,7 @@ const logout = async (req, res) => {
     try {
         req.session.destroy((err) => {
             if (err) {
-                console.log("Session error", err.message);
+                // console.log("Session error", err.message);
                 return red.redirect('/pageNotFound')
             }
             return res.redirect('/')

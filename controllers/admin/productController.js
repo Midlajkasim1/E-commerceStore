@@ -297,8 +297,12 @@ const unblockProduct = async (req, res) => {
 const getEditProduct = async (req, res) => {
     try {
         const id = req.params.id;
-        const product = await Product.findOne({ _id: id }).populate('category').lean();
 
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.redirect('/pageNotFound');
+        }
+
+        const product = await Product.findOne({ _id: id }).populate('category').lean();
         if (!product) {
             req.flash('error', 'Product not found');
             return res.redirect('/admin/products');

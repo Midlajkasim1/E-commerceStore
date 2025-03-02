@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Category = require('../../models/categorySchema');
 const Product = require('../../models/productSchema');
 
@@ -100,6 +101,9 @@ const getUnListCategory = async (req,res)=>{
  const getEditCategory = async (req,res)=>{
     try {
         const id = req.query.id;
+         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+                    return res.redirect('/pageNotFound');
+          }
         if(req.session.admin){
     const category = await Category.findOne({_id:id});
     res.render('editCategory',{category:category})

@@ -1598,7 +1598,19 @@ async function initiateRazorpay() {
             },
             theme: {
                 color: '#088178'
+            },
+            modal: {
+                ondismiss: async function() {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Payment Cancelled',
+                        text: 'You have cancelled the payment.',
+                        confirmButtonColor: '#088178'
+                    });
+                    window.location.href = '/checkout';
+                }
             }
+
         };
 
         const rzp = new Razorpay(options);

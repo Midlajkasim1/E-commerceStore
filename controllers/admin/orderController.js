@@ -65,8 +65,12 @@ const getOrder = async (req, res) => {
 const getOrderDetails = async (req, res) => {
     try {
         const orderId = req.params.id;
-        console.log("order id is :",orderId);
+        // console.log("order id is :",orderId);
    
+        if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.redirect('/pageNotFound');
+        }
+
         const order = await Order.findById(orderId)
         .populate('orderedItems.product')
         .populate('address');
@@ -88,9 +92,7 @@ const getOrderDetails = async (req, res) => {
         
         
     }catch{
-       
-        res.status(500).send('server error');
-         
+        res.status(500).send('server error');   
     }
 }
 const updateStatus = async (req, res) => {

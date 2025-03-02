@@ -1751,7 +1751,7 @@ function addToWishlist(productId) {
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // window.location.href = '/productDetails';
+                    window.location.href = '/login';
                 }
             });
             return;

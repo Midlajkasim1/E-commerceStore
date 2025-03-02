@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require('../../models/productSchema');
 const ProductVariant = require('../../models/productVariantSchema');
 const Category = require('../../models/categorySchema');
@@ -9,6 +10,10 @@ const productDetails = async (req, res) => {
         const userId = req.session.user;
         const userData = await User.findById(userId);
         const productId = req.query.id;
+        
+        if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
+            return res.redirect('/pageNotFound');
+        }
         
         const product = await Product.findById(productId).populate('category');
         if (!product) {

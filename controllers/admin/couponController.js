@@ -134,17 +134,14 @@ const addCoupon = async (req, res) => {
     }
  }
 
-
-
-
-
-
-
-
+//get coupon edit
  const getEditCoupon = async (req,res)=>{
     try {
         const id = req.params.id;
-        console.log("coupon ID :",id);
+       if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.redirect('/pageNotFound');
+       }
+        // console.log("coupon ID :",id);
         
         if (!id) {
             return res.status(400).send('Coupon ID is required');

@@ -83,6 +83,10 @@ const addToCartByGet = async (req, res) => {
         const selectedSize = req.body.size || '';
         const quantity = parseInt(req.body.quantity) || 1;
 
+         if (!mongoose.Types.ObjectId.isValid(productId)) {
+                    return res.status(404).render('page-404');
+                }
+                
         if (!selectedSize) {
             return res.json({
                 success: false,

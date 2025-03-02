@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Order = require('../../models/orderSchema');
 const Cart = require('../../models/cartSchema');
 const Product = require('../../models/productSchema');
@@ -142,9 +143,19 @@ const placeOrder = async (req, res) => {
             });
         }
 
+        if (paymentMethod === 'WALLET') {
+            const wallet = await Wallet.findOne({ user: userId });
+            if (!wallet || wallet.balance < finalAmount) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Insufficient wallet balance'
+                });
+            }
+        }
+
         const orderedItems = cart.items.map(item => ({
             product: item.productId._id,
-            variant: item.variantId._id, 
+            variant: item.variantId._id, // Ensure this is set correctly
             quantity: item.quantity,
             price: item.price,
             size: item.size,
@@ -179,7 +190,6 @@ const placeOrder = async (req, res) => {
             createOn: new Date()
         });
 
-        await order.save();
 
         if (paymentMethod === 'RAZORPAY') {
             req.session.orderDetails = {
@@ -190,14 +200,26 @@ const placeOrder = async (req, res) => {
                 tax,
                 finalAmount,
                 shippingAddress,
-                address: addressDoc._id
+                address: addressDoc._id,
+                status: 'Pending',
+                paymentMethod,
+                paymentStatus: 'pending',
+                createOn: new Date(),
+                cartItems: cart.items.map(item => ({
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    quantity: item.quantity,
+                    price: item.price,
+                    size: item.size,
+                    totalPrice: item.totalPrice
+                }))
             };
 
             if (isNaN(finalAmount) || finalAmount <= 0) {
                 throw new Error('Invalid amount for payment');
             }
             const razorpayOrder = await createRazorpayOrder(finalAmount, orderId);
-
+         
             return res.status(200).json({
                 success: true,
                 orderId,
@@ -207,58 +229,50 @@ const placeOrder = async (req, res) => {
                 discount
             });
         }
+        
         if (paymentMethod === 'WALLET') {
-            try {
-                await handleWalletPayment(userId, finalAmount, cart.items);
-                order.status = 'Pending';
-                order.paymentStatus = 'completed';
-                await order.save();
-            } catch (error) {
+            await handleWalletPayment(userId, finalAmount, cart.items);
+            order.status = 'Pending';
+            order.paymentStatus = 'completed';
+        }
+        
+        await order.save();
+
+        // Update product inventory
+        for (const item of cart.items) {
+            const variant = await ProductVariant.findById(item.variantId);
+            if (!variant) {
                 return res.status(400).json({
                     success: false,
-                    message: error.message
+                    message: `Product variant not found`
                 });
             }
-        }
 
-
-        if (order.status !== 'Payment Failed') {
-            for (const item of cart.items) {
-                const variant = await ProductVariant.findById(item.variantId);
-                if (!variant) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Product variant not found`
-                    });
-                }
-
-                if (variant.quantity < item.quantity) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Insufficient stock for ${item.productId.productName} in ${variant.color} color and size ${variant.size}`
-                    });
-                }
-
-                variant.quantity -= item.quantity;
-                await variant.save();
-
-                const product = await Product.findById(item.productId);
-                const allVariants = await ProductVariant.find({ productId: item.productId });
-                const totalQuantity = allVariants.reduce((sum, variant) => sum + variant.quantity, 0);
-                
-                if (totalQuantity === 0) {
-                    product.status = "out of stock";
-                    await product.save();
-                }
+            if (variant.quantity < item.quantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Insufficient stock for ${item.productId.productName} in ${variant.color} color and size ${variant.size}`
+                });
             }
 
-            await Cart.findOneAndUpdate(
-                { userId },
-                { $set: { items: [] } },
-                { new: true }
-            );
+            variant.quantity -= item.quantity;
+            await variant.save();
+
+            const product = await Product.findById(item.productId);
+            const allVariants = await ProductVariant.find({ productId: item.productId });
+            const totalQuantity = allVariants.reduce((sum, variant) => sum + variant.quantity, 0);
+            
+            if (totalQuantity === 0) {
+                product.status = "out of stock";
+                await product.save();
+            }
         }
 
+        await Cart.findOneAndUpdate(
+            { userId },
+            { $set: { items: [] } },
+            { new: true }
+        );
 
         return res.status(200).json({
             success: true,
@@ -287,10 +301,10 @@ const verifyPayment = async (req, res) => {
         const userId = req.session.user;
         const orderDetails = req.session.orderDetails;
 
-        if (!orderDetails) {
+        if (!orderDetails || orderDetails.orderId !== orderId) {
             return res.status(400).json({
                 success: false,
-                message: 'Order details not found'
+                message: 'Order details not found or invalid'
             });
         }
 
@@ -298,99 +312,137 @@ const verifyPayment = async (req, res) => {
         shasum.update(`${razorpayOrderId}|${razorpayPaymentId}`);
         const digest = shasum.digest('hex');
 
-        const existingOrder = await Order.findOne({ orderId });
-        if (!existingOrder) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
         if (digest !== razorpaySignature) {
-            existingOrder.status = 'failed';
-            existingOrder.paymentStatus = 'failed';
-            existingOrder.paymentDetails = {
-                razorpayPaymentId,
-                razorpayOrderId,
-                razorpaySignature
-            };
-            await existingOrder.save();
-
+            delete req.session.orderDetails;
             return res.status(400).json({
                 success: false,
                 message: 'Payment verification failed'
             });
         }
 
-        existingOrder.status = 'Pending';
-        existingOrder.paymentStatus = 'completed';
-        existingOrder.paymentDetails = {
-            razorpayPaymentId,
-            razorpayOrderId,
-            razorpaySignature
-        };
-
-        existingOrder.orderedItems = existingOrder.orderedItems.map(item => ({
-            ...item,
-            status: 'Pending'
-        }));
-
-        await existingOrder.save();
-
-        for (const item of existingOrder.orderedItems) {
-            const product = await Product.findById(item.product);
-            if (!product) {
-                throw new Error(`Product ${item.product} not found`);
-            }
-
-            if (!product.hasVariants) {
-                throw new Error(`Product ${product.productName} does not support variants`);
-            }
-
-            const variant = await ProductVariant.findOne({
-                productId: item.product,
-                size: item.size,
-                isActive: true
-            });
-
-            if (!variant) {
-                throw new Error(`Variant not found for product ${product.productName} in size ${item.size}`);
-            }
-
-            if (variant.quantity < item.quantity) {
-                throw new Error(`Insufficient stock for ${product.productName} in size ${item.size}`);
-            }
-
-            variant.quantity -= item.quantity;
-            await variant.save();
-
-            const allVariants = await ProductVariant.find({
-                productId: item.product,
-                isActive: true
-            });
-
-            const totalQuantity = allVariants.reduce((sum, v) => sum + v.quantity, 0);
+        // Check if an order with this ID already exists in the database
+        let existingOrder = await Order.findOne({ orderId: orderId });
+        
+        if (existingOrder) {
+            // If order exists, update it instead of creating a new one
+            existingOrder.status = 'Pending';
+            existingOrder.paymentStatus = 'completed';
+            existingOrder.paymentDetails = {
+                razorpayPaymentId,
+                razorpayOrderId,
+                razorpaySignature
+            };
+            await existingOrder.save();
             
-            if (totalQuantity === 0) {
-                product.status = "out of stock";
-                await product.save();
-            }
-        }
+            // Update stock using the existing order
+            for (const item of existingOrder.orderedItems) {
+                const variant = await ProductVariant.findById(item.variant);
+                const product = await Product.findById(item.product);
+                
+                if (variant && product) {
+                    // Only update stock if not already updated
+                    if (existingOrder.paymentStatus !== 'completed' || existingOrder.status === 'failed') {
+                        variant.quantity -= item.quantity;
+                        await variant.save();
 
-        const updatedOrder = await Order.findOneAndUpdate(
-            { orderId },
-            {
+                        const allVariants = await ProductVariant.find({
+                            productId: item.product,
+                            isActive: true
+                        });
+                        const totalQuantity = allVariants.reduce((sum, v) => sum + v.quantity, 0);
+                        
+                        if (totalQuantity === 0) {
+                            product.status = "out of stock";
+                            await product.save();
+                        }
+                    }
+                }
+            }
+        } else {
+            // Create a new order only if it doesn't exist yet
+            const orderedItems = orderDetails.cartItems.map(item => {
+                const variantId = item.variantId && (
+                    typeof item.variantId === 'object' && item.variantId._id 
+                        ? item.variantId._id 
+                        : (typeof item.variantId === 'string' || item.variantId instanceof mongoose.Types.ObjectId 
+                            ? item.variantId 
+                            : null)
+                );
+                
+                if (!variantId) {
+                    throw new Error(`Variant ID missing or invalid for product ${item.productId?.productName || 'unknown'}`);
+                }
+                
+                return {
+                    product: item.productId._id,
+                    variant: variantId,
+                    productName: item.productId.productName,
+                    quantity: item.quantity,
+                    price: item.price,
+                    size: item.size,
+                    status: 'Pending'
+                };
+            });
+
+            const order = new Order({
+                orderId: orderDetails.orderId,
+                userId: userId,
+                orderedItems: orderedItems,
+                totalPrice: orderDetails.subtotal,
+                discount: orderDetails.discount,
+                shipping: orderDetails.shipping,
+                tax: orderDetails.tax,
+                finalAmount: orderDetails.finalAmount,
+                shippingAddress: orderDetails.shippingAddress,
+                address: orderDetails.address,
                 status: 'Pending',
+                paymentMethod: 'RAZORPAY',
                 paymentStatus: 'completed',
                 paymentDetails: {
                     razorpayPaymentId,
                     razorpayOrderId,
                     razorpaySignature
-                }
-            },
-            { new: true }
-        );
+                },
+                createOn: orderDetails.createOn
+            });
 
+            await order.save();
+
+            // Update stock for new order
+            for (const item of order.orderedItems) {
+                const product = await Product.findById(item.product);
+                if (!product) {
+                    throw new Error(`Product ${item.product} not found`);
+                }
+
+                const variant = await ProductVariant.findById(item.variant);
+                
+                if (!variant) {
+                    throw new Error(`Variant not found for product ${product.productName}`);
+                }
+
+                if (variant.quantity < item.quantity) {
+                    throw new Error(`Insufficient stock for ${product.productName} in size ${variant.size}`);
+                }
+
+                variant.quantity -= item.quantity;
+                await variant.save();
+
+                const allVariants = await ProductVariant.find({
+                    productId: item.product,
+                    isActive: true
+                });
+
+                const totalQuantity = allVariants.reduce((sum, v) => sum + v.quantity, 0);
+                
+                if (totalQuantity === 0) {
+                    product.status = "out of stock";
+                    await product.save();
+                }
+            }
+        }
+
+        // Make sure to clear the cart
         await Cart.findOneAndUpdate(
             { userId },
             { $set: { items: [] } },
@@ -399,15 +451,14 @@ const verifyPayment = async (req, res) => {
 
         delete req.session.orderDetails;
 
-
         return res.status(200).json({
             success: true,
-            message: 'Payment verified and order updated successfully',
-            orderId: existingOrder.orderId,
+            message: 'Payment verified and order placed successfully',
+            orderId: orderId,
             redirect: `/profile/order`
         });
 
-    } catch (error){
+    } catch (error) {
         console.error('Payment verification error:', error);
 
         if (req.body.orderId) {
@@ -416,11 +467,7 @@ const verifyPayment = async (req, res) => {
             
             if (order) {
                 for (const item of order.orderedItems) {
-                    const variant = await ProductVariant.findOne({
-                        productId: item.product,
-                        size: item.size,
-                        isActive: true
-                    });
+                    const variant = await ProductVariant.findById(item.variant);
 
                     if (variant) {
                         variant.quantity += item.quantity;
@@ -436,13 +483,13 @@ const verifyPayment = async (req, res) => {
             }
         }
 
+        delete req.session.orderDetails;
         return res.status(500).json({
             success: false,
             message: 'Payment verification failed: ' + error.message
         });
     }
 };
-
 //wallet payment
 
 const handleWalletPayment = async (userId, amount, cartItems) => {
@@ -488,34 +535,89 @@ const handleFailedPayment = async (req, res) => {
             });
         }
 
-        const order = await Order.findOne({
+        let order = await Order.findOne({
             orderId: orderId,
             userId: userId
         }).populate('orderedItems.product address');
 
         const orderDetails = req.session.orderDetails;
 
-
         let finalAmount = 0;
         let paymentMethod = 'N/A';
         let id = userId;
 
         if (order) {
+            // Order already exists (e.g., from successful payment or previous failure)
             finalAmount = order.finalAmount;
             paymentMethod = order.paymentMethod;
             id = order._id;
 
-            if (order.status !== 'failed') {
+            if (order.paymentStatus === 'completed') {
+                // If payment is already completed, redirect to order success page
+                return res.redirect('/profile/order');
+            } else if (order.status !== 'failed') {
                 order.status = 'failed';
                 await order.save();
             }
-        } else if (orderDetails) {
+        } else if (orderDetails && orderDetails.orderId === orderId) {
+            // Create a failed order if it doesn't exist yet
+            const orderedItems = orderDetails.cartItems.map(item => {
+                // Properly extract and validate the variant ID
+                const variantId = item.variantId && (
+                    typeof item.variantId === 'object' && item.variantId._id 
+                        ? item.variantId._id 
+                        : (typeof item.variantId === 'string' || item.variantId instanceof mongoose.Types.ObjectId 
+                            ? item.variantId 
+                            : null)
+                );
+                
+                if (!variantId) {
+                    console.error('Invalid cart item:', item);
+                    throw new Error(`Variant ID missing or invalid for product ${item.productId?.productName || 'unknown'}`);
+                }
+
+                return {
+                    product: item.productId?._id,
+                    variant: variantId, // Ensure this is correctly set
+                    productName: item.productId?.productName,
+                    quantity: item.quantity,
+                    price: item.price,
+                    size: item.size,
+                    status: 'Payment Failed'
+                };
+            });
+
+            order = new Order({
+                orderId: orderDetails.orderId,
+                userId: userId,
+                orderedItems: orderedItems,
+                totalPrice: orderDetails.subtotal,
+                discount: orderDetails.discount,
+                shipping: orderDetails.shipping,
+                tax: orderDetails.tax,
+                finalAmount: orderDetails.finalAmount,
+                shippingAddress: orderDetails.shippingAddress,
+                address: orderDetails.address,
+                status: 'failed',
+                paymentMethod: 'RAZORPAY',
+                paymentStatus: 'failed',
+                createOn: orderDetails.createOn || new Date()
+            });
+            await order.save();
+
             finalAmount = orderDetails.finalAmount;
             paymentMethod = 'RAZORPAY';
             id = orderDetails.orderId;
+        } else {
+            return res.render('payment-failed', {
+                orderId: orderId,
+                totalAmount: 0,
+                paymentMethod: 'N/A',
+                id: 'N/A',
+                error: 'Order not found'
+            });
         }
 
-        finalAmount = Number(finalAmount) || 0;
         delete req.session.orderDetails;
         res.render('payment-failed', {
             orderId: orderId,
@@ -527,16 +629,16 @@ const handleFailedPayment = async (req, res) => {
 
     } catch (error) {
         console.error('Error handling failed payment:', error);
+        delete req.session.orderDetails;
         res.render('payment-failed', {
             orderId: req.params.orderId || 'N/A',
             totalAmount: 0,
             paymentMethod: 'N/A',
             id: 'N/A',
-            error: 'An unexpected error occurred while processing your payment. Please try again later.'
+            error: 'An unexpected error occurred while processing your payment: ' + error.message
         });
     }
 };
-
 const retryPayment = async (req, res) => {
     try {
         const { totalAmount, orderId } = req.body;
@@ -564,22 +666,50 @@ const retryPayment = async (req, res) => {
             });
         }
 
-        const existingOrder = await Order.findOne({
+        let order = await Order.findOne({
             orderId: orderId,
             userId: userId
         });
 
-        if (!existingOrder) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
-        if (existingOrder.status === 'completed') {
+        if (order && order.paymentStatus === 'completed') {
             return res.status(400).json({
                 success: false,
                 message: 'Payment already completed for this order'
+            });
+        }
+
+        const orderDetails = req.session.orderDetails || {};
+
+        if (!order && orderDetails.orderId === orderId) {
+            order = new Order({
+                orderId: orderDetails.orderId,
+                userId: userId,
+                orderedItems: orderDetails.cartItems.map(item => ({
+                    product: item.productId._id,
+                    variant: item.variantId._id,
+                    productName: item.productId.productName,
+                    quantity: item.quantity,
+                    price: item.price,
+                    size: item.size,
+                    status: 'Pending'
+                })),
+                totalPrice: orderDetails.subtotal,
+                discount: orderDetails.discount,
+                shipping: orderDetails.shipping,
+                tax: orderDetails.tax,
+                finalAmount: orderDetails.finalAmount,
+                shippingAddress: orderDetails.shippingAddress,
+                address: orderDetails.address,
+                status: 'Pending',
+                paymentMethod: 'RAZORPAY',
+                paymentStatus: 'pending',
+                createOn: orderDetails.createOn || new Date()
+            });
+            await order.save();
+        } else if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found and no session details available'
             });
         }
 
@@ -588,12 +718,19 @@ const retryPayment = async (req, res) => {
         req.session.orderDetails = {
             orderId: orderId,
             finalAmount: amount,
-            discount: existingOrder.discount,
-            subtotal: existingOrder.totalPrice,
-            shipping: existingOrder.shipping,
-            tax: existingOrder.tax,
-            shippingAddress: existingOrder.shippingAddress,
-            address: existingOrder.address
+            discount: order.discount,
+            subtotal: order.totalPrice,
+            shipping: order.shipping,
+            tax: order.tax,
+            shippingAddress: order.shippingAddress,
+            address: order.address,
+            cartItems: order.orderedItems.map(item => ({
+                productId: { _id: item.product, productName: item.productName },
+                variantId: item.variant,
+                quantity: item.quantity,
+                price: item.price,
+                size: item.size
+            }))
         };
 
         await Order.findOneAndUpdate(
@@ -681,27 +818,26 @@ const verifyRetryPayment = async (req, res) => {
         }
 
         for (const item of order.orderedItems) {
+            if (!item.variant) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Variant missing for product ${item.product.productName || 'unknown'}`
+                });
+            }
+            
             const product = await Product.findById(item.product);
             if (!product) {
                 throw new Error(`Product ${item.product} not found`);
             }
 
-            if (!product.hasVariants) {
-                throw new Error(`Product ${product.productName} does not support variants`);
-            }
-
-            const variant = await ProductVariant.findOne({
-                productId: item.product,
-                size: item.size,
-                isActive: true
-            });
-
+            const variant = await ProductVariant.findById(item.variant);
+            
             if (!variant) {
-                throw new Error(`Variant not found for product ${product.productName} in size ${item.size}`);
+                throw new Error(`Variant not found for product ${product.productName}`);
             }
 
             if (variant.quantity < item.quantity) {
-                throw new Error(`Insufficient stock for ${product.productName} in size ${item.size}`);
+                throw new Error(`Insufficient stock for ${product.productName} in size ${variant.size}`);
             }
 
             variant.quantity -= item.quantity;
@@ -720,19 +856,14 @@ const verifyRetryPayment = async (req, res) => {
             }
         }
 
-        const updatedOrder = await Order.findOneAndUpdate(
-            { orderId },
-            {
-                status: 'Pending',
-                paymentStatus: 'completed',
-                paymentDetails: {
-                    razorpayPaymentId: razorpay_payment_id,
-                    razorpayOrderId: razorpay_order_id,
-                    razorpaySignature: razorpay_signature
-                }
-            },
-            { new: true }
-        );
+        order.status = 'Pending';
+        order.paymentStatus = 'completed';
+        order.paymentDetails = {
+            razorpayPaymentId: razorpay_payment_id,
+            razorpayOrderId: razorpay_order_id,
+            razorpaySignature: razorpay_signature
+        };
+        await order.save();
 
         await Cart.findOneAndUpdate(
             { userId },
@@ -748,8 +879,8 @@ const verifyRetryPayment = async (req, res) => {
             success: true,
             message: 'Payment verified and order processed successfully',
             order: {
-                orderId: updatedOrder.orderId,
-                status: updatedOrder.status
+                orderId: order.orderId,
+                status: order.status
             }
         });
 
@@ -762,11 +893,7 @@ const verifyRetryPayment = async (req, res) => {
             
             if (order) {
                 for (const item of order.orderedItems) {
-                    const variant = await ProductVariant.findOne({
-                        productId: item.product,
-                        size: item.size,
-                        isActive: true
-                    });
+                    const variant = await ProductVariant.findById(item.variant);
 
                     if (variant) {
                         variant.quantity += item.quantity;
@@ -832,6 +959,9 @@ const getOrderMoreDetails = async (req, res) => {
     try {
         const userId = req.session.user;
         const orderId = req.params.id;
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.status(404).render('page-404');
+        }
 
         const order = await Order.findById(orderId).populate('orderedItems.product');
 
@@ -1292,7 +1422,7 @@ const returnProductOrder = async (req, res) => {
         } else if (statusCounts['Shipped'] > 0) {
             order.status = 'Shipped';
         } else if (statusCounts['Return Request'] > 0 && statusCounts['Delivered'] > 0) {
-            order.status = 'Partially Returned';
+            order.status = 'Return Request';
         } else if (statusCounts['Return Request'] === order.orderedItems.length) {
             order.status = 'Return Request';
         } else if (statusCounts['Returned'] === order.orderedItems.length) {
