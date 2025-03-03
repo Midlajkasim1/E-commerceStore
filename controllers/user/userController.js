@@ -379,7 +379,7 @@ const logout = async (req, res) => {
     try {
         req.session.destroy((err) => {
             if (err) {
-                // console.log("Session error", err.message);
+                console.log("Session error", err.message);
                 return red.redirect('/pageNotFound')
             }
             return res.redirect('/')
