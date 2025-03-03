@@ -794,14 +794,19 @@ const downloadPdfReport = async (req, res) => {
  //logout
  const logout = async(req,res)=>{
      try {
-        req.session.destroy(err=>{
-            if(err){
-                console.log("Error destroyed session",err);
-                return res.redirect('/pageerror')
+        // req.session.destroy(err=>{
+        //     if(err){
+        //         console.log("Error destroyed session",err);
+        //         return res.redirect('/pageerror')
                 
-            }
-          res.redirect('/admin/login')
-        })
+        //     }
+        //   res.redirect('/admin/login')
+        // })
+        if(req.session.admin){
+            delete req.session.admin
+        }
+         res.redirect('/admin/login')
+
      } catch (error) {
          console.log("unexpected error during logout",error);
          res.redirect("/pageerror")

@@ -374,13 +374,18 @@ const loadContactUs = async (req,res)=>{
 
 const logout = async (req, res) => {
     try {
-        req.session.destroy((err) => {
-            if (err) {
-                console.log("Session error", err.message);
-                return red.redirect('/pageNotFound')
-            }
-            return res.redirect('/')
-        })
+        // req.session.destroy((err) => {
+        //     if (err) {
+        //         console.log("Session error", err.message);
+        //         return red.redirect('/pageNotFound')
+        //     }
+        //     return res.redirect('/')
+        // })
+        if(req.session.user){
+            delete req.session.user
+        }
+        return res.redirect('/')
+
     } catch (error) {
         console.log("Logout error", error);
         res.redirect('/pageNotFound')
