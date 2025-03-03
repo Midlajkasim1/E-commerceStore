@@ -99,7 +99,26 @@ const placeOrder = async (req, res) => {
             });
         }
 
+
+
+
         for (const item of cart.items) {
+          const product = await Product.findById(item.productId._id);
+           if(!product){
+            return res.status(400).json({
+                success:false,
+                message:`Product not found`
+            })
+           }
+           if(product.isBlocked){
+            return res.status(400).json({
+                success: false,
+                message: `${product.productName} is currently unavailable for purchase`
+            });
+           }
+
+
+
             const variant = await ProductVariant.findById(item.variantId);
             if (!variant) {
                 return res.status(400).json({
@@ -287,6 +306,31 @@ const placeOrder = async (req, res) => {
         });
     }
 };
+const validateProductAvailability = async (items) => {
+    if (!Array.isArray(items) || items.length === 0) {
+        throw new Error('No items found in the order');
+    }
+
+    for (const item of items) {
+        const productId = item.productId?._id || item.productId || item.product;
+        
+        if (!productId) {
+            throw new Error('Product ID not found in order item');
+        }
+
+        const product = await Product.findById(productId);
+        
+        if (!product) {
+            throw new Error(`Product not found: ${productId}`);
+        }
+        
+        if (product.isBlocked) {
+            throw new Error(`${product.productName || 'Product'} is currently unavailable for purchase`);
+        }
+    }
+    
+    return true;
+};
 //
 const verifyPayment = async (req, res) => {
     try {
@@ -304,6 +348,15 @@ const verifyPayment = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Order details not found or invalid'
+            });
+        }
+        try {
+            await validateProductAvailability(orderDetails.cartItems);
+        } catch (error) {
+            delete req.session.orderDetails;
+            return res.status(400).json({
+                success: false,
+                message: error.message
             });
         }
 
@@ -485,6 +538,7 @@ const verifyPayment = async (req, res) => {
 //wallet payment
 
 const handleWalletPayment = async (userId, amount, cartItems) => {
+    await validateProductAvailability(cartItems);
     const wallet = await Wallet.findOne({ user: userId });
 
     if (!wallet || wallet.balance < amount) {
@@ -567,7 +621,7 @@ const handleFailedPayment = async (req, res) => {
 
                 return {
                     product: item.productId?._id,
-                    variant: variantId, // Ensure this is correctly set
+                    variant: variantId, 
                     productName: item.productId?.productName,
                     quantity: item.quantity,
                     price: item.price,
@@ -650,6 +704,25 @@ const retryPayment = async (req, res) => {
 
         if (order && order.paymentStatus === 'completed') {
             return res.status(400).json({ success: false, message: 'Payment already completed' });
+        }
+
+        if (order) {
+            for (const item of order.orderedItems) {
+                const product = await Product.findById(item.product);
+                if (!product) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Product not found: ${item.productName || 'Unknown'}`
+                    });
+                }
+                
+                if (product.isBlocked) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `${product.productName} is currently unavailable for purchase`
+                    });
+                }
+            }
         }
 
         const orderDetails = req.session.orderDetails || {};
@@ -770,7 +843,7 @@ const verifyRetryPayment = async (req, res) => {
         const order = await Order.findOne({ orderId, userId })
             .populate({
                 path: 'orderedItems.product',
-                select: 'productName status hasVariants'
+                select: 'productName status hasVariants isBlocked'
             });
 
         if (!order) {
@@ -780,6 +853,30 @@ const verifyRetryPayment = async (req, res) => {
             });
         }
 
+        for (const item of order.orderedItems) {
+            const productId = item.product;
+            if (!productId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Product information missing from order'
+                });
+            }
+            
+            const product = await Product.findById(productId);
+            if (!product) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Product not found: ${item.productName || 'Unknown'}`
+                });
+            }
+            
+            if (product.isBlocked) {
+                return res.status(400).json({
+                    success: false,
+                    message: `${product.productName} is currently unavailable for purchase`
+                });
+            }
+        }
         if (order.paymentStatus === 'completed') {
             return res.status(400).json({
                 success: false,

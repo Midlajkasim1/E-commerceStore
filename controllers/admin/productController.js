@@ -15,8 +15,8 @@ const getProducts = async (req, res) => {
             const skip = (page - 1) * limit;
 
             const productData = await Product.find({
-                productName: { $regex: new RegExp(".*" + search + ".*", "i") },
-                isBlocked: false  
+                productName: { $regex: new RegExp(".*" + search + ".*", "i") }
+              
             })
                 .skip(skip)
                 .limit(limit)
@@ -50,7 +50,7 @@ const getProducts = async (req, res) => {
 
             const count = await Product.countDocuments({
                 productName: { $regex: new RegExp(".*" + search + ".*", "i") },
-                isBlocked: false
+              
             });
 
             const category = await Category.find({ isListed: true });
@@ -287,9 +287,10 @@ const blockProduct = async (req, res) => {
 const unblockProduct = async (req, res) => {
     try {
         let id = req.query.id;
-        await Product.updateOne({_id: id}, {isBlocked: false});
+        await Product.updateOne({_id: id}, {$set: {isBlocked: false}});
         res.redirect('/admin/products');
     } catch (error) {
+        console.error("Error unblocking product:", error);
         res.redirect('/pageerror');
     }
 }

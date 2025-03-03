@@ -1540,11 +1540,18 @@ async function initiateRazorpay() {
         });
 
         const orderData = await orderResponse.json();
+        loadingAlert.close();
         if (!orderData.success) {
-            throw new Error(orderData.message);
+          await Swal.fire({
+                icon: 'error',
+                title: 'Payment Failed',
+                text: orderData.message,
+                confirmButtonColor: '#088178'
+            });
+            return;
         }
 
-        loadingAlert.close();
+       
 
         const options = {
             key: orderData.key,
