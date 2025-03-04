@@ -22,7 +22,6 @@
     color: #333;
 }
 
-/* Optional: Custom styling for the input */
 .swal2-input:focus {
     box-shadow: none;
     border-color: #3399cc;
@@ -294,7 +293,6 @@ async function addMoneyToWallet() {
             body: JSON.stringify({ amount: parseFloat(amount) })
         });
         
-        // Read the response data once
         let responseData;
         try {
             responseData = await response.json();
@@ -302,16 +300,14 @@ async function addMoneyToWallet() {
             throw new Error('Invalid server response');
         }
 
-        // Check response status and data
         if (!response.ok || !responseData.success) {
             throw new Error(responseData.message || `Order creation failed`);
         }
 
-        // Close loading screen
         Swal.close();
 
         const options = {
-            key: responseData.razorpayKeyId, // Get key from server response
+            key: responseData.razorpayKeyId, 
             amount: amount * 100,
             currency: "INR",
             name: "Wallet Recharge",
@@ -319,7 +315,6 @@ async function addMoneyToWallet() {
             order_id: responseData.orderId,
             handler: async function (response) {
                 try {
-                    // Show processing payment
                     Swal.fire({
                         title: 'Processing payment...',
                         didOpen: () => {

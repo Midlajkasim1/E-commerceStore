@@ -353,7 +353,6 @@ const removeCoupon = async (req, res) => {
         const code = req.query.couponCode;
         const userId = req.session.user;
 
-        // Find the user
         const user = await User.findById(userId);
         if (!user) {
             return res.status(400).json({

@@ -115,7 +115,6 @@ const createWalletOrder = async (req, res) => {
             });
         }
 
-        // Verify Razorpay configuration
         if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
             console.error('Razorpay credentials missing');
             return res.status(500).json({
@@ -164,7 +163,6 @@ const verifyWalletPayment = async (req, res) => {
 
         const userId = req.session.user;
 
-        // Verify Razorpay signature
         const body = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSignature = crypto
             .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -178,7 +176,6 @@ const verifyWalletPayment = async (req, res) => {
             });
         }
 
-        // Find or create wallet
         let wallet = await Wallet.findOne({ user: userId });
         
         if (!wallet) {
@@ -189,7 +186,6 @@ const verifyWalletPayment = async (req, res) => {
             });
         }
 
-        // Add credit transaction
         wallet.transaction.push({
             amount: parseFloat(amount),
             transactionId: razorpay_payment_id,
@@ -198,7 +194,6 @@ const verifyWalletPayment = async (req, res) => {
             createdAt: new Date()
         });
 
-        // Update balance
         wallet.balance += parseFloat(amount);
         
         await wallet.save();

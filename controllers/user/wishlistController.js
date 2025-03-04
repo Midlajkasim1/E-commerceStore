@@ -82,37 +82,6 @@ const addToWishlist = async (req, res) => {
         return res.status(500).json({ status: false, message: 'Server error' });
     }
 }
-// const removeProduct = async (req, res) => {
-//     try {
-//       const productId = req.query.productId;
-//       const userId = req.session.user;
-
-//       const user = await User.findById(userId);
-//       if (!user) {
-//         return res.status(404).json({ status: false, message: 'User not found' });
-//       }
-
-//       const index = user.wishlist.indexOf(productId);
-//       if (index === -1) {
-//         return res.status(404).json({ status: false, message: 'Product not found in wishlist' });
-//       }
-
-//       user.wishlist.splice(index, 1);
-//       await user.save();
-//        const wishlist = await Wishlist.findOne({ userId });
-//        if (wishlist) {
-//            wishlist.products = wishlist.products.filter(
-//                (product) => product.productId.toString() !== productId
-//            );
-//            await wishlist.save();
-//        }
-
-//       return res.status(200).json({ status: true, message: 'Product removed from wishlist' });
-//     } catch (error) {
-//       console.error(error);
-//       return res.status(500).json({ status: false, message: 'Server error' });
-//     }
-//   };
 
 
 const removeProduct = async (req, res) => {

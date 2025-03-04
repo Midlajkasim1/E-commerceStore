@@ -335,7 +335,6 @@ const loadHomePage = async (req, res) => {
         if (userId) {
             const user = await User.findById(userId);
             if (user) {
-                // console.log("User data retrieved successfully:", user);
                 return res.render('home', { user: user, products: productData });
             } else {
                 console.log("No user data found in the database.");
@@ -377,13 +376,7 @@ const loadContactUs = async (req,res)=>{
 
 const logout = async (req, res) => {
     try {
-        // req.session.destroy((err) => {
-        //     if (err) {
-        //         console.log("Session error", err.message);
-        //         return red.redirect('/pageNotFound')
-        //     }
-        //     return res.redirect('/')
-        // })
+       
         if(req.session.user){
             delete req.session.user
         }
