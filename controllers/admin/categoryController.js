@@ -137,7 +137,6 @@ const getUnListCategory = async (req,res)=>{
         const percentage = parseInt(req.body.percentage);
         const categoryId = req.body.categoryId;
 
-        // Validate percentage
         if (percentage < 0 || percentage > 100) {
             return res.json({ 
                 status: false, 
@@ -153,10 +152,8 @@ const getUnListCategory = async (req,res)=>{
             });
         }
 
-        // Get all products in category
         const products = await Product.find({ category: categoryId });
 
-        // Check if any product has a higher product offer
         const hasHigherOffer = products.some(product => 
             product.productOffer > percentage
         );
@@ -168,23 +165,19 @@ const getUnListCategory = async (req,res)=>{
             });
         }
 
-        // Update category offer
         await Category.updateOne(
             { _id: categoryId },
             { $set: { categoryOffer: percentage } }
         );
 
-        // Update all products in category
         for (let product of products) {
-            // Store original sale price if not already stored
             if (!product.originalSalePrice) {
                 product.originalSalePrice = product.salePrice;
             }
 
-            // Calculate new sale price from regular price
             const discountAmount = Math.floor(product.regularPrice * (percentage/100));
             product.salePrice = Math.max(product.regularPrice - discountAmount, 0);
-            product.productOffer = 0; // Remove any product offer
+            product.productOffer = 0; 
 
             await product.save();
         }

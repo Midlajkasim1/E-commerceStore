@@ -1079,12 +1079,10 @@ const cancelProductOrder = async (req, res) => {
         let refundAmount = itemAmount;
         let couponAdjustment = 0;
         
-        // First, check if any products in this order have already been cancelled
         const hasPreviousCancellations = order.orderedItems.some(item => 
             item.status === 'Cancelled'
         );
       
-        // Only apply coupon adjustment logic if there are no previous cancellations
         if (order.discount > 0 && !hasPreviousCancellations) {
             try {
                 const user = await User.findById(userId);
@@ -1103,19 +1101,15 @@ const cancelProductOrder = async (req, res) => {
                 }
 
                 if (remainingItems.length === 0) {
-                    // If this is a multi-item order
                     if (order.orderedItems.length > 1) {
-                        // Calculate proportional discount for this item
                         const orderSubtotal = order.totalPrice;
                         const itemPercentage = itemAmount / orderSubtotal;
                         couponAdjustment = order.discount * itemPercentage;
                         refundAmount = itemAmount - couponAdjustment;
                     } else {
-                        // Single item order - refund the finalAmount (which already accounts for discount)
                         refundAmount = order.finalAmount;
                     }
                 } 
-                // If remaining order would be below coupon threshold
                 else if (remainingSubtotal < couponMinimumPrice) {
                     couponAdjustment = order.discount;
                     refundAmount = itemAmount - couponAdjustment;
@@ -1126,7 +1120,6 @@ const cancelProductOrder = async (req, res) => {
                 }
             } catch (error) {
                 console.error("Error retrieving coupon information:", error);
-                // Only apply this logic for the first cancellation
                 if (remainingItems.length > 0) {
                     couponAdjustment = order.discount;
                     refundAmount = itemAmount - couponAdjustment;
@@ -1134,8 +1127,6 @@ const cancelProductOrder = async (req, res) => {
                 }
             }
         }
-        // For subsequent cancellations, always give full refund with no deductions
-        // This code path is taken when hasPreviousCancellations is true
 
         const variant = await ProductVariant.findById(productItem.variant);
         if (variant) {
@@ -1177,11 +1168,7 @@ const cancelProductOrder = async (req, res) => {
             order.status = "Pending";
         }
 
-        // Store information about coupon deduction applied to this cancellation
         if (couponAdjustment > 0) {
-            // You might want to add a field to the order document to track this
-            // For example:
-            // order.couponDeductionApplied = true;
         }
 
         await order.save();

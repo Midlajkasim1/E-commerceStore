@@ -119,10 +119,8 @@ const getAddress = async (req, res) => {
         const userId = req.session.user;
         const userData = await User.findById(userId);
 
-        // console.log('Getting addresses for user ID:', userId);
 
         const userAddress = await Address.findOne({ userId: userId });
-        // console.log('Found address:', userAddress);
 
         if (!userAddress) {
             console.log('No address found for user.');

@@ -203,7 +203,6 @@ const deleteReview = async (req, res) => {
     }
 };
 
-// Add to cart function needs to be modified to work with variants
 const addToCart = async (req, res) => {
     try {
         const userId = req.session.user;
@@ -214,7 +213,6 @@ const addToCart = async (req, res) => {
         const productId = req.params.id;
         const { size, quantity } = req.body;
         
-        // Find variant based on product ID and size
         const variant = await ProductVariant.findOne({
             productId: productId,
             size: size,
@@ -229,7 +227,6 @@ const addToCart = async (req, res) => {
             });
         }
         
-        // Check if product is already in cart
         const existingCartItem = await Cart.findOne({
             userId: userId,
             'items.productId': productId,
@@ -244,8 +241,6 @@ const addToCart = async (req, res) => {
             });
         }
         
-        // Add to cart logic - depends on your Cart model structure
-        // This is a placeholder - adjust according to your actual Cart model
         const result = await Cart.findOneAndUpdate(
             { userId: userId },
             { 

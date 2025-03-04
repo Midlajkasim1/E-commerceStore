@@ -541,13 +541,11 @@
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set("sort", sortOption);
     
-    // Preserve existing parameters
     const currentCategory = urlParams.get("category") || "";
     const currentSearch = urlParams.get("query") || "";
     const currentGt = urlParams.get("gt") || "0";
     const currentLt = urlParams.get("lt") || "";
     
-    // Update URL with all parameters
     const newUrl = `/shop?sort=${sortOption}` + 
                   (currentCategory ? `&category=${currentCategory}` : "") +
                   (currentSearch ? `&query=${currentSearch}` : "") +
@@ -565,7 +563,6 @@
                     window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
                 }
 
-                // Set selected sort option based on URL
                 function setSelectedSort() {
                     const urlParams = new URLSearchParams(window.location.search);
                     const currentSort = urlParams.get("sort");
@@ -586,7 +583,7 @@
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                // window.location.href = '/shop';
+                window.location.href = '/login';
             }
         });
         return;

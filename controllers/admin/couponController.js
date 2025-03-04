@@ -59,7 +59,6 @@ const addCoupon = async (req, res) => {
             minimumPrice: parseInt(req.body.minimumPrice),
         };
 
-        // Add date validation
         const currentDate = new Date();
         currentDate.setHours(0, 0, 0, 0);
 

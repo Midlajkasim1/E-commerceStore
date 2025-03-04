@@ -116,7 +116,6 @@ const addToCartByGet = async (req, res) => {
             });
         }
 
-        // console.log('Fetched Variant:', variant); 
         if (variant.quantity < quantity) {
             return res.json({
                 success: false,
@@ -268,7 +267,6 @@ const updateCartQuantity = async (req, res) => {
         const subtotal = userCart.items.reduce((total, item) =>
             total + (item.quantity * item.productId.salePrice), 0);
         const shipping = subtotal >= 2000 ? 0 : 100;
-        // const tax = 20;
         const total = subtotal + shipping;
 
         return res.json({
@@ -279,7 +277,6 @@ const updateCartQuantity = async (req, res) => {
             cartTotals: {
                 subtotal,
                 shipping,
-                // tax,
                 total,
                 freeDeliveryEligible: subtotal >= 2000
             }

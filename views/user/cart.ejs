@@ -407,7 +407,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 
   <script>
-// Format price with Rupee symbol
 function formatPrice(price) {
     return '₹' + parseFloat(price).toFixed(2);
 }
@@ -422,48 +421,38 @@ document.addEventListener('DOMContentLoaded', function() {
     sweetAlertJS.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
     document.head.appendChild(sweetAlertJS);
 
-    // Update cart summary function
     function updateCartSummary(totals) {
     if (!totals || typeof totals === 'number' || totals.subtotal === 0) {
-        // Handle empty cart
         const summaryItems = document.querySelectorAll('.summary-item');
         
-        // Update subtotal
         summaryItems[0].querySelector('span:last-child').textContent = '₹0.00';
         
-        // Update shipping info
         const shippingInfo = document.querySelector('.shipping-info');
         if (shippingInfo) {
             shippingInfo.innerHTML = '<small>Add items to your cart for delivery details</small>';
             shippingInfo.className = 'shipping-info text-muted';
         }
         
-        // Update shipping cost to ₹0
         if (summaryItems[1]) {
             summaryItems[1].querySelector('span:last-child').textContent = '₹0.00';
             summaryItems[1].querySelector('span:last-child').className = '';
         }
         
-        // Update total
         const totalElement = document.querySelector('.total span:last-child');
         if (totalElement) {
             totalElement.textContent = '₹0.00';
         }
         
-        // Hide checkout button
         const checkoutBtn = document.querySelector('.checkout-btn');
         if (checkoutBtn) checkoutBtn.style.display = 'none';
         
         return;
     }
     
-    // Update for non-empty cart
     const summaryItems = document.querySelectorAll('.summary-item');
     
-    // Update subtotal
     summaryItems[0].querySelector('span:last-child').textContent = `₹${totals.subtotal.toFixed(2)}`;
     
-    // Update shipping info and cost
     const shippingInfo = document.querySelector('.shipping-info');
     const shippingCost = summaryItems[1].querySelector('span:last-child');
     
@@ -484,14 +473,12 @@ document.addEventListener('DOMContentLoaded', function() {
         shippingCost.className = '';
     }
     
-    // Update total
     const totalElement = document.querySelector('.total span:last-child');
     if (totalElement) {
         totalElement.textContent = `₹${totals.total.toFixed(2)}`;
     }
 }
 
-    // Check for empty cart and update UI
     function checkEmptyCart() {
         const cartItems = document.querySelectorAll('.cart-item');
         if (cartItems.length === 0) {
@@ -507,12 +494,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
             }
-            // Update summary with zeros
             updateCartSummary(0);
         }
     }
 
-    // Handle quantity updates
     async function updateQuantity(productId, action, size, quantityElement) {
         try {
             const response = await fetch('/cart/update-quantity', {
@@ -535,17 +520,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Update quantity display
             quantityElement.textContent = data.newQuantity;
 
-            // Update item total price
             const itemTotalElement = quantityElement.closest('.cart-item')
                 .querySelector('.col-md-2 p');
             if (itemTotalElement) {
                 itemTotalElement.textContent = `₹${data.newItemTotal}`;
             }
 
-            // Update cart summary
             updateCartSummary(data.cartTotals);
 
         } catch (error) {
@@ -558,13 +540,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Handle item removal
     function attachRemoveHandlers() {
         document.querySelectorAll('.remove-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();
 
-                // Show confirmation dialog
                 const result = await Swal.fire({
                     title: 'Remove Item?',
                     text: 'Are you sure you want to remove this item from your cart?',
@@ -594,7 +574,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         const data = await response.json();
 
                         if (data.success) {
-                            // Remove item from DOM
                             const cartItem = btn.closest('.cart-item');
                             cartItem.style.animation = 'fadeOut 0.3s ease';
                             
@@ -612,7 +591,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             }, 300);
 
-                            // Show success message
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Item Removed',
@@ -642,7 +620,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Attach quantity update handlers
     document.querySelectorAll('.quantity-control form').forEach(form => {
         const decreaseBtn = form.querySelector('.decrease-btn');
         const increaseBtn = form.querySelector('.increase-btn');
@@ -656,10 +633,8 @@ document.addEventListener('DOMContentLoaded', function() {
             updateQuantity(productId, 'increase', size, quantityElement));
     });
 
-    // Initialize remove handlers
     attachRemoveHandlers();
 
-    // Add necessary styles
     const style = document.createElement('style');
     style.textContent = `
         @keyframes fadeOut {

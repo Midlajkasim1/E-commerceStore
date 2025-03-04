@@ -332,7 +332,6 @@ const loadHomePage = async (req, res) => {
         if (userId) {
             const user = await User.findById(userId);
             if (user) {
-                // console.log("User data retrieved successfully:", user);
                 return res.render('home', { user: user, products: productData });
             } else {
                 console.log("No user data found in the database.");

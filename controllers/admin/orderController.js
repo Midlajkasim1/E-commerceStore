@@ -112,7 +112,6 @@ const updateStatus = async (req, res) => {
             return res.redirect('/admin/orders');
         }
         
-          // Define the valid status transitions
           const statusFlow = {
             "Pending": ["Processing", "Cancelled"],
             "Processing": ["Shipped", "Cancelled"],
@@ -124,7 +123,6 @@ const updateStatus = async (req, res) => {
             "Returned": []
         };
 
-        // Check if the new status is a valid transition from the current status
         if (!statusFlow[order.status].includes(orderStatus)) {
             req.flash('err', `Cannot change status from ${order.status} to ${orderStatus}`);
             return res.redirect(`/admin/orderdetail/${orderId}`);
