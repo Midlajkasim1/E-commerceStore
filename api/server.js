@@ -11,17 +11,16 @@ const connectDB = require('../config/db');
 const userRoutes = require('../routes/userRouter');
 const adminRoutes = require('../routes/adminRouter');
 
-
-
 app.use(session({
-   secret: process.env.SESSION_SECRET  || 'defaultSecret',
+   secret: process.env.SESSION_SECRET || 'defaultSecret',
    resave: false,
    saveUninitialized: true,
-   cookie: { secure: false, httpOnly: true, maxAge: 48 * 60 * 60 * 1000 } 
+   cookie: { secure: false, httpOnly: true, maxAge: 48 * 60 * 60 * 1000 }
 }));
+
 app.use(flash());
 app.use(nocache());
-//
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -30,25 +29,27 @@ app.use((req, res, next) => {
     next();
 });
 
-connectDB(); 
+connectDB();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
 app.set('view engine', 'ejs');
-app.set("views", [path.join(__dirname, 'views/user'), path.join(__dirname, 'views/admin')]);
-app.use(express.static(path.join(__dirname, 'public')));
+app.set("views", [
+    path.join(__dirname, "..", "views"),       
+    path.join(__dirname, "..", "views/user"),
+    path.join(__dirname, "..", "views/admin")
+]);
+
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 
 app.use('/', userRoutes);
-app.use('/admin',adminRoutes);
+app.use('/admin', adminRoutes);
 
-app.use((req,res)=>{
-    res.status(404).render('page-404')
-})
-
-
-// const HOST = 'http://localhost';
-
-// app.listen(process.env.PORT, () => console.log(`Server is running at ${HOST}:${process.env.PORT}`));
+app.use((req, res) => {
+    res.status(404).render('page-404');
+});
 
 module.exports = app;
