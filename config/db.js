@@ -1,22 +1,16 @@
 const mongoose = require('mongoose');
-
-let isConnected = false; 
-const connectDB = async () => {
-  if (isConnected) {
-    return;
-  }
-
-  try {
-    const db = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000
-    });
-
-    isConnected = db.connections[0].readyState === 1;
-    console.log("MongoDB connected (Vercel serverless)");
-  } 
-  catch (error) {
-    console.error("MongoDB connection error:", error.message);
-  }
-};
+const env =require('dotenv').config()
+  
+const connectDB = async ()=>{
+    try {
+      await mongoose.connect(process.env.MONGODB_URI)  
+      console.log("DB is connected");
+      
+    } catch (error) {
+        console.log("DB connection is error",error.message);
+        process.exit(1)
+        
+    }
+}
 
 module.exports = connectDB;
