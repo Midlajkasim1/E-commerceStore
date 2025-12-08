@@ -427,7 +427,7 @@
     cancelButtonColor: '#6c757d',
     confirmButtonText: 'Add to Cart',
     cancelButtonText: 'Cancel',
-    preConfirm: () => {
+    preConfirm: () => {f
       const selectedSize = document.getElementById('sizeSelect').value;
       if (!selectedSize) {
         Swal.showValidationMessage('Please select a size');

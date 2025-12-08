@@ -498,7 +498,7 @@ const resetPassword = async (req, res) => {
     try {
         const { password, cpassword } = req.body;
         const userEmail = req.session.userEmail;
-        console.log(req.body);
+        // console.log(req.body);
         if (!password, !cpassword) {
             req.flash('err', 'reqiured all fields');
             return res.redirect('/reset-password');

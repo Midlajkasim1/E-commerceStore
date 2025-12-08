@@ -28,12 +28,13 @@ passport.use(new GoogleStrategy({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.GOOGLE_CALLBACK_URL,
     scope: ['profile', 'email'],
-    prompt: 'select_account'
+    prompt: 'select_account',
+   
 },
 async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await User.findOne({ googleId: profile.id });
-        
+         console.log(user)
         if (user) {
             if (user.isBlocked) {
                 return done(null, false, { message: 'You are blocked!' });

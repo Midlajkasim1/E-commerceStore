@@ -3,13 +3,13 @@ const app = express();
 const env = require('dotenv');
 env.config();
 const session = require('express-session');
-const passport = require('./config/passport');
+const passport = require('../config/passport');
 const flash = require('connect-flash');
 const nocache = require('nocache');
 const path = require('path');
-const connectDB = require('./config/db');
-const userRoutes = require('./routes/userRouter');
-const adminRoutes = require('./routes/adminRouter');
+const connectDB = require('../config/db');
+const userRoutes = require('../routes/userRouter');
+const adminRoutes = require('../routes/adminRouter');
 
 
 
@@ -47,8 +47,8 @@ app.use((req,res)=>{
 })
 
 
-const HOST = 'http://localhost';
+// const HOST = 'http://localhost';
 
-app.listen(process.env.PORT, () => console.log(`Server is running at ${HOST}:${process.env.PORT}`));
+// app.listen(process.env.PORT, () => console.log(`Server is running at ${HOST}:${process.env.PORT}`));
 
 module.exports = app;
