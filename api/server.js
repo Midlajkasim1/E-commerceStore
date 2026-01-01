@@ -51,5 +51,7 @@ app.use('/admin', adminRoutes);
 app.use((req, res) => {
     res.status(404).render('page-404');
 });
-
+app.listen(4005,()=>{
+    console.log("running at 4005");
+})
 module.exports = app;
